@@ -6,7 +6,7 @@ import com.chromaway.postchain.ebft.messages.SignedMessage
 import org.asnlab.asndt.runtime.type.Buffer
 import java.util.*
 
-import com.chromaway.postchain.engine.*
+import com.chromaway.postchain.base.*
 
 fun encodeAndSign(m: Message, sign: Signer): ByteArray {
     val buffer = Buffer.allocate(1024, Buffer.DISTINGUISHED_ENCODING_RULES).autoExpand();

@@ -32,7 +32,7 @@ open class BlockDataWithWitness(header: BlockHeader, transactions: Array<ByteArr
 // signature, e.g. pubkey or hash of pubkey
 class Signature(val subjectID: ByteArray, val data: ByteArray)
 
-interface MutliSigBlockWitness : BlockWitness {
+interface MultiSigBlockWitness : BlockWitness {
     fun getSignatures(): Array<Signature>;
 }
 
@@ -41,7 +41,7 @@ interface BlockWitnessBuilder {
     fun getWitness(): BlockWitness // throws when not complete
 }
 
-interface MutliSigBlockWitnessBuilder: BlockWitnessBuilder {
+interface MultiSigBlockWitnessBuilder : BlockWitnessBuilder {
     fun getMySignature(): Signature;
     fun applySignature(s: Signature);
 }
@@ -52,8 +52,8 @@ interface MutliSigBlockWitnessBuilder: BlockWitnessBuilder {
 // representation as we only care about storing of the whole Transaction
 
 interface Transactor {
-    fun isValid(): Boolean
-    fun apply(ctx: BlockEContext)
+    fun isCorrect(): Boolean
+    fun apply(ctx: BlockEContext): Boolean
 }
 
 interface Transaction : Transactor {
@@ -64,8 +64,9 @@ interface Transaction : Transactor {
 // an individual blockchain instance within Postchain system
 
 interface BlockchainConfiguration {
-    fun getTraits(): Set<String>
-    fun getChainID(): Long
+    val chainID: Long
+    val traits: Set<String>
+
     fun decodeBlockHeader(rawBlockHeader: ByteArray): BlockHeader
     fun decodeWitness(rawWitness: ByteArray): BlockWitness
     fun getTransactionFactory(): TransactionFactory
@@ -91,8 +92,10 @@ interface BlockBuilder {
     fun commit(w: BlockWitness?)
 }
 
+class InitialBlockData(val blockIID: Long, val prevBlockRID: ByteArray, val height: Long)
+
 interface BlockStore {
-    fun beginBlock(ctx: EContext): Long
+    fun beginBlock(ctx: EContext): InitialBlockData
     fun finalizeBlock(bctx: BlockEContext, bh: BlockHeader)
     fun commitBlock(bctx: BlockEContext, w: BlockWitness?)
     fun getBlockHeight(blockRID: ByteArray): Long? // returns null if not found

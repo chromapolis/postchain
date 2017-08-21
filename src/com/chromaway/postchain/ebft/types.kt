@@ -4,6 +4,7 @@ import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.Signature
 import nl.komponents.kovenant.*
+import java.util.*
 
 interface ErrContext {
     fun fatal(msg: String);
@@ -35,7 +36,7 @@ interface BlockDatabase {
     fun addBlock(block: BlockDataWithWitness): Promise<Unit, Exception>; // add a complete block after the current one
     fun loadUnfinishedBlock(block: BlockData): Promise<Signature, Exception>; // returns block signature if successful
     fun commitBlock(signatures: Array<Signature?>): Promise<Unit, Exception>;
-    fun buildBlock(): Promise<BlockData, Exception>;
+    fun buildBlock(): Promise<Pair<BlockData, Signature>, Exception>;
 
     fun verifyBlockSignature(s: Signature): Boolean;
     fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>;
@@ -49,15 +50,26 @@ object CommitBlockIntent : BlockIntent()
 object BuildBlockIntent : BlockIntent()
 
 data class FetchBlockAtHeightIntent(val height: Long): BlockIntent()
-data class FetchUnfinishedBlockIntent(val blockRID: ByteArray): BlockIntent()
+
+data class FetchUnfinishedBlockIntent(val blockRID: ByteArray) : BlockIntent() {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+        other as FetchUnfinishedBlockIntent
+        if (!Arrays.equals(blockRID, other.blockRID)) return false
+        return true
+    }
+}
+
+
 data class FetchCommitSignatureIntent(val blockRID: ByteArray, val nodes: Array<Int>): BlockIntent()
 
 interface BlockManager {
+    var currentBlock: BlockData?
     fun onReceivedUnfinishedBlock(block: BlockData);
     fun onReceivedBlockAtHeight(block: BlockDataWithWitness, height: Long);
-    fun isProcessing(): Boolean;
-    fun getCurrentBlock(): BlockData?;
-    fun getFetchBlockIntent(): BlockIntent;
+    fun isProcessing(): Boolean
+    fun getBlockIntent(): BlockIntent;
 }
 
 interface StatusManager {
@@ -66,7 +78,7 @@ interface StatusManager {
     val myStatus: NodeStatus;
 
     fun onStatusUpdate(nodeIndex: Int, status: NodeStatus); // STATUS message from another node
-    fun onHeightAdvance(height: Long); // a complete block was received from other peers, go forward
+    fun onHeightAdvance(height: Long):Boolean; // a complete block was received from other peers, go forward
     fun onCommittedBlock(blockRID: ByteArray); // when block committed to the database
     fun onReceivedBlock(blockRID: ByteArray, mySignature: Signature): Boolean; // received block was validated by BlockManager/DB
     fun onBuiltBlock(blockRID: ByteArray, mySignature: Signature): Boolean; // block built by BlockManager/BlockDatabase (on a primary node)

@@ -18,11 +18,12 @@ abstract class AbstractBlockBuilder (
     var finalized: Boolean = false
     val transactions = mutableListOf<ByteArray>()
     lateinit var bctx: BlockEContext
+    lateinit var iBlockData: InitialBlockData
     var _blockData: BlockData? = null
 
     override fun begin() {
-        val blockIID = store.beginBlock(ectx)
-        bctx = BlockEContext(ectx.conn, ectx.chainID, blockIID)
+        iBlockData = store.beginBlock(ectx)
+        bctx = BlockEContext(ectx.conn, ectx.chainID, iBlockData.blockIID)
     }
 
     override fun appendTransaction(tx: Transaction) {
@@ -62,14 +63,4 @@ abstract class AbstractBlockBuilder (
         }
         store.commitBlock(bctx, w)
     }
-}
-
-fun storeBlock(conn: Connection, bf: BlockchainConfiguration, blockData: BlockDataWithWitness) {
-    val blockBuilder = bf.makeBlockBuilder(conn)
-    blockBuilder.begin();
-    for (txData in blockData.transactions) {
-        blockBuilder.appendTransaction(txData)
-    }
-    blockBuilder.finalizeAndValidate(blockData.header)
-    blockBuilder.commit(blockData.witness)
 }

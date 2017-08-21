@@ -1,33 +1,26 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.core.BlockDataWithWitness
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.storeBlock
-import com.chromaway.postchain.ebft.messages.BlockData
+import com.chromaway.postchain.core.*
+import com.chromaway.postchain.base.BlockchainEngine
+import com.chromaway.postchain.base.ManagedBlockBuilder
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import java.sql.DriverManager
 import java.util.concurrent.SynchronousQueue
 import kotlin.concurrent.thread
 
-class BlockDatabaseImpl(val bc: BlockchainConfiguration) {
-
-    fun addBlock(block: BlockDataWithWitness) {
-        val conn = DriverManager.getConnection("jdbc:h2:mem:test")
-        storeBlock(conn, bc, block)
-        conn.close()
-    }
-}
-
 typealias Operation = () -> Unit;
 
-
-class BlockDatabaseWrapper(val bc: BlockchainConfiguration) : BlockDatabase {
-    val impl = BlockDatabaseImpl(bc)
-    val queue = SynchronousQueue<Operation>()
+class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
+    private val queue = SynchronousQueue<Operation>()
     @Volatile private var ready = true
     @Volatile private var keepGoing = true
+    private var blockBuilder: ManagedBlockBuilder? = null
+    private var witnessBuilder: MultiSigBlockWitnessBuilder? = null
+
+    @Synchronized fun stop () {
+        keepGoing = false
+        queue.put({})
+    }
 
     @Synchronized
     private fun <RT>runOp(op: ()->RT): Promise<RT, Exception> {
@@ -59,16 +52,60 @@ class BlockDatabaseWrapper(val bc: BlockchainConfiguration) : BlockDatabase {
         }
     }
 
+    private fun maybeRollback() {
+        if (blockBuilder != null) {
+            blockBuilder?.rollback()
+            blockBuilder = null
+            witnessBuilder = null
+        }
+    }
+
     override fun addBlock(block: BlockDataWithWitness): Promise<Unit, Exception> {
-        return runOp { impl.addBlock(block) }
+        return runOp {
+            engine.addBlock(block)
+        }
     }
 
 
-/*    fun loadUnfinishedBlock(block: BlockData): Promise<Signature, Exception>; // returns block signature if successful
-    fun commitBlock(signatures: Array<Signature?>): Promise<Void, Exception>;
-    fun buildBlock(): Promise<com.chromaway.postchain.core.BlockData, Exception>;
+    override fun loadUnfinishedBlock(block: BlockData): Promise<Signature, Exception> {
+        return runOp {
+            maybeRollback()
+            blockBuilder = engine.loadUnfinishedBlock(block)
+            witnessBuilder = blockBuilder!!.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
+            witnessBuilder!!.getMySignature()
+        }
+    }
 
-    fun verifyBlockSignature(s: Signature): Boolean;
-    fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>;
+    override fun commitBlock(signatures: Array<Signature?>): Promise<Unit, Exception> {
+        return runOp {
+            // TODO: process signatures
+            blockBuilder!!.commit(witnessBuilder!!.getWitness())
+            blockBuilder = null
+            witnessBuilder = null
+        }
+    }
+    override fun buildBlock(): Promise<Pair<BlockData, Signature>, Exception> {
+        return runOp {
+            maybeRollback()
+            blockBuilder = engine.buildBlock()
+            witnessBuilder = blockBuilder!!.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
+            Pair(blockBuilder!!.getBlockData(), witnessBuilder!!.getMySignature())
+        }
+    }
+
+    override fun verifyBlockSignature(s: Signature): Boolean {
+        if (witnessBuilder != null) {
+            try {
+                witnessBuilder!!.applySignature(s)
+            } catch (e: Exception) {
+                return false
+            }
+            return true
+        }
+        return false
+    }
+
+    overrid fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception> {
+    }
     fun getBlockAtHeight(height: Long): Promise<com.chromaway.postchain.core.BlockData, Exception>;*/
 }

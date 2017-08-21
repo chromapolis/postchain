@@ -60,11 +60,15 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     }
 
     @Synchronized
-    override fun onHeightAdvance(height: Long) {
+    override fun onHeightAdvance(height: Long): Boolean {
         if (height == (myStatus.height + 1)) {
             advanceHeight();
-        } else
+            return true
+        } else {
             ectxt.fatal("Height mismatch");
+            return false
+        }
+
     }
 
     @Synchronized

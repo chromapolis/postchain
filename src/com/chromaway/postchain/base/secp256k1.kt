@@ -1,7 +1,6 @@
-package com.chromaway.postchain.engine
+package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.Signature
-import nl.komponents.kovenant.combine.concreteCombine
 import org.spongycastle.crypto.digests.SHA256Digest;
 import org.spongycastle.crypto.ec.CustomNamedCurves;
 import org.spongycastle.crypto.params.*;
@@ -16,8 +15,6 @@ import org.spongycastle.crypto.params.ECPublicKeyParameters
 import java.io.IOException
 import org.spongycastle.asn1.DLSequence
 import org.spongycastle.asn1.ASN1InputStream
-import jdk.nashorn.tools.ShellFunctions.input
-import com.oracle.util.Checksums.update
 import java.security.MessageDigest
 
 

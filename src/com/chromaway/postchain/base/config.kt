@@ -1,6 +1,4 @@
-package com.chromaway.postchain.engine
-
-import org.json.*;
+package com.chromaway.postchain.base
 
 /*
 class DefaultPeerCommConfiguration(fileName: String) : PeerCommConfiguration {

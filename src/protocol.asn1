@@ -20,6 +20,11 @@ BlockData ::= SEQUENCE {
 	transactions SEQUENCE OF OCTET STRING
 }
 
+Identification ::= SEQUENCE {
+    timestamp INTEGER,
+    yourPubKey OCTET STRING
+}
+
 UnfinishedBlock ::= BlockData
 
 GetUnfinishedBlock ::= SEQUENCE {
