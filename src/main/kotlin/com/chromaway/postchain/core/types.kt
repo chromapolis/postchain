@@ -33,6 +33,10 @@ interface BlockWitness {
     fun getRawData(): ByteArray
 }
 
+interface WitnessPart {
+
+}
+
 open class BlockDataWithWitness(header: BlockHeader, transactions: Array<ByteArray>, val witness: BlockWitness?)
     : BlockData(header, transactions)
 

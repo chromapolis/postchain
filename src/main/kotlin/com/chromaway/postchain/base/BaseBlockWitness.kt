@@ -17,7 +17,7 @@ class BaseBlockWitness(val _rawData: ByteArray, override val blockRID: ByteArray
     }
 
     companion object Factory {
-        @JvmStatic val make: Int = 0
+        //@JvmStatic val make = null
     }
 
 }

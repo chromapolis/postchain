@@ -26,33 +26,33 @@ open class BaseBlockchainEngine(val bc: BlockchainConfiguration,
 
 
     override fun addBlock(block: BlockDataWithWitness) {
-        val mbb = loadUnfinishedBlock(block)
-        mbb.commit(block.witness)
+        val blockBuilder = loadUnfinishedBlock(block)
+        blockBuilder.commit(block.witness)
     }
 
     override  fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
-        val mbb = makeBlockBuilder()
-        mbb.begin();
+        val blockBuilder = makeBlockBuilder()
+        blockBuilder.begin();
         for (txData in block.transactions) {
-            mbb.appendTransaction(txData)
+            blockBuilder.appendTransaction(txData)
         }
-        mbb.finalizeAndValidate(block.header)
-        return mbb
+        blockBuilder.finalizeAndValidate(block.header)
+        return blockBuilder
     }
 
     override fun buildBlock(): ManagedBlockBuilder {
         val transactions = tq.getTransactions()
         if (transactions.isEmpty()) throw Error("No transactions to build a block")
-        val mbb = makeBlockBuilder()
-        mbb.begin()
+        val blockBuilder = makeBlockBuilder()
+        blockBuilder.begin()
         for (tx in transactions) {
-            mbb.maybeAppendTransaction(tx)
+            blockBuilder.maybeAppendTransaction(tx)
         }
         // TODO handle a case with 0 transactions
         // TODO what if more transactions arrive?
         // TODO block size policy goes here
-        mbb.finalize()
-        return mbb
+        blockBuilder.finalize()
+        return blockBuilder
     }
 
 }
