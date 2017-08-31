@@ -30,8 +30,4 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
     override fun validateWitness(w: BlockWitness): Boolean {
         return Arrays.equals( w.blockRID, _blockData!!.header.blockRID )
     }
-    override fun getBlockWitnessBuilder(): BlockWitnessBuilder? {
-        return null
-    }
-
 }

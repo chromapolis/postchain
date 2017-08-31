@@ -1,5 +1,6 @@
 package com.chromaway.postchain.ebft
 
+import com.chromaway.postchain.base.BaseBlockWitnessBuilder
 import com.chromaway.postchain.core.*
 import com.chromaway.postchain.base.ManagedBlockBuilder
 import nl.komponents.kovenant.Promise
@@ -9,7 +10,7 @@ import kotlin.concurrent.thread
 
 typealias Operation = () -> Unit;
 
-class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
+class BaseBlockDatabase(val engine: BlockchainEngine, val privKey: ByteArray, val pubKey: ByteArray) : BlockDatabase {
 
     private val queue = SynchronousQueue<Operation>()
     @Volatile private var ready = true
@@ -71,11 +72,9 @@ class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
         return runOp {
             maybeRollback()
             blockBuilder = engine.loadUnfinishedBlock(block)
-            witnessBuilder = blockBuilder!!.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
-            witnessBuilder!!.getMySignature()
+            createWitnessBuilderAndSign(block)
         }
     }
-
     override fun commitBlock(signatures: Array<Signature?>): Promise<Unit, Exception> {
         return runOp {
             // TODO: process signatures
@@ -88,8 +87,9 @@ class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
         return runOp {
             maybeRollback()
             blockBuilder = engine.buildBlock()
-            witnessBuilder = blockBuilder!!.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
-            Pair(blockBuilder!!.getBlockData(), witnessBuilder!!.getMySignature())
+            val blockData = blockBuilder!!.getBlockData()
+            val signature = createWitnessBuilderAndSign(blockData)
+            Pair(blockData, signature)
         }
     }
 
@@ -113,4 +113,29 @@ class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+
+    private fun createWitnessBuilderAndSign(blockData: BlockData): Signature {
+        val peerInfo = engine.peerCommConfiguration.peerInfo;
+        val subjects = Array(peerInfo.size, { i -> peerInfo[i].pubKey });
+
+        var requiredSigs: Int
+        if (subjects.size == 3) {
+            requiredSigs = 3;
+        } else {
+            val maxFailedNodes = Math.floor(((subjects.size - 1) / 3).toDouble());
+            //return signers.signers.length - maxFailedNodes;
+            requiredSigs = 2 * maxFailedNodes.toInt() + 1;
+        }
+
+        witnessBuilder = BaseBlockWitnessBuilder(subjects, requiredSigs)
+        val signature = signBlock(blockData)
+        witnessBuilder!!.applySignature(signature)
+
+        return signature;
+    }
+
+    private fun signBlock(blockData: BlockData): Signature {
+        val signer = engine.cryptoSystem.makeSigner(pubKey, privKey)
+        return signer.invoke(blockData.header.rawData);
+    }
 }

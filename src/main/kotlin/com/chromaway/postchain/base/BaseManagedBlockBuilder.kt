@@ -47,11 +47,6 @@ class BaseManagedBlockBuilder(
         return bb.getBlockData()
     }
 
-    override fun getBlockWitnessBuilder(): BlockWitnessBuilder? {
-        if (closed) throw Error("Already closed")
-        return bb.getBlockWitnessBuilder()
-    }
-
     override fun commit(w: BlockWitness?) {
         runOp { bb.commit(w) }
         closed = true

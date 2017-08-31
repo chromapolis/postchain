@@ -1,7 +1,6 @@
 package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.*
-import java.sql.Connection
 import java.util.*
 
 class BaseBlockchainConfiguration(override val chainID: Long, val properties: Properties) : BlockchainConfiguration {
@@ -21,8 +20,11 @@ class BaseBlockchainConfiguration(override val chainID: Long, val properties: Pr
     }
 
     override fun makeBlockBuilder(ctx: EContext): BlockBuilder {
-        TODO("Not implemented yet")
-//        return BaseBlockBuilder(SECP256K1CryptoSystem(), EContext(), com.chromaway.postchain.base.BaseBlockStore(),
+        val blockStore = BaseBlockStore();
+        // Implementation specific initialization.
+        blockStore.initialize(ctx);
+
+        return BaseBlockBuilder(SECP256K1CryptoSystem(), ctx, blockStore, getTransactionFactory());
     }
 
 }

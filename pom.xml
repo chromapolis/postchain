@@ -20,6 +20,10 @@
         <postgresql.version>42.1.4</postgresql.version>
         <spongycastle.core.version>1.56.0.0</spongycastle.core.version>
         <jasn1.version>1.8.1</jasn1.version>
+        <commons-dbcp2.version>2.1.1</commons-dbcp2.version>
+        <commons-configuration2.version>2.1.1</commons-configuration2.version>
+        <commons-beanutils.version>1.9.3</commons-beanutils.version>
+        <asnrt.version>3.14.15</asnrt.version>
     </properties>
 
     <dependencies>
@@ -61,17 +65,22 @@
         <dependency>
             <groupId>asnrt</groupId>
             <artifactId>asnrt</artifactId>
-            <version>3.14.15</version>
+            <version>${asnrt.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.openmuc</groupId>
-            <artifactId>jasn1</artifactId>
-            <version>${jasn1.version}</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>${commons-dbcp2.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.openmuc</groupId>
-            <artifactId>jasn1-compiler</artifactId>
-            <version>${jasn1.version}</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>${commons-configuration2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>${commons-beanutils.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

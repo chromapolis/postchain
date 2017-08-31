@@ -12,9 +12,9 @@ import java.util.*
 6. Transaction object can perform its duties according to the configuration it received, perhaps creating sub-objects called transactors and passing them the configuration.
  */
 // TODO: can we generalize conn? We can make it an Object, but then we have to do typecast everywhere...
-open class EContext(val conn: Connection, val chainID: Long)
+open class EContext(val conn: Connection, val chainID: Int)
 
-class BlockEContext(conn: Connection, chainID: Long, val blockIID: Long)
+class BlockEContext(conn: Connection, chainID: Int, val blockIID: Long)
     : EContext(conn, chainID)
 
 interface BlockHeader {
@@ -100,7 +100,6 @@ interface BlockBuilder {
     fun finalize()
     fun finalizeAndValidate(bh: BlockHeader)
     fun getBlockData(): BlockData
-    fun getBlockWitnessBuilder(): BlockWitnessBuilder?;
     fun commit(w: BlockWitness?)
 }
 
@@ -110,9 +109,9 @@ interface BlockStore {
     fun beginBlock(ctx: EContext): InitialBlockData
     fun finalizeBlock(bctx: BlockEContext, bh: BlockHeader)
     fun commitBlock(bctx: BlockEContext, w: BlockWitness?)
-    fun getBlockHeight(blockRID: ByteArray): Long? // returns null if not found
-    fun getBlockRID(height: Long): ByteArray? // returns null if height is out of range
-    fun getLastBlockHeight(): Long // height of the last block, first block has height 0
-    fun getBlockData(height: Long): BlockData
-    fun getWitnessData(height: Long): ByteArray
+    fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long? // returns null if not found
+    fun getBlockRID(ctx: EContext, height: Long): ByteArray? // returns null if height is out of range
+    fun getLastBlockHeight(ctx: EContext): Long // height of the last block, first block has height 0
+    fun getBlockData(ctx: EContext, height: Long): BlockData
+    fun getWitnessData(ctx: EContext, height: Long): ByteArray
 }
