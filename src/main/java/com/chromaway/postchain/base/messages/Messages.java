@@ -7,6 +7,7 @@ package com.chromaway.postchain.base.messages;
 import java.util.*;
 import org.asnlab.asndt.runtime.type.AsnType;
 import org.asnlab.asndt.runtime.type.AsnModule;
+import org.asnlab.asndt.runtime.value.*;
 import org.asnlab.asndt.runtime.conv.*;
 
 

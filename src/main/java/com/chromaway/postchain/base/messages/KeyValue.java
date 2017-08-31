@@ -5,18 +5,17 @@
 package com.chromaway.postchain.base.messages;
 
 import java.io.*;
-//import javax.validation.constraints.*;
+import java.math.*;
 import org.asnlab.asndt.runtime.conv.*;
 import org.asnlab.asndt.runtime.conv.annotation.*;
 import org.asnlab.asndt.runtime.type.AsnType;
+import org.asnlab.asndt.runtime.value.*;
 
 public class KeyValue {
 
-	// @NotNull
 	@Component(0)
 	public Long key;
 
-	//@NotNull
 	@Component(1)
 	public byte[] value;
 

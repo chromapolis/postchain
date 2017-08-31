@@ -5,30 +5,27 @@
 package com.chromaway.postchain.base.messages;
 
 import java.io.*;
-// import javax.validation.constraints.*;
+import java.math.*;
+import java.util.*;
 import org.asnlab.asndt.runtime.conv.*;
 import org.asnlab.asndt.runtime.conv.annotation.*;
 import org.asnlab.asndt.runtime.type.AsnType;
+import org.asnlab.asndt.runtime.value.*;
 
 public class BlockHeader {
 
-	// @NotNull
 	@Component(0)
 	public byte[] prevBlockHash;
 
-	// @NotNull
 	@Component(1)
 	public byte[] rootHash;
 
-	// @NotNull
 	@Component(2)
 	public Long timestamp;
 
-	// @NotNull
 	@Component(3)
 	public Long height;
 
-	// @NotNull
 	@Component(4)
 	public KeyValue[] extra;
 
