@@ -17,7 +17,7 @@ public class BlockData {
 	public byte[] header;
 
 	@Component(1)
-	public byte[][] transactions;
+	public Vector<byte[]> transactions;
 
 
 	public boolean equals(Object obj) {
@@ -43,7 +43,7 @@ public class BlockData {
 	static {
 		CONV = new AnnotationCompositeConverter(BlockData.class);
 		AsnConverter headerConverter = OctetStringConverter.INSTANCE;
-		AsnConverter transactionsConverter = new ArrayConverter(OctetStringConverter.INSTANCE);
+		AsnConverter transactionsConverter = new VectorConverter(OctetStringConverter.INSTANCE);
 		CONV.setComponentConverters(new AsnConverter[] { headerConverter, transactionsConverter });
 	}
 

@@ -27,7 +27,7 @@ public class BlockHeader {
 	public Long height;
 
 	@Component(4)
-	public KeyValue[] extra;
+	public Vector<KeyValue> extra;
 
 
 	public boolean equals(Object obj) {
@@ -56,7 +56,7 @@ public class BlockHeader {
 		AsnConverter rootHashConverter = OctetStringConverter.INSTANCE;
 		AsnConverter timestampConverter = LongConverter.INSTANCE;
 		AsnConverter heightConverter = LongConverter.INSTANCE;
-		AsnConverter extraConverter = new ArrayConverter(KeyValue.CONV);
+		AsnConverter extraConverter = new VectorConverter(KeyValue.CONV);
 		CONV.setComponentConverters(new AsnConverter[] { prevBlockHashConverter, rootHashConverter, timestampConverter, heightConverter, extraConverter });
 	}
 

@@ -4,6 +4,7 @@ import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.InitialBlockData
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.*
 
 class BaseBlockHeader(override val rawData: ByteArray, val cryptoSystem: CryptoSystem) : BlockHeader {
     override val prevBlockRID: ByteArray;
@@ -25,7 +26,7 @@ class BaseBlockHeader(override val rawData: ByteArray, val cryptoSystem: CryptoS
             bh.rootHash = rootHash;
             bh.height = iBlockData.height;
             bh.timestamp = timestamp;
-            bh.extra = arrayOf();
+            bh.extra = Vector();
             val outs = ByteArrayOutputStream()
             bh.der_encode(outs);
             return BaseBlockHeader(outs.toByteArray(), cryptoSystem);
