@@ -11,7 +11,7 @@ fun decodeBlockDataWithWitness(block: CompleteBlock, bc: BlockchainConfiguration
     val header = bc.decodeBlockHeader(block.blockData.header)
     val witness = bc.decodeWitness(block.witness)
     return BlockDataWithWitness(header,
-            block.blockData.transactions.toArray(arrayOf(byteArrayOf())),
+            block.blockData.transactions,
             witness
     )
 
