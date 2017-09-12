@@ -1,5 +1,5 @@
 import java.sql.*
-import org.apache.commons.dbutils.*;
+import org.apache.commons.dbutils.*
 import org.apache.commons.dbutils.handlers.MapHandler
 import org.apache.commons.dbutils.handlers.ScalarHandler
 
@@ -12,11 +12,11 @@ object Conn {
         Class.forName("org.h2.Driver")
         val conn = DriverManager.getConnection("jdbc:h2:mem:test")
 
-        val r = QueryRunner();
-        val h = ScalarHandler<String>();
-        val m = MapHandler();
+        val r = QueryRunner()
+        val h = ScalarHandler<String>()
+        val m = MapHandler()
 
-        val rs = r.query(conn, "SELECT 'foo' as foo", m);
+        val rs = r.query(conn, "SELECT 'foo' as foo", m)
 
         println(rs["foo"])
         conn.close()

@@ -1,7 +1,8 @@
 package com.chromaway.postchain.core
 
-import java.sql.Connection;
-import java.util.*
+import org.apache.commons.configuration2.Configuration
+import java.sql.Connection
+import java.util.Arrays
 
 /*
 1. Manager reads JSON and finds BlockchainConfigurationFactory class name.
@@ -14,13 +15,16 @@ import java.util.*
 // TODO: can we generalize conn? We can make it an Object, but then we have to do typecast everywhere...
 open class EContext(val conn: Connection, val chainID: Int)
 
-class BlockEContext(conn: Connection, chainID: Int, val blockIID: Long)
+open class BlockEContext(conn: Connection, chainID: Int, val blockIID: Long)
     : EContext(conn, chainID)
 
+class TxEContext(conn: Connection, chainID: Int, blockIID: Long, val txIID: Long)
+    : BlockEContext(conn, chainID, blockIID)
+
 interface BlockHeader {
-    val prevBlockRID: ByteArray;
-    val rawData: ByteArray;
-    val blockRID: ByteArray; // it's not a part of header but derived from it
+    val prevBlockRID: ByteArray
+    val rawData: ByteArray
+    val blockRID: ByteArray // it's not a part of header but derived from it
 }
 
 open class BlockData(val header: BlockHeader, val transactions: Array<ByteArray>)
@@ -29,23 +33,39 @@ open class BlockData(val header: BlockHeader, val transactions: Array<ByteArray>
 // Block-level witness is something which proves that block is valid and properly authorized
 
 interface BlockWitness {
-    val blockRID: ByteArray
+//    val blockRID: ByteArray
     fun getRawData(): ByteArray
 }
 
-interface WitnessPart {
-
-}
+interface WitnessPart
 
 open class BlockDataWithWitness(header: BlockHeader, transactions: Array<ByteArray>, val witness: BlockWitness?)
     : BlockData(header, transactions)
 
 // id is something which identifies subject which produces the
 // signature, e.g. pubkey or hash of pubkey
-class Signature(val subjectID: ByteArray, val data: ByteArray)
+data class Signature(val subjectID: ByteArray, val data: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Signature
+
+        if (!Arrays.equals(subjectID, other.subjectID)) return false
+        if (!Arrays.equals(data, other.data)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = Arrays.hashCode(subjectID)
+        result = 31 * result + Arrays.hashCode(data)
+        return result
+    }
+}
 
 interface MultiSigBlockWitness : BlockWitness {
-    fun getSignatures(): Array<Signature>;
+    fun getSignatures(): Array<Signature>
 }
 
 interface BlockWitnessBuilder {
@@ -54,8 +74,8 @@ interface BlockWitnessBuilder {
 }
 
 interface MultiSigBlockWitnessBuilder : BlockWitnessBuilder {
-    fun getMySignature(): Signature;
-    fun applySignature(s: Signature);
+    fun getMySignature(): Signature
+    fun applySignature(s: Signature)
 }
 
 // Transactor is an individual operation which can be applied to the database
@@ -65,11 +85,12 @@ interface MultiSigBlockWitnessBuilder : BlockWitnessBuilder {
 
 interface Transactor {
     fun isCorrect(): Boolean
-    fun apply(ctx: BlockEContext): Boolean
+    fun apply(ctx: TxEContext): Boolean
 }
 
 interface Transaction : Transactor {
     fun getRawData(): ByteArray
+    fun getRID(): ByteArray
 }
 
 // BlockchainConfiguration is a stateless objects which describes
@@ -83,10 +104,11 @@ interface BlockchainConfiguration {
     fun decodeWitness(rawWitness: ByteArray): BlockWitness
     fun getTransactionFactory(): TransactionFactory
     fun makeBlockBuilder(ctx: EContext): BlockBuilder
+
 }
 
 interface BlockchainConfigurationFactory {
-    fun makeBlockchainConfiguration(chainID: Long, properties: Properties): BlockchainConfiguration
+    fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration
 }
 
 interface TransactionFactory {
@@ -100,6 +122,7 @@ interface BlockBuilder {
     fun finalize()
     fun finalizeAndValidate(bh: BlockHeader)
     fun getBlockData(): BlockData
+    fun getBlockWitnessBuilder(): BlockWitnessBuilder?
     fun commit(w: BlockWitness?)
 }
 
@@ -107,6 +130,7 @@ class InitialBlockData(val blockIID: Long, val prevBlockRID: ByteArray, val heig
 
 interface BlockStore {
     fun beginBlock(ctx: EContext): InitialBlockData
+    fun addTransaction(bctx: BlockEContext, tx: Transaction): TxEContext
     fun finalizeBlock(bctx: BlockEContext, bh: BlockHeader)
     fun commitBlock(bctx: BlockEContext, w: BlockWitness?)
     fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long? // returns null if not found
@@ -114,4 +138,11 @@ interface BlockStore {
     fun getLastBlockHeight(ctx: EContext): Long // height of the last block, first block has height 0
     fun getBlockData(ctx: EContext, height: Long): BlockData
     fun getWitnessData(ctx: EContext, height: Long): ByteArray
+
+    fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
+    fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray
+}
+
+interface QueriesBlockStore : BlockStore {
+    fun getTxRIDsAtHeight(ctx: EContext): Any
 }

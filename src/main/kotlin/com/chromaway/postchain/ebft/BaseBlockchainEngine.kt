@@ -32,7 +32,7 @@ open class BaseBlockchainEngine(val bc: BlockchainConfiguration,
 
     override  fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
         val blockBuilder = makeBlockBuilder()
-        blockBuilder.begin();
+        blockBuilder.begin()
         for (txData in block.transactions) {
             blockBuilder.appendTransaction(txData)
         }

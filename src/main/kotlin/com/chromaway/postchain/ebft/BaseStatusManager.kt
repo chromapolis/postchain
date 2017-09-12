@@ -7,35 +7,35 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     : StatusManager {
     override val nodeStatuses = Array(nodeCount, {NodeStatus()})
     override val commitSignatures: Array<Signature?> = arrayOfNulls(nodeCount)
-    override val myStatus: NodeStatus;
+    override val myStatus: NodeStatus
     var intent: BlockIntent = DoNothingIntent
-    val quorum2f = (nodeCount / 3) * 2;
+    val quorum2f = (nodeCount / 3) * 2
 
     init {
-        myStatus = nodeStatuses[myIndex];
+        myStatus = nodeStatuses[myIndex]
     }
 
     fun countNodes (state: NodeState, height: Long, blockRID: ByteArray?): Int {
-        var count: Int = 0;
+        var count: Int = 0
         for (ns in nodeStatuses) {
             if (ns.height == height && ns.state == state) {
                 if (blockRID == null) {
-                    if (ns.blockRID == null) count++;
+                    if (ns.blockRID == null) count++
                 } else {
                     if (ns.blockRID != null && Arrays.equals(ns.blockRID, blockRID))
-                        count++;
+                        count++
                 }
             }
         }
-        return count;
+        return count
     }
 
 
     @Synchronized
     override fun onStatusUpdate(nodeIndex: Int, status: NodeStatus) {
-        val existingStatus = nodeStatuses[nodeIndex];
+        val existingStatus = nodeStatuses[nodeIndex]
         if ((status.serial > existingStatus.serial) || (status.height > existingStatus.height)) {
-            nodeStatuses[nodeIndex] = status;
+            nodeStatuses[nodeIndex] = status
             recomputeStatus()
         }
     }
@@ -62,10 +62,10 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     @Synchronized
     override fun onHeightAdvance(height: Long): Boolean {
         if (height == (myStatus.height + 1)) {
-            advanceHeight();
+            advanceHeight()
             return true
         } else {
-            ectxt.fatal("Height mismatch");
+            ectxt.fatal("Height mismatch")
             return false
         }
 
@@ -80,13 +80,13 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     }
 
     fun acceptBlock(blockRID: ByteArray, mySignature: Signature) {
-        resetCommitSignatures();
-        myStatus.blockRID = blockRID;
-        myStatus.serial += 1;
-        myStatus.state = NodeState.HaveBlock;
-        commitSignatures[myIndex] = mySignature;
-        intent = DoNothingIntent;
-        recomputeStatus();
+        resetCommitSignatures()
+        myStatus.blockRID = blockRID
+        myStatus.serial += 1
+        myStatus.state = NodeState.HaveBlock
+        commitSignatures[myIndex] = mySignature
+        intent = DoNothingIntent
+        recomputeStatus()
     }
 
     @Synchronized
@@ -95,36 +95,36 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
         if (_intent is FetchUnfinishedBlockIntent) {
             val needBlockRID = _intent.blockRID
             if (Arrays.equals(blockRID, needBlockRID)) {
-                acceptBlock(blockRID, mySignature);
-                return true;
+                acceptBlock(blockRID, mySignature)
+                return true
             } else {
-                ectxt.warn("Received block which is irrelevant");
-                return false;
+                ectxt.warn("Received block which is irrelevant")
+                return false
             }
         } else {
-            ectxt.warn("Received block which is irrelevant");
-            return false;
+            ectxt.warn("Received block which is irrelevant")
+            return false
         }
     }
 
 
     fun primaryIndex(): Int {
-        return ((myStatus.height + myStatus.round) % nodeCount).toInt();
+        return ((myStatus.height + myStatus.round) % nodeCount).toInt()
     }
 
     @Synchronized
     override fun onBuiltBlock(blockRID: ByteArray, mySignature: Signature): Boolean {
         if (intent is BuildBlockIntent) {
             if (primaryIndex() != myIndex) {
-                ectxt.warn("Inconsistent state: building a block while not a primary");
-                return false;
+                ectxt.warn("Inconsistent state: building a block while not a primary")
+                return false
             }
-            acceptBlock(blockRID, mySignature);
-            return true;
+            acceptBlock(blockRID, mySignature)
+            return true
         }
         else {
-            ectxt.warn("Received built block while not requesting it.");
-            return false;
+            ectxt.warn("Received built block while not requesting it.")
+            return false
         }
     }
 
@@ -133,10 +133,10 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
         if (myStatus.state == NodeState.Prepared
                 && Arrays.equals(blockRID, myStatus.blockRID))
         {
-            this.commitSignatures[nodeIndex] = signature;
-            recomputeStatus();
+            this.commitSignatures[nodeIndex] = signature
+            recomputeStatus()
         } else {
-            ectxt.warn("Wrong commit signature");
+            ectxt.warn("Wrong commit signature")
         }
     }
 
@@ -161,10 +161,10 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     fun recomputeStatus1 (): Boolean {
 
         fun resetBlock() {
-            myStatus.state = NodeState.WaitBlock;
-            myStatus.blockRID = null;
-            myStatus.serial += 1;
-            resetCommitSignatures();
+            myStatus.state = NodeState.WaitBlock
+            myStatus.blockRID = null
+            myStatus.serial += 1
+            resetCommitSignatures()
         }
 
 
@@ -173,10 +173,10 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
         // (might get perma-stuck if number of failures exceeds f)
         if (myStatus.state !== NodeState.Prepared) {
             var sameHeightCount: Int = 0
-            var higherHeightCount: Int = 0;
+            var higherHeightCount: Int = 0
             for (ns in nodeStatuses) {
-                if (ns.height == myStatus.height) sameHeightCount++;
-                else if (ns.height > myStatus.height) higherHeightCount++;
+                if (ns.height == myStatus.height) sameHeightCount++
+                else if (ns.height > myStatus.height) higherHeightCount++
             }
             if (sameHeightCount <= this.quorum2f) {
                 // cannot build a block
@@ -187,32 +187,32 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
 
                     if (_intent is FetchBlockAtHeightIntent) {
                         if (_intent.height == myStatus.height)
-                            return false;
+                            return false
                         intent = FetchBlockAtHeightIntent(myStatus.height)
-                        return true;
+                        return true
                     }
 
                     if (myStatus.state == NodeState.HaveBlock) {
-                        resetBlock();
+                        resetBlock()
                     }
 
                     // try fetching a block
                     this.intent = FetchBlockAtHeightIntent(myStatus.height)
-                    return true;
+                    return true
                 }
                 // there is no point in updating state further, but doesn't hurt anyway...
             }
         }
 
         if (myStatus.revolting) {
-            var nHighRound: Int = 0;
-            var nRevolting: Int = 0;
+            var nHighRound: Int = 0
+            var nRevolting: Int = 0
             for (ns in nodeStatuses) {
-                if (ns.height != myStatus.height) continue;
+                if (ns.height != myStatus.height) continue
                 if (ns.round == myStatus.round) {
-                    if (ns.revolting) nRevolting++;
+                    if (ns.revolting) nRevolting++
                 } else if (ns.round > myStatus.round) {
-                    nHighRound++;
+                    nHighRound++
                 }
             }
             if (nHighRound + nRevolting > this.quorum2f) {
@@ -220,39 +220,39 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
 
                 // Note: we do not reset block if NodeState is Prepared.
                 if (myStatus.state == NodeState.HaveBlock) {
-                    resetBlock();
+                    resetBlock()
                 }
 
-                myStatus.revolting = false;
-                myStatus.round += 1;
-                myStatus.serial += 1;
-                return true;
+                myStatus.revolting = false
+                myStatus.round += 1
+                myStatus.serial += 1
+                return true
             }
         }
 
 
         if (myStatus.state === NodeState.HaveBlock) {
             val count = countNodes(NodeState.HaveBlock, myStatus.height, myStatus.blockRID)
-                      + countNodes(NodeState.Prepared, myStatus.height, myStatus.blockRID);
+                      + countNodes(NodeState.Prepared, myStatus.height, myStatus.blockRID)
             if (count >= this.quorum2f) {
-                myStatus.state = NodeState.Prepared;
-                myStatus.serial += 1;
-                return true;
+                myStatus.state = NodeState.Prepared
+                myStatus.serial += 1
+                return true
             }
         } else if (myStatus.state === NodeState.Prepared) {
-            if (intent is CommitBlockIntent) return false;
+            if (intent is CommitBlockIntent) return false
             val count = commitSignatures.count { it != null }
             if (count > this.quorum2f) {
                 // check if we have (2f+1) commit signatures including ours, in that case we signal commit intent.
-                intent = CommitBlockIntent;
-                return true;
+                intent = CommitBlockIntent
+                return true
             } else {
                 // otherwise we set intent to FetchCommitSignatureIntent with current blockRID and list of nodes which
                 // are already in prepared state but don't have commit signatures in our array
 
-                val unfetchedNodes = mutableListOf<Int>();
+                val unfetchedNodes = mutableListOf<Int>()
                 for ((i, nodeStatus) in nodeStatuses.withIndex()) {
-                    val commitSignature = commitSignatures[i];
+                    val commitSignature = commitSignatures[i]
                     if (commitSignature != null) {
                         if ((nodeStatus.height > myStatus.height)
                                 ||
@@ -261,7 +261,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
                                         && nodeStatus.blockRID != null
                                         && Arrays.equals(nodeStatus.blockRID, myStatus.blockRID)))
                         {
-                            unfetchedNodes.add(i);
+                            unfetchedNodes.add(i)
                         }
                     }
                 }
@@ -272,20 +272,20 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
             if (primaryIndex() == this.myIndex) {
                 if (intent !is BuildBlockIntent) {
                     intent = BuildBlockIntent
-                    return true;
+                    return true
                 }
             } else {
-                val primaryBlockRID = this.nodeStatuses[this.primaryIndex()].blockRID;
+                val primaryBlockRID = this.nodeStatuses[this.primaryIndex()].blockRID
                 if (primaryBlockRID != null) {
                     val _intent = intent
                     if (! ( _intent is FetchUnfinishedBlockIntent && Arrays.equals(_intent.blockRID, myStatus.blockRID))) {
                         intent = FetchUnfinishedBlockIntent(myStatus.blockRID as ByteArray)
-                        return true;
+                        return true
                     }
                 }
             }
         }
-        return false;
+        return false
 
     }
 

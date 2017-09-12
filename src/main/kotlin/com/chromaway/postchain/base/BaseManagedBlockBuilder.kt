@@ -1,6 +1,7 @@
 package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.*
+import mu.KLogging
 
 class BaseManagedBlockBuilder(
         val ctxt: EContext,
@@ -8,12 +9,14 @@ class BaseManagedBlockBuilder(
         val bb: BlockBuilder
 )
     : ManagedBlockBuilder {
+    companion object: KLogging()
+
     var closed: Boolean = false
 
     fun<RT> runOp(fn: ()->RT): RT {
         if (closed) throw Error("Already closed")
         try {
-            return fn();
+            return fn()
         } catch (e: Exception) {
             rollback()
             throw e
@@ -22,12 +25,21 @@ class BaseManagedBlockBuilder(
 
     override fun begin() { runOp( { bb.begin()} ) }
 
-    override fun appendTransaction(tx: Transaction) { runOp { bb.appendTransaction(tx) } }
-    override fun appendTransaction(txData: ByteArray) { runOp { bb.appendTransaction(txData)}}
+    override fun appendTransaction(tx: Transaction) { throw ProgrammerError("appendTransaction is not allowed on a ManagedBlockBuilder") }
+    override fun appendTransaction(txData: ByteArray) { throw ProgrammerError("appendTransaction is not allowed on a ManagedBlockBuilder")}
 
     override fun maybeAppendTransaction(tx: Transaction): Boolean {
-        s.withSavepoint(ctxt) {
-            bb.appendTransaction(tx)
+        try {
+            s.withSavepoint(ctxt) {
+                try {
+                    bb.appendTransaction(tx)
+                } catch (userError: UserError) {
+                    logger.info("Failed to append transaction ${tx.getRID().toHex()}", userError)
+                    throw userError
+                }
+            }
+        } catch (userError: UserError) {
+            return false
         }
         return true
     }
@@ -45,6 +57,11 @@ class BaseManagedBlockBuilder(
 
     override fun getBlockData(): BlockData {
         return bb.getBlockData()
+    }
+
+    override fun getBlockWitnessBuilder(): BlockWitnessBuilder? {
+        if (closed) throw Error("Already closed")
+        return bb.getBlockWitnessBuilder()
     }
 
     override fun commit(w: BlockWitness?) {

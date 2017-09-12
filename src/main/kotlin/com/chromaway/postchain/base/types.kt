@@ -4,8 +4,8 @@ import com.chromaway.postchain.core.*
 
 data class PeerInfo(val host: String, val port: Int, val pubKey: ByteArray)
 
-typealias Signer = (ByteArray) -> Signature;
-typealias Verifier = (ByteArray, Signature) -> Boolean;
+typealias Signer = (ByteArray) -> Signature
+typealias Verifier = (ByteArray, Signature) -> Boolean
 
 interface PeerCommConfiguration {
     val peerInfo: Array<PeerInfo>
@@ -30,11 +30,11 @@ interface ManagedBlockBuilder : BlockBuilder {
 }
 
 interface Storage {
-    fun openReadConnection(chainID: Int): EContext;
-    fun closeReadConnection(ectxt: EContext);
+    fun openReadConnection(chainID: Int): EContext
+    fun closeReadConnection(ectxt: EContext)
 
-    fun openWriteConnection(chainID: Int): EContext;
-    fun closeWriteConnection(ectxt: EContext, commit: Boolean);
+    fun openWriteConnection(chainID: Int): EContext
+    fun closeWriteConnection(ectxt: EContext, commit: Boolean)
 
 
     fun withSavepoint( ctxt: EContext, fn: ()->Unit )

@@ -57,7 +57,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
             throw Error("Packet too large")
         val bytes = ByteArray(packetSize)
         dataStream.readFully(bytes)
-        return bytes;
+        return bytes
     }
 
     protected fun readPacketsWhilePossible(dataStream: DataInputStream): Exception? {
@@ -274,21 +274,21 @@ class CommManager<PT> (val myIndex: Int,
 
     @Synchronized
     fun getPackets(): MutableList<Pair<Int, PT>> {
-        val currentQueue = inboundPackets;
-        inboundPackets = mutableListOf<Pair<Int, PT>>();
+        val currentQueue = inboundPackets
+        inboundPackets = mutableListOf<Pair<Int, PT>>()
         return currentQueue
     }
 
     fun sendPacket(packet: PT, recipients: Set<Int>) {
-        outboundPackets.put(OutboundPacket(packet, recipients));
+        outboundPackets.put(OutboundPacket(packet, recipients))
     }
 
     private fun encoderLoop() {
         while (keepGoing) {
-            val pkt = outboundPackets.take();
+            val pkt = outboundPackets.take()
             if (!keepGoing) return
             try {
-                val data = encoder(pkt.packet);
+                val data = encoder(pkt.packet)
                 for (idx in pkt.recipients) {
                     connections[idx].sendPacket(data)
                 }

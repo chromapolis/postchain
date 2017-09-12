@@ -1,7 +1,7 @@
 package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.ebft.messages.Message;
+import com.chromaway.postchain.ebft.messages.Message
 import com.chromaway.postchain.ebft.messages.SignedMessage
 import org.asnlab.asndt.runtime.type.Buffer
 import java.util.*
@@ -9,12 +9,12 @@ import java.util.*
 import com.chromaway.postchain.base.*
 
 fun encodeAndSign(m: Message, sign: Signer): ByteArray {
-    val buffer = Buffer.allocate(1024, Buffer.DISTINGUISHED_ENCODING_RULES).autoExpand();
-    Message.TYPE.encode(m, buffer, Message.CONV);
+    val buffer = Buffer.allocate(1024, Buffer.DISTINGUISHED_ENCODING_RULES).autoExpand()
+    Message.TYPE.encode(m, buffer, Message.CONV)
     val bytes = buffer.array()
     buffer.clear()
     val signature = sign(bytes)
-    val sm = SignedMessage();
+    val sm = SignedMessage()
     sm.message = bytes
     sm.pubkey = signature.subjectID
     sm.signature = signature.data

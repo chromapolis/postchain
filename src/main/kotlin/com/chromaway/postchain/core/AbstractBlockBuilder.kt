@@ -1,5 +1,7 @@
 package com.chromaway.postchain.core
 
+import com.chromaway.postchain.base.toHex
+
 abstract class AbstractBlockBuilder (
         val ectx: EContext,
         val store: BlockStore,
@@ -26,8 +28,18 @@ abstract class AbstractBlockBuilder (
 
     override fun appendTransaction(tx: Transaction) {
         if (finalized) throw Error("Block is already finalized")
-        tx.apply(bctx)
-        transactions.add(tx.getRawData())
+        // tx.isCorrect may also throw UserError to provide
+        // a meaningful error message to log.
+        if (!tx.isCorrect()) {
+            throw UserError("Transaction ${tx.getRID().toHex()} is not correct")
+        }
+        val txctx = store.addTransaction(bctx, tx)
+        // In case of errors, tx.apply may either return false or throw UserError
+        if (tx.apply(txctx)) {
+            transactions.add(tx.getRawData())
+        } else {
+            throw UserError("Transaction ${tx.getRID().toHex()} failed")
+        }
     }
 
     override fun appendTransaction(txData: ByteArray) {

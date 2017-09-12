@@ -1,29 +1,29 @@
 package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.Signature
-import org.spongycastle.crypto.digests.SHA256Digest;
-import org.spongycastle.crypto.ec.CustomNamedCurves;
-import org.spongycastle.crypto.params.*;
-import org.spongycastle.crypto.signers.ECDSASigner;
-import org.spongycastle.crypto.signers.HMacDSAKCalculator;
-import org.spongycastle.crypto.params.ECPrivateKeyParameters
-import java.math.BigInteger
+import org.spongycastle.asn1.ASN1InputStream
 import org.spongycastle.asn1.ASN1Integer
 import org.spongycastle.asn1.DERSequenceGenerator
-import java.io.ByteArrayOutputStream
-import org.spongycastle.crypto.params.ECPublicKeyParameters
-import java.io.IOException
 import org.spongycastle.asn1.DLSequence
-import org.spongycastle.asn1.ASN1InputStream
+import org.spongycastle.asn1.sec.ECPrivateKey
+import org.spongycastle.crypto.digests.SHA256Digest
+import org.spongycastle.crypto.ec.CustomNamedCurves
+import org.spongycastle.crypto.params.ECDomainParameters
+import org.spongycastle.crypto.params.ECPrivateKeyParameters
+import org.spongycastle.crypto.params.ECPublicKeyParameters
+import org.spongycastle.crypto.signers.ECDSASigner
+import org.spongycastle.crypto.signers.HMacDSAKCalculator
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.math.BigInteger
 import java.security.MessageDigest
-
 
 
 // signing code taken from bitcoinj ECKey
 
 val CURVE_PARAMS = CustomNamedCurves.getByName("secp256k1")
-val CURVE = ECDomainParameters(CURVE_PARAMS.getCurve(), CURVE_PARAMS.getG(), CURVE_PARAMS.getN(), CURVE_PARAMS.getH())
-val HALF_CURVE_ORDER = CURVE_PARAMS.getN().shiftRight(1)
+val CURVE = ECDomainParameters(CURVE_PARAMS.curve, CURVE_PARAMS.g, CURVE_PARAMS.n, CURVE_PARAMS.h)
+val HALF_CURVE_ORDER: BigInteger = CURVE_PARAMS.n.shiftRight(1)
 
 fun bigIntegerToBytes(b: BigInteger, numBytes: Int): ByteArray {
     val bytes = ByteArray(numBytes)
@@ -77,7 +77,7 @@ fun secp256k1_sign(digest: ByteArray, privateKeyBytes: ByteArray): ByteArray {
     val components = signer.generateSignature(digest)
     if (components[0] <= HALF_CURVE_ORDER) {
         // canonicalize low S
-        components[1] = CURVE.getN().subtract(components[1])
+        components[1] = CURVE.n.subtract(components[1])
     }
     return encodeSignature(components[0], components[1])
 }
@@ -97,8 +97,8 @@ fun secp256k1_verify(digest: ByteArray, pubKey: ByteArray, signature: ByteArray)
 class SECP256K1CryptoSystem : CryptoSystem {
 
     override fun digest(bytes: ByteArray): ByteArray {
-        val digest = MessageDigest.getInstance("SHA-256");
-        return digest.digest(bytes);
+        val digest = MessageDigest.getInstance("SHA-256")
+        return digest.digest(bytes)
     }
     override fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer {
         return { data ->
