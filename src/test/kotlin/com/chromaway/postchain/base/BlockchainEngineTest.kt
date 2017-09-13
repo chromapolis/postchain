@@ -2,6 +2,8 @@ package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.BlockData
+import com.chromaway.postchain.core.BlockDataWithWitness
+import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
 import com.chromaway.postchain.core.UserError
 import com.chromaway.postchain.ebft.BlockchainEngine
@@ -51,7 +53,7 @@ class BlockchainEngineTest : IntegrationTest() {
     fun testLoadUnfinishedEmptyBlock() {
         val (node0, node1) = createNodes(2)
 
-        val blockData = createBlockWithTx(node0, 0)
+        val blockData = createBlockWithTxAndCommit(node0, 0)
 
         loadUnfinishedAndCommit(node1, blockData)
         assertEquals(0, blockStore.getLastBlockHeight(node1.readCtx))
@@ -63,7 +65,7 @@ class BlockchainEngineTest : IntegrationTest() {
     fun testLoadUnfinishedBlock2tx() {
         val (node0, node1) = createNodes(2)
 
-        val blockData = createBlockWithTx(node0, 2)
+        val blockData = createBlockWithTxAndCommit(node0, 2)
         loadUnfinishedAndCommit(node1, blockData)
 
         assertEquals(0, blockStore.getLastBlockHeight(node1.readCtx))
@@ -75,7 +77,7 @@ class BlockchainEngineTest : IntegrationTest() {
     fun testMultipleLoadUnfinishedBlocks() {
         val (node0, node1) = createNodes(2)
         for (i in 0..10) {
-            val blockData = createBlockWithTx(node0, 2, i * 2)
+            val blockData = createBlockWithTxAndCommit(node0, 2, i * 2)
 
             loadUnfinishedAndCommit(node1, blockData)
 
@@ -89,7 +91,7 @@ class BlockchainEngineTest : IntegrationTest() {
     fun testLoadUnfinishedBlockTxFail() {
         val (node0, node1) = createNodes(2)
 
-        val blockData = createBlockWithTx(node0, 2)
+        val blockData = createBlockWithTxAndCommit(node0, 2)
 
         val bc = node1.blockchainConfiguration as TestBlockchainConfiguration
         // Make the tx invalid on follower. Should discard whole block
@@ -116,7 +118,7 @@ class BlockchainEngineTest : IntegrationTest() {
     fun testLoadUnfinishedBlockInvalidHeader() {
         val (node0, node1) = createNodes(2)
 
-        val blockData = createBlockWithTx(node0, 2)
+        val blockData = createBlockWithTxAndCommit(node0, 2)
         blockData.header.prevBlockRID[0]++
         try {
             loadUnfinishedAndCommit(node1, blockData)
@@ -128,16 +130,33 @@ class BlockchainEngineTest : IntegrationTest() {
         assertEquals(-1, blockStore.getLastBlockHeight(node1.readCtx))
     }
 
-    private fun createBlockWithTx(node: Node, txCount: Int, startId: Int = 0): BlockData {
+    @Test
+    fun testAddBlock() {
+        val (node0, node1) = createNodes(2)
+        val blockBuilder = createBlockWithTx(node0, 2)
+        val witness = commitBlock(blockBuilder)
+        val blockData = blockBuilder.getBlockData()
+        val blockWithWitness = BlockDataWithWitness(blockData.header, blockData.transactions, witness)
+
+        node1.engine.addBlock(blockWithWitness)
+
+        assertEquals(0, blockStore.getLastBlockHeight(node1.readCtx))
+        val riDsAtHeight0 = blockStore.getTxRIDsAtHeight(node1.readCtx, 0)
+        assertTrue(riDsAtHeight0.contentDeepEquals(Array(2, { TestTransaction(it).getRID() })))
+    }
+
+    private fun createBlockWithTxAndCommit(node: Node, txCount: Int, startId: Int = 0): BlockData {
+        val blockBuilder = createBlockWithTx(node, txCount, startId)
+        commitBlock(blockBuilder)
+        return blockBuilder.getBlockData()
+    }
+
+    private fun createBlockWithTx(node: Node, txCount: Int, startId: Int = 0): BlockBuilder {
         for (i in startId until startId + txCount) {
             node.txQueue.add(TestTransaction(i))
         }
-        val blockBuilder = node.engine.buildBlock()
-        val blockData = blockBuilder.getBlockData()
-        commitBlock(blockBuilder)
-        return blockData
+        return node.engine.buildBlock()
     }
-
 
     private fun loadUnfinishedAndCommit(node: Node, blockData: BlockData) {
         val blockBuilder = node.engine.loadUnfinishedBlock(blockData)
@@ -149,7 +168,7 @@ class BlockchainEngineTest : IntegrationTest() {
         commitBlock(blockBuilder)
     }
 
-    private fun commitBlock(blockBuilder: BlockBuilder) {
+    private fun commitBlock(blockBuilder: BlockBuilder): BlockWitness {
         val witnessBuilder = blockBuilder.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
         assertNotNull(witnessBuilder)
         blockBuilder.finalize()
@@ -158,7 +177,9 @@ class BlockchainEngineTest : IntegrationTest() {
         val blockHeader = blockData.header
         val signatures = privKeys.mapIndexed { index, bytes -> cryptoSystem.makeSigner(pubKeys[index], bytes)(blockHeader.rawData) }
         signatures.forEach { witnessBuilder.applySignature(it) }
-        blockBuilder.commit(witnessBuilder.getWitness())
+        val witness = witnessBuilder.getWitness()
+        blockBuilder.commit(witness)
+        return witness
     }
 
 }
