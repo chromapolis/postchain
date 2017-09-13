@@ -7,13 +7,12 @@ class BaseManagedBlockBuilder(
         val ctxt: EContext,
         val s: Storage,
         val bb: BlockBuilder
-)
-    : ManagedBlockBuilder {
-    companion object: KLogging()
+) : ManagedBlockBuilder {
+    companion object : KLogging()
 
     var closed: Boolean = false
 
-    fun<RT> runOp(fn: ()->RT): RT {
+    fun <RT> runOp(fn: () -> RT): RT {
         if (closed) throw Error("Already closed")
         try {
             return fn()
@@ -23,10 +22,17 @@ class BaseManagedBlockBuilder(
         }
     }
 
-    override fun begin() { runOp( { bb.begin()} ) }
+    override fun begin() {
+        runOp({ bb.begin() })
+    }
 
-    override fun appendTransaction(tx: Transaction) { throw ProgrammerError("appendTransaction is not allowed on a ManagedBlockBuilder") }
-    override fun appendTransaction(txData: ByteArray) { throw ProgrammerError("appendTransaction is not allowed on a ManagedBlockBuilder")}
+    override fun appendTransaction(tx: Transaction) {
+        throw ProgrammerError("appendTransaction is not allowed on a ManagedBlockBuilder")
+    }
+
+    override fun appendTransaction(txData: ByteArray) {
+        runOp({bb.appendTransaction(txData)})
+    }
 
     override fun maybeAppendTransaction(tx: Transaction): Boolean {
         try {
@@ -52,8 +58,13 @@ class BaseManagedBlockBuilder(
     }
 
 
-    override fun finalize() { runOp { bb.finalize() }}
-    override fun finalizeAndValidate(bh: BlockHeader) { runOp { bb.finalizeAndValidate(bh)} }
+    override fun finalize() {
+        runOp { bb.finalize() }
+    }
+
+    override fun finalizeAndValidate(bh: BlockHeader) {
+        runOp { bb.finalizeAndValidate(bh) }
+    }
 
     override fun getBlockData(): BlockData {
         return bb.getBlockData()

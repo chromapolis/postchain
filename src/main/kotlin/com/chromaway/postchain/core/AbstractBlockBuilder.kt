@@ -27,7 +27,7 @@ abstract class AbstractBlockBuilder (
     }
 
     override fun appendTransaction(tx: Transaction) {
-        if (finalized) throw Error("Block is already finalized")
+        if (finalized) throw ProgrammerError("Block is already finalized")
         // tx.isCorrect may also throw UserError to provide
         // a meaningful error message to log.
         if (!tx.isCorrect()) {
@@ -59,7 +59,7 @@ abstract class AbstractBlockBuilder (
             _blockData = BlockData(bh, transactions.toTypedArray())
             finalized = true
         } else {
-            throw Error("Invalid block header")
+            throw UserError("Invalid block header")
         }
     }
 

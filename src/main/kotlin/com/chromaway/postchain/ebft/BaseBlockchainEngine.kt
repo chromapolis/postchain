@@ -9,6 +9,7 @@ import com.chromaway.postchain.base.TransactionQueue
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
+import com.chromaway.postchain.core.UserError
 
 open class BaseBlockchainEngine(val bc: BlockchainConfiguration,
                                 override val peerCommConfiguration: PeerCommConfiguration,
@@ -42,17 +43,16 @@ open class BaseBlockchainEngine(val bc: BlockchainConfiguration,
 
     override fun buildBlock(): ManagedBlockBuilder {
         val transactions = tq.getTransactions()
-        if (transactions.isEmpty()) throw Error("No transactions to build a block")
+//        if (transactions.isEmpty()) throw Error("No transactions to build a block")
         val blockBuilder = makeBlockBuilder()
         blockBuilder.begin()
         for (tx in transactions) {
             blockBuilder.maybeAppendTransaction(tx)
         }
-        // TODO handle a case with 0 transactions
-        // TODO what if more transactions arrive?
-        // TODO block size policy goes here
+        // TODO handle a case with 0 transactions - Done
+        // TODO what if more transactions arrive? - They will wait until next block
+        // TODO block size policy goes here - Uhm, ok.
         blockBuilder.finalize()
         return blockBuilder
     }
-
 }

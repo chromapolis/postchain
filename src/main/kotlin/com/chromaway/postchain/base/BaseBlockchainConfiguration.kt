@@ -8,7 +8,7 @@ import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.TransactionFactory
 import org.apache.commons.configuration2.Configuration
 
-class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
+open class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
         BlockchainConfiguration {
     override val traits = setOf<String>()
 
@@ -27,8 +27,6 @@ class BaseBlockchainConfiguration(override val chainID: Long, val config: Config
 
     override fun makeBlockBuilder(ctx: EContext): BlockBuilder {
         val blockStore = BaseBlockStore()
-        // Implementation specific initialization.
-        blockStore.initialize(ctx)
 
         val signersStrings = config.getStringArray("signers")
         val signers = signersStrings.map { hexString -> hexString.hexStringToByteArray() }
