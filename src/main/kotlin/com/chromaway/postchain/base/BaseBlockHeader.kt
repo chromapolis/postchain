@@ -6,7 +6,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.*
 
-class BaseBlockHeader(override val rawData: ByteArray, val cryptoSystem: CryptoSystem) : BlockHeader {
+class BaseBlockHeader(override val rawData: ByteArray, cryptoSystem: CryptoSystem) : BlockHeader {
     override val prevBlockRID: ByteArray
     override val blockRID: ByteArray
     val blockHeaderRec: com.chromaway.postchain.base.messages.BlockHeader
