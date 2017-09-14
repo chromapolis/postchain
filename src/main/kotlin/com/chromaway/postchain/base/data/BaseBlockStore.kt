@@ -1,4 +1,4 @@
-package com.chromaway.postchain.base
+package com.chromaway.postchain.base.data
 
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockEContext

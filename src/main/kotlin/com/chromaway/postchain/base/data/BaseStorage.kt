@@ -1,9 +1,9 @@
-package com.chromaway.postchain.base
+package com.chromaway.postchain.base.data
 
+import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.ProgrammerError
 import javax.sql.DataSource
-import javax.xml.crypto.Data
 
 class BaseStorage(private val writeDataSource: DataSource, private val readDataSource: DataSource) : Storage {
 

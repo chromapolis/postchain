@@ -1,6 +1,6 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.base.BaseManagedBlockBuilder
+import com.chromaway.postchain.base.data.BaseManagedBlockBuilder
 import com.chromaway.postchain.base.CryptoSystem
 import com.chromaway.postchain.base.ManagedBlockBuilder
 import com.chromaway.postchain.base.PeerCommConfiguration
@@ -9,7 +9,6 @@ import com.chromaway.postchain.base.TransactionQueue
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.UserError
 
 open class BaseBlockchainEngine(val bc: BlockchainConfiguration,
                                 override val peerCommConfiguration: PeerCommConfiguration,

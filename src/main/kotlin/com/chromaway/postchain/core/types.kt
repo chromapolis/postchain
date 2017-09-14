@@ -142,7 +142,3 @@ interface BlockStore {
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray
 }
-
-interface QueriesBlockStore : BlockStore {
-    fun getTxRIDsAtHeight(ctx: EContext): Any
-}

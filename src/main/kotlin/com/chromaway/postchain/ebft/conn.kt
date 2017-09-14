@@ -10,6 +10,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 import com.chromaway.postchain.base.PeerInfo
+import mu.KLogging
 import java.net.ServerSocket
 import java.util.concurrent.CyclicBarrier
 
@@ -41,15 +42,18 @@ interface AbstractPeerConnection {
 }
 
 class NullPeerConnect(override var id: Int) : AbstractPeerConnection {
-    override  fun stop() {}
-    override fun sendPacket(b: ByteArray)  {}
+    companion object : KLogging()
+
+    override  fun stop() {/*logger.info("")*/}
+    override fun sendPacket(b: ByteArray)  {/*logger.info(String(b))*/}
 }
 
-open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArray) -> Unit, val log: (Exception) -> Unit)
-    : AbstractPeerConnection {
+open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArray) -> Unit,
+                          val log: (Exception) -> Unit) : AbstractPeerConnection {
     @Volatile protected var keepGoing: Boolean = true
-    @Volatile protected var socket: Socket? = null
+    @Volatile var socket: Socket? = null
     private val outboundPackets = LinkedBlockingQueue<ByteArray>()
+    companion object : KLogging()
 
     protected fun readOnePacket(dataStream: DataInputStream): ByteArray {
         val packetSize = dataStream.readInt()
@@ -57,15 +61,23 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
             throw Error("Packet too large")
         val bytes = ByteArray(packetSize)
         dataStream.readFully(bytes)
+        logger.info("Packet received: ${String(bytes)}")
         return bytes
     }
 
     protected fun readPacketsWhilePossible(dataStream: DataInputStream): Exception? {
         try {
             while (keepGoing) {
-                packetHandler(id, readOnePacket(dataStream))
+                val bytes = readOnePacket(dataStream)
+                if (bytes.size == 0) {
+                    // This is a special packet sent when other side is closing
+                    // ignore
+                    continue
+                }
+                packetHandler(id, bytes)
             }
         } catch (e: Exception) {
+            outboundPackets.put(byteArrayOf())
             return e
         }
         return null
@@ -74,6 +86,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
     protected fun writeOnePacket(dataStream: DataOutputStream, bytes: ByteArray) {
         dataStream.writeInt(bytes.size)
         dataStream.write(bytes)
+        logger.info("Packet sent: ${String(bytes)}")
     }
 
     protected fun writePacketsWhilePossible(dataStream: DataOutputStream): Exception? {
@@ -96,23 +109,24 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
         socket?.close()
     }
 
-    override fun sendPacket(bytes: ByteArray) {
+    override fun sendPacket(b: ByteArray) {
         if (!keepGoing) return
-        outboundPackets.put(bytes)
+        outboundPackets.put(b)
     }
 }
 
 class PassivePeerConnection(
-        val parseInitPacket: (ByteArray) -> Int,
+        val packetConverter: InitPacketConverter,
         inSocket: Socket,
         packetHandler: (Int, ByteArray) -> Unit,
         log: (Exception) -> Unit,
-        val registerConn: (PeerConnection) -> Unit
+        val registerConn: (PeerConnection) -> Unit,
+        val myIndex: Int
 ) : PeerConnection(-1, packetHandler, log) {
 
     init {
         socket = inSocket
-        thread { readLoop(inSocket) }
+        thread(name="$myIndex-PassiveReadLoop-PeerId-TBA") { readLoop(inSocket) }
     }
 
     private fun writeLoop(socket1: Socket) {
@@ -132,10 +146,11 @@ class PassivePeerConnection(
         try {
             val stream = DataInputStream(socket1.getInputStream())
 
-            id = parseInitPacket(readOnePacket(stream))
+            id = packetConverter.parseInitPacket(readOnePacket(stream))
+            Thread.currentThread().name = "$myIndex-PassiveReadLoop-PeerId-$id"
             registerConn(this)
 
-            thread { writeLoop(socket1) }
+            thread(name="$myIndex-PassiveWriteLoop-PeerId-$id") { writeLoop(socket1) }
 
             val err = readPacketsWhilePossible(stream)
             if (err != null) {
@@ -151,9 +166,10 @@ class ActivePeerConnection(
         id: Int,
         val host: String,
         val port: Int,
-        val makeInitPacket: (Int) -> ByteArray,
+        val packetConverter: InitPacketConverter,
         packetHandler: (Int, ByteArray) -> Unit,
-        log: (Exception) -> Unit
+        log: (Exception) -> Unit,
+        val myIndex: Int
 ) : PeerConnection(id, packetHandler, log) {
 
     val connAvail = CyclicBarrier(2)
@@ -168,7 +184,7 @@ class ActivePeerConnection(
                 connAvail.await()
                 val socket1 = socket ?: throw Error("No connection")
                 val stream = DataOutputStream(socket1.getOutputStream())
-                writeOnePacket(stream, makeInitPacket(id)) // write init packet
+                writeOnePacket(stream, packetConverter.makeInitPacket(myIndex)) // write init packet
                 val err = writePacketsWhilePossible(stream)
                 if (err != null) {
                     log(err)
@@ -199,39 +215,44 @@ class ActivePeerConnection(
     }
 
     fun start() {
-        thread { writeLoop() }
-        thread { readLoop() }
+        thread(name="$myIndex-ActiveWriteLoop-PeerId-$id") { writeLoop() }
+        thread(name="$myIndex-ActiveReadLoop-PeerId-$id") { readLoop() }
     }
 }
 
 class PeerConnectionAcceptor(
         port: Int,
-        val parseInitPacket: (ByteArray) -> Int,
+        val initPacketConverter: InitPacketConverter,
         val packetHandler: (Int, ByteArray) -> Unit,
         val log: (Exception) -> Unit,
-        val registerConn: (PeerConnection)->Unit
+        val registerConn: (PeerConnection)->Unit,
+        val myIndex: Int
 
 ) {
     val serverSocket: ServerSocket
     @Volatile var keepGoing = true
+    companion object : KLogging()
 
     init {
+        logger.info("Starting server on port $port")
         serverSocket = ServerSocket(port)
-        thread { acceptLoop() }
+        logger.info("Starting server on port $port done")
+        thread(name="$myIndex-acceptLoop") { acceptLoop() }
     }
 
     private fun acceptLoop() {
         try {
             while (keepGoing) {
                 val socket = serverSocket.accept()
+                logger.info("${myIndex} accept socket")
                 PassivePeerConnection(
-                        parseInitPacket,
+                        initPacketConverter,
                         socket,
                         packetHandler,
                         log,
-                        registerConn
+                        registerConn,
+                        myIndex
                 )
-
             }
         } catch (e: Exception) {
             log(e)
@@ -247,26 +268,33 @@ class PeerConnectionAcceptor(
 
 data class OutboundPacket<PT>(val packet: PT, val recipients: Set<Int>)
 
+interface InitPacketConverter {
+    fun makeInitPacket(index: Int): ByteArray
+    fun parseInitPacket(bytes: ByteArray): Int
+}
+
+interface PacketConverter<PT>: InitPacketConverter {
+    fun decodePacket(index: Int, bytes: ByteArray): PT
+    fun encodePacket(packet: PT): ByteArray
+}
+
 class CommManager<PT> (val myIndex: Int,
-                       val peers: Array<PeerInfo>,
-                       val makeInitPacket: (Int) -> ByteArray,
-                       val parseInitPacket: (ByteArray) -> Int,
-                       val decoder: (Int, ByteArray) -> PT,
-                       val encoder: (PT) -> ByteArray,
+                       peers: Array<PeerInfo>,
+                       val packetConverter: PacketConverter<PT>,
                        val log: (Exception) -> Unit)
 {
-    private val connections: Array<AbstractPeerConnection>
+    val connections: Array<AbstractPeerConnection>
     var inboundPackets = mutableListOf<Pair<Int, PT>>()
     val outboundPackets = LinkedBlockingQueue<OutboundPacket<PT>>()
     @Volatile private var keepGoing: Boolean = true
     private val encoderThread: Thread
     private val connAcceptor: PeerConnectionAcceptor
-
+    companion object : KLogging()
 
     private fun decodeAndEnqueue(peerIndex: Int, packet: ByteArray) {
         // packet decoding should not be synchronized so we can make
         // use of parallel processing in different threads
-        val decodedPacket = decoder(peerIndex, packet)
+        val decodedPacket = packetConverter.decodePacket(peerIndex, packet)
         synchronized(this) {
             inboundPackets.add(Pair(peerIndex, decodedPacket))
         }
@@ -288,7 +316,7 @@ class CommManager<PT> (val myIndex: Int,
             val pkt = outboundPackets.take()
             if (!keepGoing) return
             try {
-                val data = encoder(pkt.packet)
+                val data = packetConverter.encodePacket(pkt.packet)
                 for (idx in pkt.recipients) {
                     connections[idx].sendPacket(data)
                 }
@@ -303,9 +331,9 @@ class CommManager<PT> (val myIndex: Int,
         for ((index, peer) in peers.withIndex()) {
             if (index < myIndex) {
                 val conn = ActivePeerConnection(index, peer.host, peer.port,
-                        makeInitPacket,
+                        packetConverter,
                         { idx, packet -> decodeAndEnqueue(idx, packet) },
-                        log)
+                        log, myIndex)
                 conn.start()
                 connlist.add(conn)
             } else {
@@ -313,13 +341,14 @@ class CommManager<PT> (val myIndex: Int,
             }
         }
         connections = connlist.toTypedArray()
-        encoderThread = thread { encoderLoop() }
+        encoderThread = thread(name="$myIndex-encoderLoop") { encoderLoop() }
         connAcceptor = PeerConnectionAcceptor(
                 peers[myIndex].port,
-                parseInitPacket,
+                packetConverter,
                 { idx, packet -> decodeAndEnqueue(idx, packet) },
                 log,
-                { conn -> connlist[conn.id] = conn }
+                { conn -> logger.info("$myIndex Registering ${conn.id} $conn");connections[conn.id] = conn },
+                myIndex
         )
     }
 
@@ -335,19 +364,27 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<Message> {
     val peerInfo = pc.peerInfo
     val signer = pc.getSigner()
     val verifier = pc.getVerifier()
+
+    val packetConverter = object: PacketConverter<Message> {
+        override fun makeInitPacket(index: Int): ByteArray {
+            val gbah = GetBlockAtHeight()
+            gbah.height = index.toLong()
+            return encodeAndSign(Message.getBlockAtHeight(gbah), signer)
+        }
+        override fun parseInitPacket(bytes: ByteArray): Int {
+            return 0
+        }
+        override fun decodePacket(index: Int, bytes: ByteArray): Message {
+            return decodeAndVerify(bytes, peerInfo[index].pubKey, verifier)
+        }
+        override fun encodePacket(packet: Message): ByteArray {
+            return encodeAndSign(packet, signer)
+        }
+    }
     return CommManager<Message>(
             pc.myIndex,
             peerInfo,
-            { idx ->
-                val gbah = GetBlockAtHeight()
-                gbah.height = idx.toLong()
-                encodeAndSign(Message.getBlockAtHeight(gbah), signer)
-            },
-            {
-                bytes -> 0
-            },
-            { idx, packet -> decodeAndVerify(packet, peerInfo[idx].pubKey, verifier) },
-            { packet -> encodeAndSign(packet, signer) },
+            packetConverter,
             { e -> e.printStackTrace() }
     )
 

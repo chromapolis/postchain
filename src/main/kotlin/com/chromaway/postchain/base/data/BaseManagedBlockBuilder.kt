@@ -1,5 +1,8 @@
-package com.chromaway.postchain.base
+package com.chromaway.postchain.base.data
 
+import com.chromaway.postchain.base.ManagedBlockBuilder
+import com.chromaway.postchain.base.Storage
+import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.*
 import mu.KLogging
 

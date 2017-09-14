@@ -1,5 +1,8 @@
-package com.chromaway.postchain.base
+package com.chromaway.postchain.base.data
 
+import com.chromaway.postchain.base.BaseBlockWitness
+import com.chromaway.postchain.base.SECP256K1CryptoSystem
+import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.BlockWitness

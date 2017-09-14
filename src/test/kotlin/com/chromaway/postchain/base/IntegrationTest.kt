@@ -1,5 +1,8 @@
 package com.chromaway.postchain.base
 
+import com.chromaway.postchain.base.data.BaseBlockStore
+import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
+import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.core.BlockStore
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory

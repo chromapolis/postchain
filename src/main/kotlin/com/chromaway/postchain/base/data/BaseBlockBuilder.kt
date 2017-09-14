@@ -1,5 +1,9 @@
-package com.chromaway.postchain.base
+package com.chromaway.postchain.base.data
 
+import com.chromaway.postchain.base.BaseBlockHeader
+import com.chromaway.postchain.base.BaseBlockWitnessBuilder
+import com.chromaway.postchain.base.CryptoSystem
+import com.chromaway.postchain.base.computeMerkleRootHash
 import com.chromaway.postchain.core.*
 import java.util.*
 
@@ -15,7 +19,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
 
     override fun makeBlockHeader(): BlockHeader {
         // TODO("timestamp")
-        return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(),0)
+        return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(), 0)
     }
 
     override fun validateBlockHeader(bh: BlockHeader): Boolean {
@@ -42,7 +46,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
         if (!finalized) {
             throw ProgrammerError("Block is not finalized yet.")
         }
-        var requiredSigs: Int
+        val requiredSigs: Int
         if (subjects.size == 3) {
             requiredSigs = 3
         } else {

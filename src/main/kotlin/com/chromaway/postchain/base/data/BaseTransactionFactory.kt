@@ -1,4 +1,4 @@
-package com.chromaway.postchain.base
+package com.chromaway.postchain.base.data
 
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.TransactionFactory
