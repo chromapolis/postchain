@@ -18,7 +18,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testBuildBlock() {
-        val node = createNode(0)
+        val node = createDataLayer(0)
         node.txQueue.add(TestTransaction(0))
         buildBlockAndCommit(node.engine)
         assertEquals(0, blockStore.getLastBlockHeight(node.readCtx))
@@ -51,7 +51,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testLoadUnfinishedEmptyBlock() {
-        val (node0, node1) = createNodes(2)
+        val (node0, node1) = createEngines(2)
 
         val blockData = createBlockWithTxAndCommit(node0, 0)
 
@@ -63,7 +63,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testLoadUnfinishedBlock2tx() {
-        val (node0, node1) = createNodes(2)
+        val (node0, node1) = createEngines(2)
 
         val blockData = createBlockWithTxAndCommit(node0, 2)
         loadUnfinishedAndCommit(node1, blockData)
@@ -75,7 +75,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testMultipleLoadUnfinishedBlocks() {
-        val (node0, node1) = createNodes(2)
+        val (node0, node1) = createEngines(2)
         for (i in 0..10) {
             val blockData = createBlockWithTxAndCommit(node0, 2, i * 2)
 
@@ -89,7 +89,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testLoadUnfinishedBlockTxFail() {
-        val (node0, node1) = createNodes(2)
+        val (node0, node1) = createEngines(2)
 
         val blockData = createBlockWithTxAndCommit(node0, 2)
 
@@ -116,7 +116,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testLoadUnfinishedBlockInvalidHeader() {
-        val (node0, node1) = createNodes(2)
+        val (node0, node1) = createEngines(2)
 
         val blockData = createBlockWithTxAndCommit(node0, 2)
         blockData.header.prevBlockRID[0]++
@@ -132,7 +132,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     @Test
     fun testAddBlock() {
-        val (node0, node1) = createNodes(2)
+        val (node0, node1) = createEngines(2)
         val blockBuilder = createBlockWithTx(node0, 2)
         val witness = commitBlock(blockBuilder)
         val blockData = blockBuilder.getBlockData()
@@ -145,21 +145,21 @@ class BlockchainEngineTest : IntegrationTest() {
         assertTrue(riDsAtHeight0.contentDeepEquals(Array(2, { TestTransaction(it).getRID() })))
     }
 
-    private fun createBlockWithTxAndCommit(node: Node, txCount: Int, startId: Int = 0): BlockData {
-        val blockBuilder = createBlockWithTx(node, txCount, startId)
+    private fun createBlockWithTxAndCommit(dataLayer: DataLayer, txCount: Int, startId: Int = 0): BlockData {
+        val blockBuilder = createBlockWithTx(dataLayer, txCount, startId)
         commitBlock(blockBuilder)
         return blockBuilder.getBlockData()
     }
 
-    private fun createBlockWithTx(node: Node, txCount: Int, startId: Int = 0): BlockBuilder {
+    private fun createBlockWithTx(dataLayer: DataLayer, txCount: Int, startId: Int = 0): BlockBuilder {
         for (i in startId until startId + txCount) {
-            node.txQueue.add(TestTransaction(i))
+            dataLayer.txQueue.add(TestTransaction(i))
         }
-        return node.engine.buildBlock()
+        return dataLayer.engine.buildBlock()
     }
 
-    private fun loadUnfinishedAndCommit(node: Node, blockData: BlockData) {
-        val blockBuilder = node.engine.loadUnfinishedBlock(blockData)
+    private fun loadUnfinishedAndCommit(dataLayer: DataLayer, blockData: BlockData) {
+        val blockBuilder = dataLayer.engine.loadUnfinishedBlock(blockData)
         commitBlock(blockBuilder)
     }
 

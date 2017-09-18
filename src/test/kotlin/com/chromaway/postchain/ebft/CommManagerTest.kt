@@ -1,9 +1,7 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.base.BasePeerCommConfiguration
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.base.PeerCommConfiguration
-import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.core.UserError
 import com.chromaway.postchain.parseInt
 import mu.KLogging
@@ -85,13 +83,7 @@ class CommManagerTest : IntegrationTest() {
         }
     }
 
-    private fun setupCommManagers(count: Int = 2) {
-        val pubKeys = Array<ByteArray>(count, {ByteArray(33, {it.toByte()})})
-        val peerInfos = Array(count, { PeerInfo("localhost", 53190 + it, pubKeys[it]) })
-        val peerCommConfigurations = Array(count, { BasePeerCommConfiguration(peerInfos, it) })
-        commManagers = peerCommConfigurations.map { makeCommManager(it) }
-    }
-//
+    //
 //    private fun send(message: String, from: Int, to: Int) {
 //        while (true) {
 //            val dummyMessage = DummyMessage(from, message)
@@ -129,6 +121,25 @@ class CommManagerTest : IntegrationTest() {
 
     data class DummyMessage(val index: Int, val text: String)
 
+    protected fun setupCommManagers(count: Int = 2) {
+        val peerCommConfigurations = arrayOfBasePeerCommConfigurations(count)
+        commManagers = peerCommConfigurations.map { makeCommManager(it) }
+    }
+
+    private fun makeCommManager(pc: PeerCommConfiguration): CommManager<CommManagerTest.DummyMessage> {
+        val peerInfo = pc.peerInfo
+        return CommManager<CommManagerTest.DummyMessage>(
+                pc.myIndex,
+                peerInfo,
+                DummyPacketConverter(),
+                { handleError(it)}
+        )
+    }
+
+    private fun handleError(e: Exception) {
+        logger.error("Shit pommes frites", e)
+    }
+
     class DummyPacketConverter : PacketConverter<DummyMessage> {
         override fun makeInitPacket(index: Int): ByteArray {
            return "Hi, I'm $index".toByteArray()
@@ -149,17 +160,4 @@ class CommManagerTest : IntegrationTest() {
         }
     }
 
-    private fun makeCommManager(pc: PeerCommConfiguration): CommManager<DummyMessage> {
-        val peerInfo = pc.peerInfo
-        return CommManager<DummyMessage>(
-                pc.myIndex,
-                peerInfo,
-                DummyPacketConverter(),
-                { handleError(it)}
-        )
-    }
-
-    private fun handleError(e: Exception) {
-        logger.error("Shit pommes frites", e)
-    }
 }

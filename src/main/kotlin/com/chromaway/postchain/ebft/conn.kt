@@ -10,8 +10,13 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 import com.chromaway.postchain.base.PeerInfo
+import com.chromaway.postchain.base.toHex
+import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.ebft.messages.Identification
+import com.sun.xml.internal.bind.v2.model.core.ID
 import mu.KLogging
 import java.net.ServerSocket
+import java.util.Date
 import java.util.concurrent.CyclicBarrier
 
 val MAX_PAYLOAD_SIZE = 10000000
@@ -61,7 +66,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
             throw Error("Packet too large")
         val bytes = ByteArray(packetSize)
         dataStream.readFully(bytes)
-        logger.info("Packet received: ${String(bytes)}")
+        logger.info("Packet received. Length: ${bytes.size}")
         return bytes
     }
 
@@ -86,7 +91,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
     protected fun writeOnePacket(dataStream: DataOutputStream, bytes: ByteArray) {
         dataStream.writeInt(bytes.size)
         dataStream.write(bytes)
-        logger.info("Packet sent: ${String(bytes)}")
+        logger.info("Packet sent: ${bytes.size}")
     }
 
     protected fun writePacketsWhilePossible(dataStream: DataOutputStream): Exception? {
@@ -372,7 +377,28 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<Message> {
             return encodeAndSign(Message.getBlockAtHeight(gbah), signer)
         }
         override fun parseInitPacket(bytes: ByteArray): Int {
-            return 0
+            val signedMessage = decodeSignedMessage(bytes);
+            val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubkey) }
+            if (peerIndex == -1) {
+                throw UserError("I don't know pubkey ${signedMessage.pubkey.toHex()}")
+            }
+            val message = decodeAndVerify(bytes, peerInfo[peerIndex].pubKey, verifier)
+
+
+            if (message.getBlockAtHeight == null) {
+                throw UserError("Packet was not a GetBlockAtHeight. Got ${message::class}")
+            }
+            return message.getBlockAtHeight.height.toInt()
+
+
+//            if (message !is Identification) {
+//                throw UserError("Packet was not an Identification. Got ${message::class}")
+//            }
+//
+//            if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
+//                throw UserError("'yourPubKey' ${message.yourPubKey} of Identification is not mine");
+//            }
+//            return peerIndex
         }
         override fun decodePacket(index: Int, bytes: ByteArray): Message {
             return decodeAndVerify(bytes, peerInfo[index].pubKey, verifier)

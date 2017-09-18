@@ -92,11 +92,7 @@ interface StatusManager {
 }
 
 interface BlockchainEngine {
-    val peerCommConfiguration: PeerCommConfiguration
-    val cryptoSystem: CryptoSystem
-
     fun addBlock(block: BlockDataWithWitness)
     fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder
     fun buildBlock(): ManagedBlockBuilder
-
 }

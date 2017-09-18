@@ -1,21 +1,17 @@
 package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.data.BaseManagedBlockBuilder
-import com.chromaway.postchain.base.CryptoSystem
 import com.chromaway.postchain.base.ManagedBlockBuilder
-import com.chromaway.postchain.base.PeerCommConfiguration
 import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.TransactionQueue
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
 
-open class BaseBlockchainEngine(val bc: BlockchainConfiguration,
-                                override val peerCommConfiguration: PeerCommConfiguration,
+open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                                 val s: Storage,
-                                val chainID: Int,
-                                override val cryptoSystem: CryptoSystem,
-                                val tq: TransactionQueue
+                                private val chainID: Int,
+                                private val tq: TransactionQueue
 ) : BlockchainEngine
 {
     private fun makeBlockBuilder(): ManagedBlockBuilder {

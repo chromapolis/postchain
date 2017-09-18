@@ -58,6 +58,9 @@ class SyncManager (
     }
 
 
+    fun update() {
+        Thread.sleep(100)
+    }
 
 
 }

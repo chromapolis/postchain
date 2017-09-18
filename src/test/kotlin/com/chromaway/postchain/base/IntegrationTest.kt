@@ -24,7 +24,7 @@ import java.io.File
 import javax.sql.DataSource
 
 open class IntegrationTest {
-    private val nodes = mutableListOf<Node>()
+    private val nodes = mutableListOf<DataLayer>()
     protected val blockStore = BaseBlockStore() as BlockStore
     private val privKeysHex = arrayOf("3132333435363738393031323334353637383930313233343536373839303131",
             "3132333435363738393031323334353637383930313233343536373839303132",
@@ -37,9 +37,9 @@ open class IntegrationTest {
             "03ef3f5be98d499b048ba28b247036b611a1ced7fcf87c17c8b5ca3b3ce1ee23a4")
     protected val pubKeys = pubKeysHex.map { it.hexStringToByteArray() }
 
-    class Node(val engine: BlockchainEngine, val txQueue: TestTxQueue,
-               val readCtx: EContext, val blockchainConfiguration: BlockchainConfiguration,
-               private val dataSources: Array<BasicDataSource>) {
+    class DataLayer(val engine: BlockchainEngine, val txQueue: TestTxQueue,
+                    val readCtx: EContext, val blockchainConfiguration: BlockchainConfiguration,
+                    private val dataSources: Array<BasicDataSource>) {
         fun close() {
             dataSources.forEach {
                 it.close()
@@ -127,11 +127,11 @@ open class IntegrationTest {
         nodes.clear()
     }
 
-    protected fun createNodes(count: Int): Array<Node> {
-        return Array(count, { createNode(it) })
+    protected fun createEngines(count: Int): Array<DataLayer> {
+        return Array(count, { createDataLayer(it) })
     }
 
-    protected fun createNode(nodeIndex: Int): Node {
+    protected fun createDataLayer(nodeIndex: Int): DataLayer {
         val configs = Configurations()
         val config = configs.properties(File("config.properties"))
         config.listDelimiterHandler = DefaultListDelimiterHandler(',')
@@ -142,9 +142,6 @@ open class IntegrationTest {
         // append nodeIndex to schema name
         config.setProperty("database.schema", config.getString("database.schema") + nodeIndex)
         val blockchainConfiguration = factory.makeBlockchainConfiguration(1, config)
-
-        val peerInfos = arrayOf(PeerInfo("", 1, pubKeys[nodeIndex]))
-        val peerCommConf = BasePeerCommConfiguration(peerInfos, nodeIndex)
 
         val writeDataSource = createBasicDataSource(config, true)
         writeDataSource.maxTotal = 1
@@ -159,12 +156,10 @@ open class IntegrationTest {
 
         val txQueue = TestTxQueue()
 
+        val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
+                1, txQueue)
 
-        val cryptoSystem = SECP256K1CryptoSystem()
-        val engine = BaseBlockchainEngine(blockchainConfiguration, peerCommConf,
-                storage, 1, cryptoSystem, txQueue)
-
-        val node = Node(engine, txQueue, readCtx, blockchainConfiguration, arrayOf(readDataSource, writeDataSource))
+        val node = DataLayer(engine, txQueue, readCtx, blockchainConfiguration, arrayOf(readDataSource, writeDataSource))
         // keep list of nodes to close after test
         nodes.add(node)
         return node
@@ -196,5 +191,16 @@ open class IntegrationTest {
         (blockStore as BaseBlockStore).initialize(EContext(conn, 1))
         conn.commit()
         conn.close()
+    }
+
+    protected fun createBasePeerCommConfiguration(nodeCount: Int, myIndex: Int): BasePeerCommConfiguration {
+        val pubKeys = if (nodeCount <= pubKeys.size) pubKeys else Array<ByteArray>(nodeCount, { ByteArray(33, { it.toByte() }) }).toList()
+        val peerInfos = Array(nodeCount, { PeerInfo("localhost", 53190 + it, pubKeys[it]) })
+        val privKey = if (nodeCount <= pubKeys.size) privKeys[myIndex] else kotlin.ByteArray(32, {it.toByte()})
+        return BasePeerCommConfiguration(peerInfos, myIndex, SECP256K1CryptoSystem(), privKey)
+    }
+
+    protected fun arrayOfBasePeerCommConfigurations(count: Int): Array<BasePeerCommConfiguration> {
+        return Array(count, { createBasePeerCommConfiguration(count, it) })
     }
 }

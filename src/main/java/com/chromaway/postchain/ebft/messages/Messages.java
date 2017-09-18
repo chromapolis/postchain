@@ -27,6 +27,8 @@ public class Messages extends AsnModule {
 
 
 	public static AsnType type(int id) {
+		AsnType t = instance.getType(id);
+
 		return instance.getType(id);
 	}
 
