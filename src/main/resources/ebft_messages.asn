@@ -1,0 +1,53 @@
+Messages {} DEFINITIONS ::= BEGIN
+
+SignedMessage ::= SEQUENCE {
+	message OCTET STRING,
+	pubkey OCTET STRING,
+	signature OCTET STRING
+}
+
+Message ::= CHOICE {
+	getUnfinishedBlock [0] GetUnfinishedBlock,
+	blockData [1] BlockData,
+	getBlockAtHeight [2] GetBlockAtHeight,
+	completeBlock [3] CompleteBlock,
+	status [4] Status
+}
+
+BlockData ::= SEQUENCE {
+	header OCTET STRING,
+	transactions SEQUENCE OF OCTET STRING
+}
+
+Identification ::= SEQUENCE {
+    timestamp INTEGER,
+    yourPubKey OCTET STRING
+}
+
+UnfinishedBlock ::= BlockData
+
+GetUnfinishedBlock ::= SEQUENCE {
+	blockRID OCTET STRING
+}
+
+GetBlockAtHeight ::= SEQUENCE {
+	height INTEGER
+}
+
+CompleteBlock ::= SEQUENCE {
+	height INTEGER,
+	blockData BlockData,
+	witness OCTET STRING
+}
+
+Status ::= SEQUENCE {
+	serial INTEGER,
+	state INTEGER,
+	round INTEGER,
+	blockRID OCTET STRING OPTIONAL,
+	height INTEGER,
+	revolting BOOLEAN
+}
+
+
+END
