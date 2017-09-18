@@ -17,6 +17,9 @@ public class Message {
 	public static final int getBlockAtHeightChosen = 2;
 	public static final int completeBlockChosen = 3;
 	public static final int statusChosen = 4;
+	public static final int identificationChosen = 5;
+	public static final int getBlockSignatureChosen = 6;
+	public static final int blockSignatureChosen = 7;
 
 	public final int choiceID;
 
@@ -35,34 +38,58 @@ public class Message {
 	@Alternative(4)
 	public final Status status;
 
+	@Alternative(5)
+	public final Identification identification;
 
-	private Message(int choiceID, GetUnfinishedBlock getUnfinishedBlock, BlockData blockData, GetBlockAtHeight getBlockAtHeight, CompleteBlock completeBlock, Status status) {
+	@Alternative(6)
+	public final GetBlockSignature getBlockSignature;
+
+	@Alternative(7)
+	public final BlockSignature blockSignature;
+
+
+	private Message(int choiceID, GetUnfinishedBlock getUnfinishedBlock, BlockData blockData, GetBlockAtHeight getBlockAtHeight, CompleteBlock completeBlock, Status status, Identification identification, GetBlockSignature getBlockSignature, BlockSignature blockSignature) {
 		this.choiceID = choiceID;
 		this.getUnfinishedBlock = getUnfinishedBlock;
 		this.blockData = blockData;
 		this.getBlockAtHeight = getBlockAtHeight;
 		this.completeBlock = completeBlock;
 		this.status = status;
+		this.identification = identification;
+		this.getBlockSignature = getBlockSignature;
+		this.blockSignature = blockSignature;
 	}
 
 	public static Message getUnfinishedBlock(GetUnfinishedBlock getUnfinishedBlock) {
-		return new Message(getUnfinishedBlockChosen, getUnfinishedBlock, null, null, null, null);
+		return new Message(getUnfinishedBlockChosen, getUnfinishedBlock, null, null, null, null, null, null, null);
 	}
 
 	public static Message blockData(BlockData blockData) {
-		return new Message(blockDataChosen, null, blockData, null, null, null);
+		return new Message(blockDataChosen, null, blockData, null, null, null, null, null, null);
 	}
 
 	public static Message getBlockAtHeight(GetBlockAtHeight getBlockAtHeight) {
-		return new Message(getBlockAtHeightChosen, null, null, getBlockAtHeight, null, null);
+		return new Message(getBlockAtHeightChosen, null, null, getBlockAtHeight, null, null, null, null, null);
 	}
 
 	public static Message completeBlock(CompleteBlock completeBlock) {
-		return new Message(completeBlockChosen, null, null, null, completeBlock, null);
+		return new Message(completeBlockChosen, null, null, null, completeBlock, null, null, null, null);
 	}
 
 	public static Message status(Status status) {
-		return new Message(statusChosen, null, null, null, null, status);
+		return new Message(statusChosen, null, null, null, null, status, null, null, null);
+	}
+
+	public static Message identification(Identification identification) {
+		return new Message(identificationChosen, null, null, null, null, null, identification, null, null);
+	}
+
+	public static Message getBlockSignature(GetBlockSignature getBlockSignature) {
+		return new Message(getBlockSignatureChosen, null, null, null, null, null, null, getBlockSignature, null);
+	}
+
+	public static Message blockSignature(BlockSignature blockSignature) {
+		return new Message(blockSignatureChosen, null, null, null, null, null, null, null, blockSignature);
 	}
 
 	public boolean equals(Object obj) {
@@ -81,7 +108,7 @@ public class Message {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65543);
+	public final static AsnType TYPE = Messages.type(65547);
 
 	public final static ChoiceConverter CONV;
 
@@ -92,7 +119,10 @@ public class Message {
 		AsnConverter getBlockAtHeightConverter = GetBlockAtHeight.CONV;
 		AsnConverter completeBlockConverter = CompleteBlock.CONV;
 		AsnConverter statusConverter = Status.CONV;
-		CONV.setAlternativeConverters(new AsnConverter[] { getUnfinishedBlockConverter, blockDataConverter, getBlockAtHeightConverter, completeBlockConverter, statusConverter });
+		AsnConverter identificationConverter = Identification.CONV;
+		AsnConverter getBlockSignatureConverter = GetBlockSignature.CONV;
+		AsnConverter blockSignatureConverter = BlockSignature.CONV;
+		CONV.setAlternativeConverters(new AsnConverter[] { getUnfinishedBlockConverter, blockDataConverter, getBlockAtHeightConverter, completeBlockConverter, statusConverter, identificationConverter, getBlockSignatureConverter, blockSignatureConverter });
 	}
 
 

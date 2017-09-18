@@ -5,23 +5,22 @@
 package com.chromaway.postchain.ebft.messages;
 
 import java.io.*;
-import java.math.*;
 import org.asnlab.asndt.runtime.conv.*;
 import org.asnlab.asndt.runtime.conv.annotation.*;
 import org.asnlab.asndt.runtime.type.AsnType;
 import org.asnlab.asndt.runtime.value.*;
 
-public class Identification {
+public class Signature {
 
 	@Component(0)
-	public Long timestamp;
+	public byte[] subjectID;
 
 	@Component(1)
-	public byte[] yourPubKey;
+	public byte[] data;
 
 
 	public boolean equals(Object obj) {
-		if(!(obj instanceof Identification)){
+		if(!(obj instanceof Signature)){
 			return false;
 		}
 		return TYPE.equals(this, obj, CONV);
@@ -31,20 +30,20 @@ public class Identification {
 		TYPE.encode(this, EncodingRules.DISTINGUISHED_ENCODING_RULES, CONV, out);
 	}
 
-	public static Identification der_decode(InputStream in) throws IOException {
-		return (Identification)TYPE.decode(in, EncodingRules.DISTINGUISHED_ENCODING_RULES, CONV);
+	public static Signature der_decode(InputStream in) throws IOException {
+		return (Signature)TYPE.decode(in, EncodingRules.DISTINGUISHED_ENCODING_RULES, CONV);
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65543);
+	public final static AsnType TYPE = Messages.type(65545);
 
 	public final static CompositeConverter CONV;
 
 	static {
-		CONV = new AnnotationCompositeConverter(Identification.class);
-		AsnConverter timestampConverter = LongConverter.INSTANCE;
-		AsnConverter yourPubKeyConverter = OctetStringConverter.INSTANCE;
-		CONV.setComponentConverters(new AsnConverter[] { timestampConverter, yourPubKeyConverter });
+		CONV = new AnnotationCompositeConverter(Signature.class);
+		AsnConverter subjectIDConverter = OctetStringConverter.INSTANCE;
+		AsnConverter dataConverter = OctetStringConverter.INSTANCE;
+		CONV.setComponentConverters(new AsnConverter[] { subjectIDConverter, dataConverter });
 	}
 
 
