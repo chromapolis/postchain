@@ -5,48 +5,39 @@ import com.chromaway.postchain.base.Verifier
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.UserError
-import com.chromaway.postchain.ebft.messages.Message
-import com.chromaway.postchain.ebft.messages.SignedMessage
-import java.io.ByteArrayOutputStream
+import com.chromaway.postchain.ebft.message.Messaged
+import com.chromaway.postchain.ebft.message.SignedMessage
 import java.util.Arrays
 
-fun encodeAndSign(m: Message, sign: Signer): ByteArray {
-    val signingBytesOut = ByteArrayOutputStream()
-    m.der_encode(signingBytesOut)
-    val signingBytes = signingBytesOut.toByteArray()
-
+fun encodeAndSign(m: Messaged, sign: Signer): ByteArray {
+    val signingBytes = m.encode()
     val signature = sign(signingBytes)
-    val sm = SignedMessage()
-    sm.message = signingBytes
-    sm.pubkey = signature.subjectID
-    sm.signature = signature.data
-    val out = ByteArrayOutputStream()
-    sm.der_encode(out)
-    return out.toByteArray()
+    val sm = SignedMessage(signingBytes, signature.subjectID, signature.data)
+    return sm.encode()
 }
 
 fun decodeSignedMessage(bytes: ByteArray): SignedMessage {
     try {
-        return  SignedMessage.der_decode(bytes.inputStream())
+        return  SignedMessage.decode(bytes)
     } catch (e: Exception) {
         throw UserError("bytes ${bytes.toHex()} cannot be decoded", e)
     }
 }
 
-fun decodeWithoutVerification(bytes: ByteArray): Message {
+fun decodeWithoutVerification(bytes: ByteArray): SignedMessage {
     try {
-        val sm = SignedMessage.TYPE.decode(bytes, SignedMessage.CONV) as SignedMessage
-        return Message.TYPE.decode(sm.message, Message.CONV) as Message
+        val sm = SignedMessage.decode(bytes)
+        return sm
     } catch (e: Exception) {
         throw UserError("bytes cannot be decoded", e)
     }
 }
 
-fun decodeAndVerify(bytes: ByteArray, pubkey: ByteArray, verify: Verifier): Message {
-    val sm = SignedMessage.der_decode(bytes.inputStream()) as SignedMessage
-    if (Arrays.equals(sm.pubkey, pubkey)
-            && verify(sm.message, Signature(sm.pubkey, sm.signature))) {
-        return Message.der_decode(sm.message.inputStream())
+fun decodeAndVerify(bytes: ByteArray, pubkey: ByteArray, verify: Verifier): Messaged {
+    val sm = SignedMessage.decode(bytes)
+    if (Arrays.equals(sm.pubKey, pubkey)
+            && verify(sm.message, Signature(sm.pubKey, sm.signature))) {
+        return Messaged.decode(sm.message)
     } else {
         throw UserError("Verification failed")
     }

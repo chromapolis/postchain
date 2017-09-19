@@ -7,6 +7,7 @@ import com.chromaway.postchain.parseInt
 import mu.KLogging
 import org.junit.After
 import org.junit.Test
+import org.junit.Assert.*
 
 
 class CommManagerTest : IntegrationTest() {
@@ -131,7 +132,7 @@ class CommManagerTest : IntegrationTest() {
         return CommManager<CommManagerTest.DummyMessage>(
                 pc.myIndex,
                 peerInfo,
-                DummyPacketConverter(),
+                DummyPacketConverter(pc.myIndex),
                 { handleError(it)}
         )
     }
@@ -140,14 +141,15 @@ class CommManagerTest : IntegrationTest() {
         logger.error("Shit pommes frites", e)
     }
 
-    class DummyPacketConverter : PacketConverter<DummyMessage> {
+    class DummyPacketConverter(val myIndex: Int) : PacketConverter<DummyMessage> {
         override fun makeInitPacket(index: Int): ByteArray {
-           return "Hi, I'm $index".toByteArray()
+           return "Hi, I'm ${myIndex}. I suppose you're $index".toByteArray()
         }
 
         override fun parseInitPacket(bytes: ByteArray): Int {
             val str = kotlin.text.String(bytes)
-            return parseInt(str.substring(8))!!
+            assertEquals(myIndex, parseInt(str.substring(28, 29)))
+            return parseInt(str.substring(8, 9))!!
         }
 
         override fun decodePacket(index: Int, bytes: ByteArray): DummyMessage {

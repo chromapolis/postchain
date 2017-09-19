@@ -2,8 +2,11 @@ package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.ebft.messages.CompleteBlock
-import com.chromaway.postchain.ebft.messages.Message
+import com.chromaway.postchain.ebft.message.CompleteBlock
+import com.chromaway.postchain.ebft.message.GetBlockAtHeight
+import com.chromaway.postchain.ebft.message.Messaged
+import com.chromaway.postchain.ebft.message.Status
+import mu.KLogging
 
 fun decodeBlockDataWithWitness(block: CompleteBlock, bc: BlockchainConfiguration)
         : BlockDataWithWitness
@@ -21,34 +24,33 @@ class SyncManager (
         val statusManager: StatusManager,
         val blockManager: BlockManager,
         val blockDatabase: BlockDatabase,
-        val commManager: CommManager<Message>,
+        val commManager: CommManager<Messaged>,
         val blockchainConfiguration: BlockchainConfiguration
 ) {
+    companion object : KLogging()
 
     fun dispatchMessages () {
         for (packet in commManager.getPackets()) {
             val nodeIndex = packet.first
             val message = packet.second
-            when (message.choiceID) {
-                Message.completeBlockChosen -> {
-                    val completeBlock = message.completeBlock
+            when (message) {
+                is com.chromaway.postchain.ebft.message.CompleteBlock -> {
                     blockManager.onReceivedBlockAtHeight(
-                            decodeBlockDataWithWitness(completeBlock, blockchainConfiguration),
-                            completeBlock.height
+                            decodeBlockDataWithWitness(message, blockchainConfiguration),
+                            message.height
                     )
                 }
-                Message.statusChosen -> {
-                    val status = message.status
-                    val nodeStatus = NodeStatus(status.height, status.serial)
+                is Status -> {
+                    val nodeStatus = NodeStatus(message.height, message.serial)
                     with (nodeStatus) {
-                        round = status.round
-                        state = NodeState.values()[status.state.toInt()]
-                        revolting = status.revolting
-                        blockRID = status.blockRID
+                        round = message.round
+                        state = NodeState.values()[message.state.toInt()]
+                        revolting = message.revolting
+                        blockRID = message.blockRId
                     }
                     statusManager.onStatusUpdate(nodeIndex, nodeStatus)
                 }
-                Message.getBlockAtHeightChosen -> {
+                is GetBlockAtHeight -> {
 
                 }
             }
@@ -57,10 +59,17 @@ class SyncManager (
         }
     }
 
+    fun processIntent() {
 
-    fun update() {
-        Thread.sleep(100)
     }
 
 
+
+
+    fun update() {
+        dispatchMessages()
+        processIntent()
+//        revoltTracker.update();
+//        statusSync.update();
+    }
 }

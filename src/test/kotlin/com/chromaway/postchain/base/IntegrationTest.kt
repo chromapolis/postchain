@@ -194,8 +194,8 @@ open class IntegrationTest {
     }
 
     protected fun createBasePeerCommConfiguration(nodeCount: Int, myIndex: Int): BasePeerCommConfiguration {
-        val pubKeys = if (nodeCount <= pubKeys.size) pubKeys else Array<ByteArray>(nodeCount, { ByteArray(33, { it.toByte() }) }).toList()
-        val peerInfos = Array(nodeCount, { PeerInfo("localhost", 53190 + it, pubKeys[it]) })
+        val pubKeysToUse = if (nodeCount <= pubKeys.size) pubKeys else Array<ByteArray>(nodeCount, { ByteArray(33, { it.toByte() }) }).toList()
+        val peerInfos = Array(nodeCount, { PeerInfo("localhost", 53190 + it, pubKeysToUse[it]) })
         val privKey = if (nodeCount <= pubKeys.size) privKeys[myIndex] else kotlin.ByteArray(32, {it.toByte()})
         return BasePeerCommConfiguration(peerInfos, myIndex, SECP256K1CryptoSystem(), privKey)
     }

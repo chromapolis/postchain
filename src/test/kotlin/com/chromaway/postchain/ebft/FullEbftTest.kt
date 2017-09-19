@@ -1,4 +1,4 @@
-package com.chromaway.postchain.ebft;
+package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.base.IntegrationTest.DataLayer
@@ -24,7 +24,7 @@ class FullEbftTest: IntegrationTest() {
     }
 
     @Test
-    fun setupThreeNodes() {
+    fun setupThreeNodesAndStartUpdating() {
         val nodes = createEbftNodes(3)
         for (i in 0 until 1000) {
             nodes.forEach { it.syncManager.update() }

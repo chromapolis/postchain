@@ -1,7 +1,5 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.ebft.messages.GetBlockAtHeight
-import com.chromaway.postchain.ebft.messages.Message
 import com.chromaway.postchain.base.PeerCommConfiguration
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -12,11 +10,11 @@ import kotlin.concurrent.thread
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.UserError
-import com.chromaway.postchain.ebft.messages.Identification
-import com.sun.xml.internal.bind.v2.model.core.ID
+import com.chromaway.postchain.ebft.message.Identification
+import com.chromaway.postchain.ebft.message.Messaged
+import com.chromaway.postchain.ebft.message.SignedMessage
 import mu.KLogging
 import java.net.ServerSocket
-import java.util.Date
 import java.util.concurrent.CyclicBarrier
 
 val MAX_PAYLOAD_SIZE = 10000000
@@ -189,7 +187,7 @@ class ActivePeerConnection(
                 connAvail.await()
                 val socket1 = socket ?: throw Error("No connection")
                 val stream = DataOutputStream(socket1.getOutputStream())
-                writeOnePacket(stream, packetConverter.makeInitPacket(myIndex)) // write init packet
+                writeOnePacket(stream, packetConverter.makeInitPacket(id)) // write init packet
                 val err = writePacketsWhilePossible(stream)
                 if (err != null) {
                     log(err)
@@ -365,49 +363,42 @@ class CommManager<PT> (val myIndex: Int,
     }
 }
 
-fun makeCommManager(pc: PeerCommConfiguration): CommManager<Message> {
+fun makeCommManager(pc: PeerCommConfiguration): CommManager<Messaged> {
     val peerInfo = pc.peerInfo
     val signer = pc.getSigner()
     val verifier = pc.getVerifier()
 
-    val packetConverter = object: PacketConverter<Message> {
+    val packetConverter = object: PacketConverter<Messaged> {
         override fun makeInitPacket(index: Int): ByteArray {
-            val gbah = GetBlockAtHeight()
-            gbah.height = index.toLong()
-            return encodeAndSign(Message.getBlockAtHeight(gbah), signer)
+            val bytes = Identification(peerInfo[index].pubKey, System.currentTimeMillis()).encode()
+            val signature = signer(bytes)
+            return SignedMessage(bytes, peerInfo[pc.myIndex].pubKey, signature.data).encode()
         }
         override fun parseInitPacket(bytes: ByteArray): Int {
-            val signedMessage = decodeSignedMessage(bytes);
-            val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubkey) }
+            val signedMessage = decodeSignedMessage(bytes)
+            val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubKey) }
             if (peerIndex == -1) {
-                throw UserError("I don't know pubkey ${signedMessage.pubkey.toHex()}")
+                throw UserError("I don't know pubkey ${signedMessage.pubKey.toHex()}")
             }
             val message = decodeAndVerify(bytes, peerInfo[peerIndex].pubKey, verifier)
 
-
-            if (message.getBlockAtHeight == null) {
-                throw UserError("Packet was not a GetBlockAtHeight. Got ${message::class}")
+            if (message !is Identification) {
+                throw UserError("Packet was not an Identification. Got ${message::class}")
             }
-            return message.getBlockAtHeight.height.toInt()
 
-
-//            if (message !is Identification) {
-//                throw UserError("Packet was not an Identification. Got ${message::class}")
-//            }
-//
-//            if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
-//                throw UserError("'yourPubKey' ${message.yourPubKey} of Identification is not mine");
-//            }
-//            return peerIndex
+            if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
+                throw UserError("'yourPubKey' ${message.yourPubKey.toHex()} of Identification is not mine")
+            }
+            return peerIndex
         }
-        override fun decodePacket(index: Int, bytes: ByteArray): Message {
+        override fun decodePacket(index: Int, bytes: ByteArray): Messaged {
             return decodeAndVerify(bytes, peerInfo[index].pubKey, verifier)
         }
-        override fun encodePacket(packet: Message): ByteArray {
+        override fun encodePacket(packet: Messaged): ByteArray {
             return encodeAndSign(packet, signer)
         }
     }
-    return CommManager<Message>(
+    return CommManager<Messaged>(
             pc.myIndex,
             peerInfo,
             packetConverter,
