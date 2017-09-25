@@ -9,7 +9,8 @@ import mu.KLogging
 class BaseManagedBlockBuilder(
         val ctxt: EContext,
         val s: Storage,
-        val bb: BlockBuilder
+        val bb: BlockBuilder,
+        private val lifecycleListeners: List<BlockLifecycleListener>
 ) : ManagedBlockBuilder {
     companion object : KLogging()
 
@@ -27,6 +28,7 @@ class BaseManagedBlockBuilder(
 
     override fun begin() {
         runOp({ bb.begin() })
+        lifecycleListeners.forEach({it.beginBlockDone()})
     }
 
     override fun appendTransaction(tx: Transaction) {
@@ -35,6 +37,7 @@ class BaseManagedBlockBuilder(
 
     override fun appendTransaction(txData: ByteArray) {
         runOp({bb.appendTransaction(txData)})
+        lifecycleListeners.forEach({it.appendTxDone(txData)})
     }
 
     override fun maybeAppendTransaction(tx: Transaction): Boolean {
@@ -50,6 +53,7 @@ class BaseManagedBlockBuilder(
         } catch (userError: UserError) {
             return false
         }
+        lifecycleListeners.forEach({it.appendTxDone(tx)})
         return true
     }
 
@@ -57,16 +61,19 @@ class BaseManagedBlockBuilder(
         s.withSavepoint(ctxt) {
             bb.appendTransaction(txData)
         }
+        lifecycleListeners.forEach({it.appendTxDone(txData)})
         return true
     }
 
 
     override fun finalize() {
         runOp { bb.finalize() }
+        lifecycleListeners.forEach({it.finalizeBlockDone(bb.getBlockData().header)})
     }
 
     override fun finalizeAndValidate(bh: BlockHeader) {
         runOp { bb.finalizeAndValidate(bh) }
+        lifecycleListeners.forEach({it.finalizeBlockDone(bb.getBlockData().header)})
     }
 
     override fun getBlockData(): BlockData {
@@ -82,6 +89,7 @@ class BaseManagedBlockBuilder(
         runOp { bb.commit(w) }
         closed = true
         s.closeWriteConnection(ctxt, true)
+        lifecycleListeners.forEach({it.commitDone(w)})
     }
 
     override fun rollback() {

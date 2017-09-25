@@ -5,7 +5,7 @@ import com.chromaway.postchain.core.BlockDataWithWitness
 import nl.komponents.kovenant.Promise
 import java.util.*
 
-class BaseBlockManager(val blockDB: BlockDatabase, val sm: StatusManager, val ectxt: ErrContext)
+class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusManager, val ectxt: ErrContext)
     : BlockManager {
     @Volatile var processing = false
     var intent : BlockIntent = DoNothingIntent
@@ -37,7 +37,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val sm: StatusManager, val ec
             runDBOp({
                 blockDB.loadUnfinishedBlock(block)
             }, { sig ->
-                if (sm.onReceivedBlock(block.header.blockRID, sig)) {
+                if (statusManager.onReceivedBlock(block.header.blockRID, sig)) {
                     currentBlock = block
                 }
             })
@@ -52,7 +52,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val sm: StatusManager, val ec
             runDBOp({
                 blockDB.addBlock(block)
             }, {
-                if (sm.onHeightAdvance(height + 1)) {
+                if (statusManager.onHeightAdvance(height + 1)) {
                     currentBlock = null
                 }
             })
@@ -62,7 +62,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val sm: StatusManager, val ec
 
     protected fun update() {
         if (processing) return
-        val smIntent = sm.getBlockIntent()
+        val smIntent = statusManager.getBlockIntent()
         intent = DoNothingIntent
         when (smIntent) {
             is CommitBlockIntent -> {
@@ -71,9 +71,9 @@ class BaseBlockManager(val blockDB: BlockDatabase, val sm: StatusManager, val ec
                     return
                 }
                 runDBOp({
-                    blockDB.commitBlock(sm.commitSignatures)
+                    blockDB.commitBlock(statusManager.commitSignatures)
                 }, {
-                    sm.onCommittedBlock(currentBlock!!.header.blockRID)
+                    statusManager.onCommittedBlock(currentBlock!!.header.blockRID)
                     currentBlock = null
                 })
             }
@@ -84,7 +84,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val sm: StatusManager, val ec
                     blockAndSignature ->
                     val block = blockAndSignature.first
                     val signature = blockAndSignature.second
-                    if (sm.onBuiltBlock(block.header.blockRID, signature)) {
+                    if (statusManager.onBuiltBlock(block.header.blockRID, signature)) {
                         currentBlock = block
                     }
                 })

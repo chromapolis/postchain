@@ -1,10 +1,9 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.base.CryptoSystem
 import com.chromaway.postchain.base.ManagedBlockBuilder
-import com.chromaway.postchain.base.PeerCommConfiguration
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
+import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.Signature
 import nl.komponents.kovenant.*
 import java.util.*
@@ -43,23 +42,36 @@ interface BlockDatabase {
 
     fun verifyBlockSignature(s: Signature): Boolean
     fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>
-    fun getBlockAtHeight(height: Long): Promise<BlockData, Exception>
+    fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception>
 }
 
-sealed class BlockIntent
+sealed class BlockIntent {
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (super.equals(other)) return true
+        if (this::class != other::class) return false
+        return true
+    }
+}
 
 object DoNothingIntent : BlockIntent()
 object CommitBlockIntent : BlockIntent()
 object BuildBlockIntent : BlockIntent()
 
-data class FetchBlockAtHeightIntent(val height: Long): BlockIntent()
+data class FetchBlockAtHeightIntent(val height: Long): BlockIntent() {
+    override fun equals(other: Any?): Boolean {
+        if (!super.equals(other)) return false
+        if (other !is FetchBlockAtHeightIntent) return false
+        return height == other.height
+    }
+}
 
 data class FetchUnfinishedBlockIntent(val blockRID: ByteArray) : BlockIntent() {
     override fun equals(other: Any?): Boolean {
+        if (!super.equals(other)) return false
         if (this === other) return true
-        if (other?.javaClass != javaClass) return false
         other as FetchUnfinishedBlockIntent
-        if (!Arrays.equals(blockRID, other.blockRID)) return false
+        if (!blockRID.contentEquals(other.blockRID)) return false
         return true
     }
 }
@@ -89,10 +101,12 @@ interface StatusManager {
     fun onStartRevolting()
 
     fun getBlockIntent(): BlockIntent
+    fun getCommitSignature(): Signature?
 }
 
 interface BlockchainEngine {
     fun addBlock(block: BlockDataWithWitness)
     fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder
     fun buildBlock(): ManagedBlockBuilder
+    fun addBlockLifecycleListener(listener: BlockLifecycleListener)
 }

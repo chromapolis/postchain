@@ -1,6 +1,7 @@
 package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.core.Signature
+import mu.KLogging
 import java.util.*
 
 class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: Int)
@@ -10,12 +11,13 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     override val myStatus: NodeStatus
     var intent: BlockIntent = DoNothingIntent
     val quorum2f = (nodeCount / 3) * 2
+    companion object : KLogging()
 
     init {
         myStatus = nodeStatuses[myIndex]
     }
 
-    fun countNodes (state: NodeState, height: Long, blockRID: ByteArray?): Int {
+    private fun countNodes (state: NodeState, height: Long, blockRID: ByteArray?): Int {
         var count: Int = 0
         for (ns in nodeStatuses) {
             if (ns.height == height && ns.state == state) {
@@ -40,7 +42,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
         }
     }
 
-    fun advanceHeight() {
+    private fun advanceHeight() {
         with (myStatus) {
             height += 1
             serial += 1
@@ -54,7 +56,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
         recomputeStatus()
     }
 
-    fun resetCommitSignatures () {
+    private fun resetCommitSignatures () {
         for (i in commitSignatures.indices)
             commitSignatures[i] = null
     }
@@ -65,7 +67,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
             advanceHeight()
             return true
         } else {
-            ectxt.fatal("Height mismatch")
+            logger.error("Height mismatch my height: ${myStatus.height} new height: $height")
             return false
         }
 
@@ -76,7 +78,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
         if (Arrays.equals(blockRID, myStatus.blockRID)) {
             advanceHeight()
         } else
-            ectxt.fatal("Committed block with wrong RID")
+            logger.error("Committed block with wrong RID")
     }
 
     fun acceptBlock(blockRID: ByteArray, mySignature: Signature) {
@@ -98,11 +100,11 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
                 acceptBlock(blockRID, mySignature)
                 return true
             } else {
-                ectxt.warn("Received block which is irrelevant")
+                logger.error("Received block which is irrelevant")
                 return false
             }
         } else {
-            ectxt.warn("Received block which is irrelevant")
+            logger.error("Received block which is irrelevant")
             return false
         }
     }
@@ -116,14 +118,14 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     override fun onBuiltBlock(blockRID: ByteArray, mySignature: Signature): Boolean {
         if (intent is BuildBlockIntent) {
             if (primaryIndex() != myIndex) {
-                ectxt.warn("Inconsistent state: building a block while not a primary")
+                logger.warn("Inconsistent state: building a block while not a primary")
                 return false
             }
             acceptBlock(blockRID, mySignature)
             return true
         }
         else {
-            ectxt.warn("Received built block while not requesting it.")
+            logger.warn("Received built block while not requesting it.")
             return false
         }
     }
@@ -136,7 +138,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
             this.commitSignatures[nodeIndex] = signature
             recomputeStatus()
         } else {
-            ectxt.warn("Wrong commit signature")
+            logger.warn("Wrong commit signature")
         }
     }
 
@@ -150,6 +152,14 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
     @Synchronized
     override fun getBlockIntent(): BlockIntent {
         return intent
+    }
+
+    fun setBlockIntent(newIntent: BlockIntent) {
+        intent = newIntent
+    }
+
+    override fun getCommitSignature(): Signature? {
+        return this.commitSignatures[myIndex]
     }
 
     fun recomputeStatus() {
@@ -232,8 +242,8 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
 
 
         if (myStatus.state === NodeState.HaveBlock) {
-            val count = countNodes(NodeState.HaveBlock, myStatus.height, myStatus.blockRID)
-                      + countNodes(NodeState.Prepared, myStatus.height, myStatus.blockRID)
+            val count = countNodes(NodeState.HaveBlock, myStatus.height, myStatus.blockRID) +
+                    countNodes(NodeState.Prepared, myStatus.height, myStatus.blockRID)
             if (count >= this.quorum2f) {
                 myStatus.state = NodeState.Prepared
                 myStatus.serial += 1
@@ -253,7 +263,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
                 val unfetchedNodes = mutableListOf<Int>()
                 for ((i, nodeStatus) in nodeStatuses.withIndex()) {
                     val commitSignature = commitSignatures[i]
-                    if (commitSignature != null) {
+                    if (commitSignature == null) {
                         if ((nodeStatus.height > myStatus.height)
                                 ||
                                 ((nodeStatus.height == myStatus.height)
@@ -265,8 +275,10 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
                         }
                     }
                 }
-
-                intent = FetchCommitSignatureIntent(myStatus.blockRID as ByteArray, unfetchedNodes.toTypedArray())
+                if (!unfetchedNodes.isEmpty()) {
+                    intent = FetchCommitSignatureIntent(myStatus.blockRID as ByteArray, unfetchedNodes.toTypedArray())
+                    return true
+                }
             }
         } else if (myStatus.state == NodeState.WaitBlock) {
             if (primaryIndex() == this.myIndex) {
@@ -278,8 +290,11 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
                 val primaryBlockRID = this.nodeStatuses[this.primaryIndex()].blockRID
                 if (primaryBlockRID != null) {
                     val _intent = intent
-                    if (! ( _intent is FetchUnfinishedBlockIntent && Arrays.equals(_intent.blockRID, myStatus.blockRID))) {
-                        intent = FetchUnfinishedBlockIntent(myStatus.blockRID as ByteArray)
+                    // Don't update intent if
+                    if (!(_intent is FetchUnfinishedBlockIntent &&
+//                            _intent.blockRID != null &&
+                            Arrays.equals(_intent.blockRID, myStatus.blockRID))) {
+                        intent = FetchUnfinishedBlockIntent(primaryBlockRID)
                         return true
                     }
                 }

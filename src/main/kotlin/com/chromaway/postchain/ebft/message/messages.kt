@@ -16,108 +16,6 @@ import com.chromaway.postchain.ebft.messages.UnfinishedBlock
 import java.io.ByteArrayOutputStream
 import java.util.Vector
 
-sealed class Messaged {
-    companion object {
-        fun decode(bytes: ByteArray): Messaged {
-            val message = Message.der_decode(bytes.inputStream())
-            return when (message.choiceID) {
-                Message.blockDataChosen -> BlockData(message.blockData.header, message.blockData.transactions)
-                Message.getBlockAtHeightChosen -> GetBlockAtHeight(message.getBlockAtHeight.height)
-                Message.identificationChosen -> Identification(message.identification.yourPubKey, message.identification.timestamp)
-                else -> throw ProgrammerError("Message type ${message::class} is not handeled")
-            }
-
-        }
-    }
-
-    open fun encode(): ByteArray {
-        val out = ByteArrayOutputStream()
-        getBackingInstance().der_encode(out)
-        return out.toByteArray()
-    }
-
-    abstract fun getBackingInstance(): Message
-
-}
-
-class BlockData(val header: ByteArray, val transactions: List<ByteArray>): Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = BlockData()
-        result.header = header
-        result.transactions = Vector(transactions)
-        return Message.blockData(result)
-    }
-}
-
-class BlockSignature(val blockRID: ByteArray, val signature: com.chromaway.postchain.ebft.message.Signature): Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = BlockSignature()
-        result.blockRID = blockRID
-        result.signature = signature.createBackingImpl()
-        return Message.blockSignature(result)
-    }
-
-}
-
-class CompleteBlock(val blockData: BlockData, val height: Long, val witness: ByteArray): Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = CompleteBlock()
-        result.blockData = blockData
-        result.height = height
-        result.witness = witness
-        return Message.completeBlock(result)
-    }
-}
-
-
-class GetBlockAtHeight(val height: Long): Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = GetBlockAtHeight()
-        result.height = height
-        return Message.getBlockAtHeight(result)
-    }
-}
-
-class GetBlockSignature(val blockRID: ByteArray) : Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = GetBlockSignature()
-        result.blockRID = blockRID
-        return Message.getBlockSignature(result)
-    }
-}
-
-class GetUnfinishedBlock(val blockRID: ByteArray) : Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = GetUnfinishedBlock()
-        result.blockRID = blockRID
-        return Message.getUnfinishedBlock(result)
-    }
-}
-
-class Identification(val yourPubKey: ByteArray, val timestamp: Long) : Messaged() {
-    override fun getBackingInstance(): Message {
-        val result = Identification()
-        result.yourPubKey = yourPubKey
-        result.timestamp = timestamp
-        return Message.identification(result)
-    }
-}
-
-class Signature(val data: ByteArray, val subjectID: ByteArray) {
-    fun encode(): ByteArray {
-        val result = createBackingImpl()
-        val out = ByteArrayOutputStream()
-        result.der_encode(out)
-        return out.toByteArray()
-    }
-
-    fun createBackingImpl(): Signature {
-        val result = Signature()
-        result.data = data
-        result.subjectID = subjectID
-        return result
-    }
-}
 
 class SignedMessage(val message: ByteArray, val pubKey: ByteArray, val signature: ByteArray) {
     companion object {
@@ -138,7 +36,99 @@ class SignedMessage(val message: ByteArray, val pubKey: ByteArray, val signature
     }
 }
 
-class Status(val blockRId: ByteArray, val height: Long, val revolting: Boolean, val round: Long, val serial: Long, val state: Long) : Messaged() {
+sealed class EbftMessage {
+    companion object {
+        fun decode(bytes: ByteArray): EbftMessage {
+            val message = Message.der_decode(bytes.inputStream())
+            return when (message.choiceID) {
+                Message.getBlockAtHeightChosen -> GetBlockAtHeight(message.getBlockAtHeight.height)
+                Message.identificationChosen -> Identification(message.identification.yourPubKey, message.identification.timestamp)
+                Message.statusChosen -> {
+                    val s = message.status
+                    com.chromaway.postchain.ebft.message.Status(s.blockRID, s.height, s.revolting, s.round, s.serial, s.state.toInt())
+                }
+                Message.getUnfinishedBlockChosen -> com.chromaway.postchain.ebft.message.GetUnfinishedBlock(message.getUnfinishedBlock.blockRID)
+                Message.blockDataChosen -> com.chromaway.postchain.ebft.message.UnfinishedBlock(message.blockData.header, message.blockData.transactions)
+                Message.getBlockSignatureChosen -> com.chromaway.postchain.ebft.message.GetBlockSignature(message.getBlockSignature.blockRID)
+                Message.blockSignatureChosen -> com.chromaway.postchain.ebft.message.BlockSignature(message.blockSignature.blockRID, com.chromaway.postchain.core.Signature(message.blockSignature.signature.subjectID, message.blockSignature.signature.data))
+                else -> throw ProgrammerError("Message type ${message.choiceID} is not handeled")
+            }
+
+        }
+    }
+
+    open fun encode(): ByteArray {
+        val out = ByteArrayOutputStream()
+        getBackingInstance().der_encode(out)
+        return out.toByteArray()
+    }
+
+    abstract fun getBackingInstance(): Message
+
+    override fun toString(): String {
+        return this::class.simpleName!!
+    }
+}
+
+class BlockSignature(val blockRID: ByteArray, val signature: com.chromaway.postchain.core.Signature): EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = BlockSignature()
+        result.blockRID = blockRID
+        val sig = Signature()
+        sig.data = signature.data
+        sig.subjectID = signature.subjectID
+        result.signature = sig
+        return Message.blockSignature(result)
+    }
+}
+
+class CompleteBlock(val header: ByteArray, val transactions: List<ByteArray>, val height: Long, val witness: ByteArray): EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = CompleteBlock()
+        result.blockData = BlockData()
+        result.blockData.header = header
+        result.blockData.transactions = Vector(transactions)
+        result.height = height
+        result.witness = witness
+        return Message.completeBlock(result)
+    }
+}
+
+
+class GetBlockAtHeight(val height: Long): EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = GetBlockAtHeight()
+        result.height = height
+        return Message.getBlockAtHeight(result)
+    }
+}
+
+class GetBlockSignature(val blockRID: ByteArray) : EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = GetBlockSignature()
+        result.blockRID = blockRID
+        return Message.getBlockSignature(result)
+    }
+}
+
+class GetUnfinishedBlock(val blockRID: ByteArray) : EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = GetUnfinishedBlock()
+        result.blockRID = blockRID
+        return Message.getUnfinishedBlock(result)
+    }
+}
+
+class Identification(val yourPubKey: ByteArray, val timestamp: Long) : EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = Identification()
+        result.yourPubKey = yourPubKey
+        result.timestamp = timestamp
+        return Message.identification(result)
+    }
+}
+
+class Status(val blockRId: ByteArray?, val height: Long, val revolting: Boolean, val round: Long, val serial: Long, val state: Int) : EbftMessage() {
     override fun getBackingInstance(): Message {
         val result = Status()
         result.blockRID = blockRId
@@ -146,27 +136,18 @@ class Status(val blockRId: ByteArray, val height: Long, val revolting: Boolean, 
         result.revolting = revolting
         result.round = round
         result.serial = serial
-        result.state = state
+        result.state = state.toLong()
         return Message.status(result)
     }
 
 }
 
-class UnfinishedBlock(val header: ByteArray, val transactions: List<ByteArray>) : Messaged() {
-
-    override fun encode(): ByteArray {
-        val result = UnfinishedBlock()
+class UnfinishedBlock(val header: ByteArray, val transactions: List<ByteArray>) : EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = com.chromaway.postchain.ebft.messages.BlockData()
         result.header = header
         result.transactions = Vector(transactions)
-        val out = ByteArrayOutputStream()
-        result.der_encode(out)
-        return out.toByteArray()
+        return Message.blockData(result)
     }
-
-
-    override fun getBackingInstance(): Message {
-        throw ProgrammerError("Not supported")
-    }
-
 }
 

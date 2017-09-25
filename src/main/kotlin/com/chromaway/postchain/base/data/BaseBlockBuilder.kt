@@ -3,12 +3,13 @@ package com.chromaway.postchain.base.data
 import com.chromaway.postchain.base.BaseBlockHeader
 import com.chromaway.postchain.base.BaseBlockWitnessBuilder
 import com.chromaway.postchain.base.CryptoSystem
+import com.chromaway.postchain.base.Signer
 import com.chromaway.postchain.base.computeMerkleRootHash
 import com.chromaway.postchain.core.*
 import java.util.*
 
 class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store: BlockStore,
-                       txFactory: TransactionFactory, val subjects: Array<ByteArray>)
+                       txFactory: TransactionFactory, val subjects: Array<ByteArray>, val blockSigner: Signer)
     : AbstractBlockBuilder(eContext, store, txFactory ) {
 
 
@@ -55,7 +56,9 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
             requiredSigs = 2 * maxFailedNodes.toInt() + 1
         }
 
-        return BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, requiredSigs)
+        val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, requiredSigs, blockSigner)
+
+        return witnessBuilder
     }
 
 }

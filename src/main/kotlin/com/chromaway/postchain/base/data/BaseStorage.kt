@@ -7,9 +7,6 @@ import javax.sql.DataSource
 
 class BaseStorage(private val writeDataSource: DataSource, private val readDataSource: DataSource) : Storage {
 
-//    private val writeDataSource: DataSource = writeDataSource
-//    private val readDataSource: DataSource = readDataSource
-
     private fun getConnection(chainID: Int, dataSource: DataSource): EContext {
         val connection = dataSource.connection
         return EContext(connection, chainID)

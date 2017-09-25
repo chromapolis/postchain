@@ -5,11 +5,11 @@ import com.chromaway.postchain.base.Verifier
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.UserError
-import com.chromaway.postchain.ebft.message.Messaged
+import com.chromaway.postchain.ebft.message.EbftMessage
 import com.chromaway.postchain.ebft.message.SignedMessage
 import java.util.Arrays
 
-fun encodeAndSign(m: Messaged, sign: Signer): ByteArray {
+fun encodeAndSign(m: EbftMessage, sign: Signer): ByteArray {
     val signingBytes = m.encode()
     val signature = sign(signingBytes)
     val sm = SignedMessage(signingBytes, signature.subjectID, signature.data)
@@ -33,11 +33,11 @@ fun decodeWithoutVerification(bytes: ByteArray): SignedMessage {
     }
 }
 
-fun decodeAndVerify(bytes: ByteArray, pubkey: ByteArray, verify: Verifier): Messaged {
+fun decodeAndVerify(bytes: ByteArray, pubkey: ByteArray, verify: Verifier): EbftMessage {
     val sm = SignedMessage.decode(bytes)
     if (Arrays.equals(sm.pubKey, pubkey)
             && verify(sm.message, Signature(sm.pubKey, sm.signature))) {
-        return Messaged.decode(sm.message)
+        return EbftMessage.decode(sm.message)
     } else {
         throw UserError("Verification failed")
     }

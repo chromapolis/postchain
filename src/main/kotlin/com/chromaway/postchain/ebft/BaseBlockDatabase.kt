@@ -1,8 +1,8 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.base.BaseBlockWitnessBuilder
 import com.chromaway.postchain.core.*
 import com.chromaway.postchain.base.ManagedBlockBuilder
+import mu.KLogging
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import java.util.concurrent.SynchronousQueue
@@ -10,13 +10,14 @@ import kotlin.concurrent.thread
 
 typealias Operation = () -> Unit
 
-class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
+class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQueries: BlockQueries) : BlockDatabase {
 
     private val queue = SynchronousQueue<Operation>()
     @Volatile private var ready = true
     @Volatile private var keepGoing = true
     private var blockBuilder: ManagedBlockBuilder? = null
     private var witnessBuilder: MultiSigBlockWitnessBuilder? = null
+    companion object : KLogging()
 
     @Synchronized fun stop () {
         keepGoing = false
@@ -95,22 +96,23 @@ class BaseBlockDatabase(val engine: BlockchainEngine) : BlockDatabase {
     }
 
     override fun verifyBlockSignature(s: Signature): Boolean {
-        if (witnessBuilder != null) {
-            try {
-                witnessBuilder!!.applySignature(s)
-            } catch (e: Exception) {
-                return false
-            }
-            return true
+        if (witnessBuilder == null) {
+            return false
         }
-        return false
+        return try {
+            witnessBuilder!!.applySignature(s)
+            true
+        } catch (e: Exception) {
+            logger.debug("Signature invalid", e)
+            false
+        }
     }
 
     override fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return blockQueries.getBlockSignature(blockRID);
     }
 
-    override fun getBlockAtHeight(height: Long): Promise<BlockData, Exception> {
+    override fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

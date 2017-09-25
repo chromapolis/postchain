@@ -11,9 +11,12 @@ import com.chromaway.postchain.core.ProgrammerError
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.TxEContext
+import com.chromaway.postchain.parseInt
 import org.apache.commons.dbutils.QueryRunner
+import org.apache.commons.dbutils.handlers.BeanHandler
 import org.apache.commons.dbutils.handlers.BeanListHandler
 import org.apache.commons.dbutils.handlers.ColumnListHandler
+import org.apache.commons.dbutils.handlers.MapHandler
 import org.apache.commons.dbutils.handlers.ScalarHandler
 
 class BaseBlockStore : BlockStore {
@@ -22,7 +25,10 @@ class BaseBlockStore : BlockStore {
     private val longRes = ScalarHandler<Long>()
     val signatureRes = BeanListHandler<Signature>(Signature::class.java)
     private val nullableByteArrayRes = ScalarHandler<ByteArray?>()
+    private val nullableLongRes = ScalarHandler<Long?>()
     private val byteArrayRes = ScalarHandler<ByteArray>()
+    private val blockDataRes = BeanHandler<BlockData>(BlockData::class.java)
+    private val byteArrayListRes = ColumnListHandler<ByteArray>()
 
     override fun beginBlock(ctx: EContext): InitialBlockData {
         val prevHeight = getLastBlockHeight(ctx)
@@ -68,7 +74,8 @@ class BaseBlockStore : BlockStore {
     }
 
     override fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long? {
-        TODO("not implemented")
+        return r.query(ctx.conn, "SELECT block_height FROM blocks where chain_id = ? and block_rid = ?",
+                nullableLongRes, ctx.chainID, blockRID)
     }
 
     override fun getBlockRID(ctx: EContext, height: Long): ByteArray? {
@@ -78,11 +85,24 @@ class BaseBlockStore : BlockStore {
     }
 
     override fun getBlockData(ctx: EContext, height: Long): BlockData {
-        TODO("not implemented")
+//        val map = r.query(ctx.conn,
+//                "SELECT block_iid, block_rid, block_header FROM blocks WHERE chain_id = ? AND block_height = ? ",
+//                MapHandler(), ctx.chainID, height)
+//        if (map == null) {
+//            throw ProgrammerError("no block data at height ${height}")
+//        }
+//        val blockIid = map.get("block_iid") as Long
+//        val transactions = r.query(ctx.conn,
+//                "SELECT tx_data FROM transactions where block_iid=?",
+//                byteArrayListRes, blockIid)
+//        val result = BlockData(
+        TODO("Implement")
     }
 
     override fun getWitnessData(ctx: EContext, height: Long): ByteArray {
-        TODO("not implemented")
+        return r.query(ctx.conn,
+                "SELECT block_witness FROM blocks WHERE chain_id = ? AND block_height = ?",
+                byteArrayRes, ctx.chainID, height)
     }
 
     override fun getLastBlockHeight(ctx: EContext): Long {

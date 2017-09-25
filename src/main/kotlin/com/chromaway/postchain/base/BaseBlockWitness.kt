@@ -29,7 +29,7 @@ class BaseBlockWitness(val _rawData: ByteArray, val _signatures: Array<Signature
                 buffer.get(subjectId)
                 val signatureSize = buffer.int
                 val signature = ByteArray(signatureSize)
-                buffer.get(signatureSize)
+                buffer.get(signature)
                 Signature(subjectId, signature)
             })
             BaseBlockWitness(rawWitness, signatures)
@@ -53,8 +53,8 @@ class BaseBlockWitness(val _rawData: ByteArray, val _signatures: Array<Signature
 
 class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: BlockHeader,
                               val subjects: Array<ByteArray>,
-                              val threshold: Int) : MultiSigBlockWitnessBuilder {
-    val signatures = mutableSetOf<Signature>()
+                              val threshold: Int, blockSigner: Signer) : MultiSigBlockWitnessBuilder {
+    val signatures = mutableListOf<Signature>(blockSigner(blockHeader.rawData))
 
     override fun isComplete(): Boolean {
         return signatures.size >= threshold
@@ -65,10 +65,16 @@ class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: B
         return BaseBlockWitness.fromSignatures(signatures.toTypedArray())
     }
 
-    override fun getMySignature(): Signature = TODO("Not implemented yet")
+    override fun getMySignature(): Signature {
+        return signatures[0]
+    }
+
     override fun applySignature(s: Signature) {
         if (!subjects.any( { s.subjectID.contentEquals(it) } )) {
             throw UserError("Unexpected subject ${s.subjectID.toHex()} of signature")
+        }
+        if (signatures.any({it.subjectID.contentEquals(s.subjectID)})) {
+            return
         }
         if (!cryptoSystem.makeVerifier()(blockHeader.rawData, s)) {
             throw UserError("Invalid signature from subject ${s.subjectID.toHex()}")

@@ -9,9 +9,10 @@ import kotlin.concurrent.thread
 
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.toHex
+import com.chromaway.postchain.core.ProgrammerError
 import com.chromaway.postchain.core.UserError
 import com.chromaway.postchain.ebft.message.Identification
-import com.chromaway.postchain.ebft.message.Messaged
+import com.chromaway.postchain.ebft.message.EbftMessage
 import com.chromaway.postchain.ebft.message.SignedMessage
 import mu.KLogging
 import java.net.ServerSocket
@@ -64,7 +65,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
             throw Error("Packet too large")
         val bytes = ByteArray(packetSize)
         dataStream.readFully(bytes)
-        logger.info("Packet received. Length: ${bytes.size}")
+        logger.trace("Packet received. Length: ${bytes.size}")
         return bytes
     }
 
@@ -89,7 +90,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
     protected fun writeOnePacket(dataStream: DataOutputStream, bytes: ByteArray) {
         dataStream.writeInt(bytes.size)
         dataStream.write(bytes)
-        logger.info("Packet sent: ${bytes.size}")
+        logger.trace("Packet sent: ${bytes.size}")
     }
 
     protected fun writePacketsWhilePossible(dataStream: DataOutputStream): Exception? {
@@ -298,6 +299,7 @@ class CommManager<PT> (val myIndex: Int,
         // packet decoding should not be synchronized so we can make
         // use of parallel processing in different threads
         val decodedPacket = packetConverter.decodePacket(peerIndex, packet)
+        logger.debug("Receiving ${myIndex} -> $peerIndex: $decodedPacket")
         synchronized(this) {
             inboundPackets.add(Pair(peerIndex, decodedPacket))
         }
@@ -310,7 +312,18 @@ class CommManager<PT> (val myIndex: Int,
         return currentQueue
     }
 
+    fun broadcastPacket(packet: PT) {
+        outboundPackets.put(OutboundPacket(packet, emptySet()))
+    }
+
     fun sendPacket(packet: PT, recipients: Set<Int>) {
+        if (recipients.isEmpty()) {
+            // Using recipients=emptySet() to broadcast may cause
+            // code to accidentaly broadcast, when in fact they want to send
+            // the packet to exactly no recipients. So we don't allow that.
+            throw ProgrammerError("Cannot send to no recipients. If you want to broadcast, please use broadcastPacket() instead")
+        }
+        logger.debug("Sending $myIndex -> $recipients: $packet")
         outboundPackets.put(OutboundPacket(packet, recipients))
     }
 
@@ -320,8 +333,13 @@ class CommManager<PT> (val myIndex: Int,
             if (!keepGoing) return
             try {
                 val data = packetConverter.encodePacket(pkt.packet)
-                for (idx in pkt.recipients) {
-                    connections[idx].sendPacket(data)
+                if (pkt.recipients.isEmpty()) {
+                    // Don't mind avoiding myIndex, just send to NullCommChannel. It's fine
+                    connections.forEach { it.sendPacket(data) }
+                } else {
+                    for (idx in pkt.recipients) {
+                        connections[idx].sendPacket(data)
+                    }
                 }
             } catch (e: Exception) {
                 log(e)
@@ -361,14 +379,15 @@ class CommManager<PT> (val myIndex: Int,
         for (c in connections) c.stop()
         encoderThread.interrupt()
     }
+
 }
 
-fun makeCommManager(pc: PeerCommConfiguration): CommManager<Messaged> {
+fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
     val peerInfo = pc.peerInfo
     val signer = pc.getSigner()
     val verifier = pc.getVerifier()
 
-    val packetConverter = object: PacketConverter<Messaged> {
+    val packetConverter = object: PacketConverter<EbftMessage> {
         override fun makeInitPacket(index: Int): ByteArray {
             val bytes = Identification(peerInfo[index].pubKey, System.currentTimeMillis()).encode()
             val signature = signer(bytes)
@@ -391,14 +410,14 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<Messaged> {
             }
             return peerIndex
         }
-        override fun decodePacket(index: Int, bytes: ByteArray): Messaged {
+        override fun decodePacket(index: Int, bytes: ByteArray): EbftMessage {
             return decodeAndVerify(bytes, peerInfo[index].pubKey, verifier)
         }
-        override fun encodePacket(packet: Messaged): ByteArray {
+        override fun encodePacket(packet: EbftMessage): ByteArray {
             return encodeAndSign(packet, signer)
         }
     }
-    return CommManager<Messaged>(
+    return CommManager<EbftMessage>(
             pc.myIndex,
             peerInfo,
             packetConverter,

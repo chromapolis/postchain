@@ -49,14 +49,14 @@ abstract class AbstractBlockBuilder (
     override fun finalize() {
         val bh = makeBlockHeader()
         store.finalizeBlock(bctx, bh)
-        _blockData = BlockData(bh, transactions.toTypedArray())
+        _blockData = BlockData(bh, transactions)
         finalized = true
     }
 
     override fun finalizeAndValidate(bh: BlockHeader) {
         if (validateBlockHeader(bh)) {
             store.finalizeBlock(bctx, bh)
-            _blockData = BlockData(bh, transactions.toTypedArray())
+            _blockData = BlockData(bh, transactions)
             finalized = true
         } else {
             throw UserError("Invalid block header")

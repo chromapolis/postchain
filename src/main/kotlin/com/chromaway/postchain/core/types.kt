@@ -1,5 +1,7 @@
 package com.chromaway.postchain.core
 
+import com.chromaway.postchain.base.Storage
+import nl.komponents.kovenant.Promise
 import org.apache.commons.configuration2.Configuration
 import java.sql.Connection
 import java.util.Arrays
@@ -27,7 +29,7 @@ interface BlockHeader {
     val blockRID: ByteArray // it's not a part of header but derived from it
 }
 
-open class BlockData(val header: BlockHeader, val transactions: Array<ByteArray>)
+open class BlockData(val header: BlockHeader, val transactions: List<ByteArray>)
 
 // Witness is a generalization over signatures
 // Block-level witness is something which proves that block is valid and properly authorized
@@ -39,7 +41,7 @@ interface BlockWitness {
 
 interface WitnessPart
 
-open class BlockDataWithWitness(header: BlockHeader, transactions: Array<ByteArray>, val witness: BlockWitness?)
+open class BlockDataWithWitness(header: BlockHeader, transactions: List<ByteArray>, val witness: BlockWitness?)
     : BlockData(header, transactions)
 
 // id is something which identifies subject which produces the
@@ -105,6 +107,7 @@ interface BlockchainConfiguration {
     fun getTransactionFactory(): TransactionFactory
     fun makeBlockBuilder(ctx: EContext): BlockBuilder
 
+    fun makeBlockQueries(storage: Storage): BlockQueries
 }
 
 interface BlockchainConfigurationFactory {
@@ -113,6 +116,11 @@ interface BlockchainConfigurationFactory {
 
 interface TransactionFactory {
     fun decodeTransaction(data: ByteArray): Transaction
+}
+
+interface BlockQueries {
+    fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>
+    fun getBestHeight(): Promise<Long, Exception>
 }
 
 interface BlockBuilder {
@@ -141,4 +149,16 @@ interface BlockStore {
 
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray
+}
+
+open class BlockLifecycleListener {
+    open fun beginBlockDone() {}
+
+    open fun appendTxDone(tx: Transaction) {}
+
+    open fun appendTxDone(txData: ByteArray) {}
+
+    open fun finalizeBlockDone(header: BlockHeader) {}
+
+    open fun commitDone(witness: BlockWitness?) {}
 }

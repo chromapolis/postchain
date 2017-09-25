@@ -175,8 +175,10 @@ class BlockchainEngineTest : IntegrationTest() {
         val blockData = blockBuilder.getBlockData()
         // Simulate other peers sign the block
         val blockHeader = blockData.header
-        val signatures = privKeys.mapIndexed { index, bytes -> cryptoSystem.makeSigner(pubKeys[index], bytes)(blockHeader.rawData) }
-        signatures.forEach { witnessBuilder.applySignature(it) }
+        var i = 0;
+        while (!witnessBuilder.isComplete()) {
+            witnessBuilder.applySignature(cryptoSystem.makeSigner(pubKey(i), privKey(i))(blockHeader.rawData))
+        }
         val witness = witnessBuilder.getWitness()
         blockBuilder.commit(witness)
         return witness

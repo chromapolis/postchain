@@ -94,6 +94,12 @@ fun secp256k1_verify(digest: ByteArray, pubKey: ByteArray, signature: ByteArray)
     }
 }
 
+fun secp256k1_derivePubKey(privKey: ByteArray): ByteArray {
+    val d = BigInteger(privKey)
+    val q = CURVE_PARAMS.g.multiply(d)
+    return q.getEncoded(true)
+}
+
 class SECP256K1CryptoSystem : CryptoSystem {
 
     override fun digest(bytes: ByteArray): ByteArray {
