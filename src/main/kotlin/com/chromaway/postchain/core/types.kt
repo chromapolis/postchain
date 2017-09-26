@@ -127,7 +127,7 @@ interface BlockBuilder {
     fun begin()
     fun appendTransaction(tx: Transaction)
     fun appendTransaction(txData: ByteArray)
-    fun finalize()
+    fun finalizeBlock()
     fun finalizeAndValidate(bh: BlockHeader)
     fun getBlockData(): BlockData
     fun getBlockWitnessBuilder(): BlockWitnessBuilder?

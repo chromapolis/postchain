@@ -46,7 +46,7 @@ abstract class AbstractBlockBuilder (
         appendTransaction(txFactory.decodeTransaction(txData))
     }
 
-    override fun finalize() {
+    override fun finalizeBlock() {
         val bh = makeBlockHeader()
         store.finalizeBlock(bctx, bh)
         _blockData = BlockData(bh, transactions)

@@ -46,7 +46,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     init {
-        thread {
+        thread(name="BlockOperation") {
             while (keepGoing) {
                 val op = queue.take()
                 op()
@@ -80,6 +80,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
 
     override fun commitBlock(signatures: Array<Signature?>): Promise<Unit, Exception> {
         return runOp {
+
             // TODO: process signatures
             blockBuilder!!.commit(witnessBuilder!!.getWitness())
             blockBuilder = null

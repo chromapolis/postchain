@@ -53,8 +53,8 @@ class BaseBlockWitness(val _rawData: ByteArray, val _signatures: Array<Signature
 
 class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: BlockHeader,
                               val subjects: Array<ByteArray>,
-                              val threshold: Int, blockSigner: Signer) : MultiSigBlockWitnessBuilder {
-    val signatures = mutableListOf<Signature>(blockSigner(blockHeader.rawData))
+                              val threshold: Int) : MultiSigBlockWitnessBuilder {
+    val signatures = mutableListOf<Signature>()
 
     override fun isComplete(): Boolean {
         return signatures.size >= threshold

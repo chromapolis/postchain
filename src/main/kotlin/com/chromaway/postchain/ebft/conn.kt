@@ -299,7 +299,7 @@ class CommManager<PT> (val myIndex: Int,
         // packet decoding should not be synchronized so we can make
         // use of parallel processing in different threads
         val decodedPacket = packetConverter.decodePacket(peerIndex, packet)
-        logger.debug("Receiving ${myIndex} -> $peerIndex: $decodedPacket")
+        logger.debug("Receiving $peerIndex -> ${myIndex}: $decodedPacket")
         synchronized(this) {
             inboundPackets.add(Pair(peerIndex, decodedPacket))
         }

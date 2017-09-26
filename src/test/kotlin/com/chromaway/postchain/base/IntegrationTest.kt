@@ -149,7 +149,7 @@ open class IntegrationTest {
     }
 
     protected fun createEngines(count: Int): Array<DataLayer> {
-        return Array(count, { createDataLayer(it) })
+        return Array(count, { createDataLayer(it, count) })
     }
 
     protected fun createDataLayer(nodeIndex: Int, nodeCount: Int = 1): DataLayer {

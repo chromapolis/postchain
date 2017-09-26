@@ -2,6 +2,7 @@ package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
+import mu.KLogging
 import nl.komponents.kovenant.Promise
 import java.util.*
 
@@ -9,7 +10,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
     : BlockManager {
     @Volatile var processing = false
     var intent : BlockIntent = DoNothingIntent
-
+    companion object: KLogging()
     override var currentBlock: BlockData? = null
 
     @Synchronized
@@ -24,6 +25,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
             })
             promise.fail { err ->
                 processing = false
+                logger.debug("Error in runDBOp()", err)
             }
         }
     }

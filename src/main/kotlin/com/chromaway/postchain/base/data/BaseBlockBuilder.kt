@@ -36,7 +36,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
         if (!(w is MultiSigBlockWitness)) {
             throw ProgrammerError("Invalid BlockWitness impelmentation.")
         }
-        val witnessBuilder = getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
+        val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, getRequiredSigCount())
         for (signature in w.getSignatures()) {
             witnessBuilder.applySignature(signature)
         }
@@ -47,6 +47,14 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
         if (!finalized) {
             throw ProgrammerError("Block is not finalized yet.")
         }
+        val requiredSigs: Int = getRequiredSigCount()
+
+        val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, getRequiredSigCount())
+        witnessBuilder.applySignature(blockSigner(_blockData!!.header.rawData))
+        return witnessBuilder
+    }
+
+    private fun getRequiredSigCount(): Int {
         val requiredSigs: Int
         if (subjects.size == 3) {
             requiredSigs = 3
@@ -55,10 +63,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
             //return signers.signers.length - maxFailedNodes;
             requiredSigs = 2 * maxFailedNodes.toInt() + 1
         }
-
-        val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, requiredSigs, blockSigner)
-
-        return witnessBuilder
+        return requiredSigs
     }
 
 }

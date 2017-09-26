@@ -4,11 +4,13 @@ import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.base.IntegrationTest.DataLayer
 import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.BlockWitness
+import com.chromaway.postchain.core.ProgrammerError
 import mu.KLogging
 import org.junit.After
 import org.junit.Test
 import org.junit.Assert.*
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 class FullEbftTest : IntegrationTest() {
@@ -37,42 +39,50 @@ class FullEbftTest : IntegrationTest() {
         nodes.forEach { it.close() }
     }
 
+    class CommitListener(): BlockLifecycleListener() {
+        val queue = LinkedBlockingQueue<BlockWitness?>()
+        var height = 0;
+        override fun commitDone(witness: BlockWitness?) {
+            logger.info("Commit height ${height++} done")
+            if (queue.size > 0) {
+                logger.error("Committed multiple times", ProgrammerError(""))
+                fail()
+            }
+            queue.add(witness)
+        }
+
+        fun awaitCommitted() {
+            try {
+                logger.info("Awaiting commit")
+                queue.take()
+            } finally {
+                logger.info("Finished Awaiting commit")
+            }
+        }
+    }
+
     @Test
     fun setupThreeNodesAndStartUpdating() {
         nodes = createEbftNodes(3)
 
-        val listener = object : BlockLifecycleListener() {
-            val queue = LinkedBlockingQueue<BlockWitness?>(1)
-            var height = 0;
-            override fun commitDone(witness: BlockWitness?) {
-                logger.info("Commit height ${height++/nodes.size} done")
-                queue.add(witness)
-            }
+        val listeners = nodes.map { CommitListener() }
 
-            fun awaitCommitted() {
-                try {
-                    logger.info("Awaiting commit")
-                    for (node in nodes) {
-                        queue.take()
-                    }
-                } finally {
-                    logger.info("Finished Awaiting commit")
-                }
-            }
-        }
-
-        nodes.forEach { it.dataLayer.engine.addBlockLifecycleListener(listener) }
+        val stopMe = AtomicBoolean(false)
+        nodes.forEachIndexed { index, ebftNode -> ebftNode.dataLayer.engine.addBlockLifecycleListener(listeners[index]) }
         thread(name = "updateLoop") {
             while (true) {
                 nodes.forEach { it.syncManager.update() }
+                if (stopMe.get()) {
+                    break
+                }
                 Thread.sleep(100)
             }
         }
         nodes[0].statusManager.setBlockIntent(BuildBlockIntent)
         for (i in 0 until 10) {
-            listener.awaitCommitted()
+            listeners.forEach({it.awaitCommitted()})
         }
-
+        stopMe.set(true)
         val queries0 = nodes[0].dataLayer.blockQueries;
         val referenceHeight = queries0.getBestHeight().get()
         nodes.forEach { node ->

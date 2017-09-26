@@ -6,11 +6,8 @@ import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.TransactionQueue
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
-import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.BlockLifecycleListener
-import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.Transaction
 
 open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                                 val s: Storage,
@@ -52,7 +49,7 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
         // TODO handle a case with 0 transactions - Done
         // TODO what if more transactions arrive? - They will wait until next block
         // TODO block size policy goes here - Uhm, ok.
-        blockBuilder.finalize()
+        blockBuilder.finalizeBlock()
         return blockBuilder
     }
 

@@ -17,7 +17,8 @@ class BaseManagedBlockBuilder(
     var closed: Boolean = false
 
     fun <RT> runOp(fn: () -> RT): RT {
-        if (closed) throw Error("Already closed")
+        if (closed)
+            throw Error("Already closed")
         try {
             return fn()
         } catch (e: Exception) {
@@ -65,9 +66,8 @@ class BaseManagedBlockBuilder(
         return true
     }
 
-
-    override fun finalize() {
-        runOp { bb.finalize() }
+    override fun finalizeBlock() {
+        runOp { bb.finalizeBlock() }
         lifecycleListeners.forEach({it.finalizeBlockDone(bb.getBlockData().header)})
     }
 
@@ -89,7 +89,7 @@ class BaseManagedBlockBuilder(
         runOp { bb.commit(w) }
         closed = true
         s.closeWriteConnection(ctxt, true)
-        lifecycleListeners.forEach({it.commitDone(w)})
+        lifecycleListeners.forEach({ it.commitDone(w) })
     }
 
     override fun rollback() {
