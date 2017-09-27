@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 typealias Operation = () -> Unit
 
-class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQueries: BlockQueries) : BlockDatabase {
+class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQueries: BlockQueries, val nodeIndex: Int) : BlockDatabase {
 
     private val queue = SynchronousQueue<Operation>()
     @Volatile private var ready = true
@@ -20,8 +20,10 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     companion object : KLogging()
 
     @Synchronized fun stop () {
+        logger.debug("BaseBlockDatabase $nodeIndex stopping");
         keepGoing = false
-        queue.put({})
+        queue.offer({})
+        maybeRollback()
     }
 
     @Synchronized
@@ -31,6 +33,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
             deferred.reject(Exception("Not ready"))
         } else {
             ready = false
+            logger.debug("BaseBlockDatabase $nodeIndex putting a job");
             queue.put({
                 try {
                     val res = op()
@@ -46,7 +49,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     init {
-        thread(name="BlockOperation") {
+        thread(name="${nodeIndex}-BlockOperationProcessor") {
             while (keepGoing) {
                 val op = queue.take()
                 op()
@@ -55,11 +58,13 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     private fun maybeRollback() {
+        logger.debug("BaseBlockDatabase $nodeIndex maybeRollback.");
         if (blockBuilder != null) {
-            blockBuilder?.rollback()
-            blockBuilder = null
-            witnessBuilder = null
+            logger.debug("BaseBlockDatabase $nodeIndex blockBuilder is not null.");
         }
+        blockBuilder?.rollback()
+        blockBuilder = null
+        witnessBuilder = null
     }
 
     override fun addBlock(block: BlockDataWithWitness): Promise<Unit, Exception> {

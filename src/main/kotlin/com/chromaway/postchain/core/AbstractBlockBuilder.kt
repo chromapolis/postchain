@@ -23,7 +23,7 @@ abstract class AbstractBlockBuilder (
 
     override fun begin() {
         iBlockData = store.beginBlock(ectx)
-        bctx = BlockEContext(ectx.conn, ectx.chainID, iBlockData.blockIID)
+        bctx = BlockEContext(ectx.conn, ectx.chainID, ectx.nodeID, iBlockData.blockIID)
     }
 
     override fun appendTransaction(tx: Transaction) {

@@ -1,13 +1,13 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.core.BlockData
-import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.BlockStore
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.MultiSigBlockWitness
+import com.chromaway.postchain.core.ProgrammerError
 import com.chromaway.postchain.core.Signature
+import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.UserError
 import mu.KLogging
 import nl.komponents.kovenant.Promise
@@ -34,11 +34,7 @@ class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfigurat
 
     override fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception> {
         return runOp({ ctx ->
-            val height = blockStore.getBlockHeight(ctx, blockRID)
-            if (height == null) {
-                throw UserError("Trying go get signature of non-existing block")
-            }
-            val witnessData = blockStore.getWitnessData(ctx, height)
+            val witnessData = blockStore.getWitnessData(ctx, blockRID)
             val witness = blockchainConfiguration.decodeWitness(witnessData) as MultiSigBlockWitness
             val signature = witness.getSignatures().find { it.subjectID.contentEquals(mySubjectId) }
             if (signature == null) {
@@ -53,4 +49,28 @@ class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfigurat
             blockStore.getLastBlockHeight(it)
         }
     }
+
+    override fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception> {
+        return runOp {
+            val height = blockStore.getBlockHeight(it, blockRID)
+            if (height == null) {
+                throw ProgrammerError("BlockRID does not exist");
+            }
+            blockStore.getTxRIDsAtHeight(it, height).toList()
+        }
+    }
+
+    override fun getTransaction(txRID: ByteArray): Promise<Transaction, Exception> {
+        return runOp {
+            val txBytes = blockStore.getTxBytes(it, txRID)
+            blockchainConfiguration.getTransactionFactory().decodeTransaction(txBytes)
+        }
+    }
+
+    override fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception> {
+        return runOp {
+            blockStore.getBlockRIDs(it, height).toList()
+        }
+    }
+
 }

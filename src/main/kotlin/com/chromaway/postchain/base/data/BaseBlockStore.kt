@@ -11,12 +11,10 @@ import com.chromaway.postchain.core.ProgrammerError
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.TxEContext
-import com.chromaway.postchain.parseInt
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.BeanHandler
 import org.apache.commons.dbutils.handlers.BeanListHandler
 import org.apache.commons.dbutils.handlers.ColumnListHandler
-import org.apache.commons.dbutils.handlers.MapHandler
 import org.apache.commons.dbutils.handlers.ScalarHandler
 
 class BaseBlockStore : BlockStore {
@@ -36,10 +34,11 @@ class BaseBlockStore : BlockStore {
         if (prevHeight == -1L) {
             prevBlockRID = kotlin.ByteArray(32)
         } else {
-            prevBlockRID = getBlockRID(ctx, prevHeight)
-            if (prevBlockRID == null) {
+            val prevBlockRIDs = getBlockRIDs(ctx, prevHeight)
+            if (prevBlockRIDs.isEmpty()) {
                 throw ProgrammerError("Previous block had no RID. Check your block writing code!")
             }
+            prevBlockRID = prevBlockRIDs[0]
         }
 
         val blockIid = r.insert(ctx.conn,
@@ -55,7 +54,7 @@ class BaseBlockStore : BlockStore {
                         "VALUES (?, ?, ?, ?) RETURNING tx_iid",
                 longRes,
                 bctx.chainID, tx.getRID(), tx.getRawData(), bctx.blockIID)
-        return TxEContext(bctx.conn, bctx.chainID, bctx.blockIID, txIid)
+        return TxEContext(bctx.conn, bctx.chainID, bctx.nodeID, bctx.blockIID, txIid)
     }
 
     override fun finalizeBlock(bctx: BlockEContext, bh: BlockHeader) {
@@ -78,13 +77,13 @@ class BaseBlockStore : BlockStore {
                 nullableLongRes, ctx.chainID, blockRID)
     }
 
-    override fun getBlockRID(ctx: EContext, height: Long): ByteArray? {
+    override fun getBlockRIDs(ctx: EContext, height: Long): List<ByteArray> {
         return r.query(ctx.conn,
                 "SELECT block_rid FROM blocks WHERE chain_id = ? AND block_height = ?",
-                nullableByteArrayRes, ctx.chainID, height)
+                byteArrayListRes, ctx.chainID, height)
     }
 
-    override fun getBlockData(ctx: EContext, height: Long): BlockData {
+    override fun getBlockData(ctx: EContext, blockRID: ByteArray): BlockData {
 //        val map = r.query(ctx.conn,
 //                "SELECT block_iid, block_rid, block_header FROM blocks WHERE chain_id = ? AND block_height = ? ",
 //                MapHandler(), ctx.chainID, height)
@@ -99,10 +98,10 @@ class BaseBlockStore : BlockStore {
         TODO("Implement")
     }
 
-    override fun getWitnessData(ctx: EContext, height: Long): ByteArray {
+    override fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray {
         return r.query(ctx.conn,
-                "SELECT block_witness FROM blocks WHERE chain_id = ? AND block_height = ?",
-                byteArrayRes, ctx.chainID, height)
+                "SELECT block_witness FROM blocks WHERE chain_id = ? AND block_rid = ?",
+                byteArrayRes, ctx.chainID, blockRID)
     }
 
     override fun getLastBlockHeight(ctx: EContext): Long {
@@ -121,7 +120,7 @@ class BaseBlockStore : BlockStore {
     }
 
     override fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray {
-        return r.query(ctx.conn, "SELECT tx_rid FROM " +
+        return r.query(ctx.conn, "SELECT tx_data FROM " +
                 "transactions WHERE chain_id=? AND tx_rid=?",
                 byteArrayRes, ctx.chainID, rid)
     }

@@ -39,10 +39,10 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
     }
 
     override fun buildBlock(): ManagedBlockBuilder {
-        val transactions = tq.getTransactions()
 //        if (transactions.isEmpty()) throw Error("No transactions to build a block")
         val blockBuilder = makeBlockBuilder()
         blockBuilder.begin()
+        val transactions = tq.getTransactions()
         for (tx in transactions) {
             blockBuilder.maybeAppendTransaction(tx)
         }

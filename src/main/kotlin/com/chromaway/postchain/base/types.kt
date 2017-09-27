@@ -1,8 +1,28 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.core.*
+import com.chromaway.postchain.core.BlockBuilder
+import com.chromaway.postchain.core.EContext
+import com.chromaway.postchain.core.Signature
+import com.chromaway.postchain.core.Transaction
+import java.util.concurrent.CountDownLatch
 
-data class PeerInfo(val host: String, val port: Int, val pubKey: ByteArray)
+open class PeerInfo(val host: String, open val port: Int, val pubKey: ByteArray)
+
+class DynamicPortPeerInfo(host: String, pubKey: ByteArray): PeerInfo(host, 0, pubKey) {
+    private val latch = CountDownLatch(1)
+    private var assignedPortNumber = 0
+
+    override val port: Int get() {
+        latch.await()
+        return assignedPortNumber
+    }
+
+    fun portAssigned(port: Int) {
+        assignedPortNumber = port
+        latch.countDown()
+    }
+}
+
 
 typealias Signer = (ByteArray) -> Signature
 typealias Verifier = (ByteArray, Signature) -> Boolean

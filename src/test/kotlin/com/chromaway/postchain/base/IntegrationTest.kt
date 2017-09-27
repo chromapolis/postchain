@@ -27,8 +27,8 @@ import javax.sql.DataSource
 
 open class IntegrationTest {
     private val nodes = mutableListOf<DataLayer>()
-    protected val blockStore = BaseBlockStore() as BlockStore
-    companion object: KLogging()
+
+    companion object : KLogging()
 //    private val privKeysHex = arrayOf("3132333435363738393031323334353637383930313233343536373839303131",
 //            "3132333435363738393031323334353637383930313233343536373839303132",
 //            "3132333435363738393031323334353637383930313233343536373839303133",
@@ -45,26 +45,27 @@ open class IntegrationTest {
         // private key index 0 is all zeroes except byte 16 which is 1
         // private key index 12 is all 12:s except byte 16 which is 1
         // reason for byte16=1 is that private key cannot be all zeroes
-        return ByteArray(32, {if (it == 16) 1.toByte() else index.toByte()})
+        return ByteArray(32, { if (it == 16) 1.toByte() else index.toByte() })
     }
+
     fun privKeyHex(index: Int): String {
         return privKey(index).toHex()
     }
+
     fun pubKey(index: Int): ByteArray {
         return secp256k1_derivePubKey(privKey(index))
     }
+
     fun pubKeyHex(index: Int): String {
         return pubKey(index).toHex()
     }
 
-    class DataLayer(val engine: BlockchainEngine, val txQueue: TestTxQueue,
-                    val readCtx: EContext, val blockchainConfiguration: BlockchainConfiguration,
+    class DataLayer(val engine: BlockchainEngine, val txQueue: TestTxQueue, val blockchainConfiguration: BlockchainConfiguration,
                     private val dataSources: Array<BasicDataSource>, val blockQueries: BlockQueries) {
         fun close() {
             dataSources.forEach {
                 it.close()
             }
-            readCtx.conn.close()
         }
     }
 
@@ -141,11 +142,17 @@ open class IntegrationTest {
         }
     }
 
+    // PeerInfos must be shared between all nodes because
+    // a listening node will update the PeerInfo port after
+    // ServerSocket is created.
+    var peerInfos: Array<PeerInfo>? = null
+
     @After
     fun tearDown() {
         nodes.forEach { it.close() }
         nodes.clear()
         logger.debug("Closed nodes");
+        peerInfos = null
     }
 
     protected fun createEngines(count: Int): Array<DataLayer> {
@@ -159,7 +166,7 @@ open class IntegrationTest {
         config.listDelimiterHandler = DefaultListDelimiterHandler(',')
 
         val factory = TestBlockchainConfigurationFactory()
-        config.addProperty("blockchain.$chainId.signers", Array(nodeCount, {pubKeyHex(it)}).reduce({ acc, value -> "$acc,$value" }))
+        config.addProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
         // append nodeIndex to schema name
         config.setProperty("database.schema", config.getString("database.schema") + nodeIndex)
         config.setProperty("blockchain.$chainId.privkey", privKeyHex(nodeIndex))
@@ -173,9 +180,7 @@ open class IntegrationTest {
         readDataSource.maxTotal = 2
         readDataSource.defaultReadOnly = true
 
-        val storage = BaseStorage(writeDataSource, readDataSource)
-
-        val readCtx = storage.openReadConnection(chainId)
+        val storage = BaseStorage(writeDataSource, readDataSource, nodeIndex)
 
         val txQueue = TestTxQueue()
 
@@ -184,7 +189,7 @@ open class IntegrationTest {
 
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val node = DataLayer(engine, txQueue, readCtx, blockchainConfiguration, arrayOf(readDataSource, writeDataSource), blockQueries)
+        val node = DataLayer(engine, txQueue, blockchainConfiguration, arrayOf(readDataSource, writeDataSource), blockQueries)
         // keep list of nodes to close after test
         nodes.add(node)
         return node
@@ -213,16 +218,23 @@ open class IntegrationTest {
         queryRunner.update(conn, "DROP SCHEMA IF EXISTS $schema CASCADE")
         queryRunner.update(conn, "CREATE SCHEMA $schema")
         // Implementation specific initialization.
-        (blockStore as BaseBlockStore).initialize(EContext(conn, 1))
+        BaseBlockStore().initialize(EContext(conn, 1, 0))
         conn.commit()
         conn.close()
     }
 
     protected fun createBasePeerCommConfiguration(nodeCount: Int, myIndex: Int): BasePeerCommConfiguration {
-        val pubKeysToUse = Array<ByteArray>(nodeCount, { pubKey(it) })
-        val peerInfos = Array(nodeCount, { PeerInfo("localhost", 53190 + it, pubKeysToUse[it]) })
+        val peerInfos = createPeerInfos(nodeCount)
         val privKey = privKey(myIndex)
         return BasePeerCommConfiguration(peerInfos, myIndex, SECP256K1CryptoSystem(), privKey)
+    }
+
+    private fun createPeerInfos(nodeCount: Int): Array<PeerInfo> {
+        if (peerInfos == null) {
+            val pubKeysToUse = Array<ByteArray>(nodeCount, { pubKey(it) })
+            peerInfos = Array<PeerInfo>(nodeCount, { DynamicPortPeerInfo("localhost", pubKeysToUse[it]) })
+        }
+        return peerInfos!!
     }
 
     protected fun arrayOfBasePeerCommConfigurations(count: Int): Array<BasePeerCommConfiguration> {

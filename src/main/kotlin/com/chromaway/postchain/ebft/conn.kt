@@ -1,5 +1,6 @@
 package com.chromaway.postchain.ebft
 
+import com.chromaway.postchain.base.DynamicPortPeerInfo
 import com.chromaway.postchain.base.PeerCommConfiguration
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -168,8 +169,7 @@ class PassivePeerConnection(
 
 class ActivePeerConnection(
         id: Int,
-        val host: String,
-        val port: Int,
+        val peer: PeerInfo,
         val packetConverter: InitPacketConverter,
         packetHandler: (Int, ByteArray) -> Unit,
         log: (Exception) -> Unit,
@@ -182,7 +182,7 @@ class ActivePeerConnection(
         while (keepGoing) {
             try {
                 if (socket != null && !(socket!!.isClosed)) socket!!.close()
-                socket = Socket(host, port)
+                socket = Socket(peer.host, peer.port)
                 // writer loop sets up a serverSocket then waits for read loop to sync
                 // if exception is thrown when connecting, read loop will just wait for the next cycle
                 connAvail.await()
@@ -225,7 +225,7 @@ class ActivePeerConnection(
 }
 
 class PeerConnectionAcceptor(
-        port: Int,
+        peer: PeerInfo,
         val initPacketConverter: InitPacketConverter,
         val packetHandler: (Int, ByteArray) -> Unit,
         val log: (Exception) -> Unit,
@@ -238,9 +238,13 @@ class PeerConnectionAcceptor(
     companion object : KLogging()
 
     init {
-        logger.info("Starting server on port $port")
-        serverSocket = ServerSocket(port)
-        logger.info("Starting server on port $port done")
+        if (peer is DynamicPortPeerInfo) {
+            serverSocket = ServerSocket(0)
+            peer.portAssigned(serverSocket.localPort)
+        } else {
+            serverSocket = ServerSocket(peer.port)
+        }
+        logger.info("Starting server on port ${peer.port} done")
         thread(name="$myIndex-acceptLoop") { acceptLoop() }
     }
 
@@ -351,7 +355,7 @@ class CommManager<PT> (val myIndex: Int,
         val connlist = mutableListOf<AbstractPeerConnection>()
         for ((index, peer) in peers.withIndex()) {
             if (index < myIndex) {
-                val conn = ActivePeerConnection(index, peer.host, peer.port,
+                val conn = ActivePeerConnection(index, peer,
                         packetConverter,
                         { idx, packet -> decodeAndEnqueue(idx, packet) },
                         log, myIndex)
@@ -364,7 +368,7 @@ class CommManager<PT> (val myIndex: Int,
         connections = connlist.toTypedArray()
         encoderThread = thread(name="$myIndex-encoderLoop") { encoderLoop() }
         connAcceptor = PeerConnectionAcceptor(
-                peers[myIndex].port,
+                peers[myIndex],
                 packetConverter,
                 { idx, packet -> decodeAndEnqueue(idx, packet) },
                 log,

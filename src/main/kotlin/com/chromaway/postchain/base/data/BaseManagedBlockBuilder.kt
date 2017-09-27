@@ -93,6 +93,7 @@ class BaseManagedBlockBuilder(
     }
 
     override fun rollback() {
+        logger.debug("${ctxt.nodeID} BaseManagedBlockBuilder.rollback()")
         if (closed) throw Error("Already closed")
         closed = true
         s.closeWriteConnection(ctxt, false)

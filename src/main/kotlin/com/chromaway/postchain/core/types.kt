@@ -15,13 +15,13 @@ import java.util.Arrays
 6. Transaction object can perform its duties according to the configuration it received, perhaps creating sub-objects called transactors and passing them the configuration.
  */
 // TODO: can we generalize conn? We can make it an Object, but then we have to do typecast everywhere...
-open class EContext(val conn: Connection, val chainID: Int)
+open class EContext(val conn: Connection, val chainID: Int, val nodeID: Int)
 
-open class BlockEContext(conn: Connection, chainID: Int, val blockIID: Long)
-    : EContext(conn, chainID)
+open class BlockEContext(conn: Connection, chainID: Int, nodeID: Int, val blockIID: Long)
+    : EContext(conn, chainID, nodeID)
 
-class TxEContext(conn: Connection, chainID: Int, blockIID: Long, val txIID: Long)
-    : BlockEContext(conn, chainID, blockIID)
+class TxEContext(conn: Connection, chainID: Int, nodeID: Int, blockIID: Long, val txIID: Long)
+    : BlockEContext(conn, chainID, nodeID, blockIID)
 
 interface BlockHeader {
     val prevBlockRID: ByteArray
@@ -121,6 +121,9 @@ interface TransactionFactory {
 interface BlockQueries {
     fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>
     fun getBestHeight(): Promise<Long, Exception>
+    fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception>
+    fun getTransaction(txRID: ByteArray): Promise<Transaction, Exception>
+    fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception>
 }
 
 interface BlockBuilder {
@@ -142,10 +145,10 @@ interface BlockStore {
     fun finalizeBlock(bctx: BlockEContext, bh: BlockHeader)
     fun commitBlock(bctx: BlockEContext, w: BlockWitness?)
     fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long? // returns null if not found
-    fun getBlockRID(ctx: EContext, height: Long): ByteArray? // returns null if height is out of range
+    fun getBlockRIDs(ctx: EContext, height: Long): List<ByteArray> // returns null if height is out of range
     fun getLastBlockHeight(ctx: EContext): Long // height of the last block, first block has height 0
-    fun getBlockData(ctx: EContext, height: Long): BlockData
-    fun getWitnessData(ctx: EContext, height: Long): ByteArray
+    fun getBlockData(ctx: EContext, blockRID: ByteArray): BlockData
+    fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray
 
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray

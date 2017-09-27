@@ -5,17 +5,22 @@ import com.chromaway.postchain.base.IntegrationTest.DataLayer
 import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.ProgrammerError
+import junitparams.JUnitParamsRunner
+import junitparams.Parameters
 import mu.KLogging
 import org.junit.After
 import org.junit.Test
 import org.junit.Assert.*
+import org.junit.Before
+import org.junit.runner.RunWith
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
+@RunWith(JUnitParamsRunner::class)
 class FullEbftTest : IntegrationTest() {
     companion object : KLogging()
-    lateinit var nodes: Array<EbftNode>
+    private var ebftNodes: Array<EbftNode> = arrayOf()
     fun createEbftNodes(count: Int): Array<EbftNode> {
         return Array(count, { createEBFTNode(count, it) })
     }
@@ -24,19 +29,45 @@ class FullEbftTest : IntegrationTest() {
         val dataLayer = createDataLayer(myIndex, nodeCount)
         val ectxt = TestErrorContext()
         val statusManager = BaseStatusManager(ectxt, nodeCount, myIndex)
-        val blockDatabase = BaseBlockDatabase(dataLayer.engine, dataLayer.blockQueries)
+        val blockDatabase = BaseBlockDatabase(dataLayer.engine, dataLayer.blockQueries, myIndex)
         val blockManager = BaseBlockManager(blockDatabase, statusManager, ectxt)
 
         val commConfiguration = createBasePeerCommConfiguration(nodeCount, myIndex)
         val commManager = makeCommManager(commConfiguration)
 
         val syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager, dataLayer.blockchainConfiguration)
-        return EbftNode(syncManager, dataLayer, statusManager, blockManager)
+        return EbftNode(syncManager, blockDatabase, dataLayer, statusManager, blockManager)
+    }
+
+    var updateLoop: Thread? = null
+    @Before
+    fun setupEbftNodes() {
+    }
+
+    val stopMe = AtomicBoolean(false)
+    private fun startUpdateLoop() {
+        updateLoop = thread(name = "updateLoop") {
+            while (true) {
+                if (stopMe.get()) {
+                    break
+                }
+                ebftNodes.forEach { it.syncManager.update() }
+                if (stopMe.get()) {
+                    break
+                }
+                Thread.sleep(100)
+            }
+        }
     }
 
     @After
-    fun tearDownEbftNode() {
-        nodes.forEach { it.close() }
+    fun tearDownEbftNodes() {
+        stopMe.set(true)
+        ebftNodes.forEach {
+            it.close()
+        }
+        ebftNodes = arrayOf()
+        updateLoop?.join()
     }
 
     class CommitListener(): BlockLifecycleListener() {
@@ -59,45 +90,77 @@ class FullEbftTest : IntegrationTest() {
                 logger.info("Finished Awaiting commit")
             }
         }
+
+        val allowBeginBlock = LinkedBlockingQueue<Boolean>()
+        override fun beginBlockDone() {
+            allowBeginBlock.take()
+        }
+        fun releaseBlock() {
+            allowBeginBlock.add(true)
+        }
     }
 
     @Test
-    fun setupThreeNodesAndStartUpdating() {
-        nodes = createEbftNodes(3)
+    @Parameters("3, 1, 0",  "3, 2, 0",  "3, 10, 0",
+                "3, 1, 10", "3, 2, 10", "3, 10, 10",
+                "4, 1, 0",  "4, 2, 0",  "4, 10, 0",
+                "4, 1, 10", "4, 2, 10", "4, 10, 10",
+                "8, 1, 0",  "8, 2, 0",  "8, 10, 0",
+                "8, 1, 10", "8, 2, 10", "8, 10, 10"
+                )
+    fun runXNodesWithYTxPerBlock(nodeCount: Int, blockCount: Int, txPerBlock: Int) {
+        ebftNodes = createEbftNodes(nodeCount)
+        startUpdateLoop()
 
-        val listeners = nodes.map { CommitListener() }
+        val listeners = ebftNodes.map { CommitListener() }
 
-        val stopMe = AtomicBoolean(false)
-        nodes.forEachIndexed { index, ebftNode -> ebftNode.dataLayer.engine.addBlockLifecycleListener(listeners[index]) }
-        thread(name = "updateLoop") {
-            while (true) {
-                nodes.forEach { it.syncManager.update() }
-                if (stopMe.get()) {
-                    break
-                }
-                Thread.sleep(100)
+        ebftNodes.forEachIndexed { index, ebftNode -> ebftNode.dataLayer.engine.addBlockLifecycleListener(listeners[index]) }
+
+        ebftNodes[0].statusManager.setBlockIntent(BuildBlockIntent)
+        var txId = 0;
+        for (i in 0 until blockCount) {
+            for (tx in 0 until txPerBlock) {
+                ebftNodes[i % nodeCount].dataLayer.txQueue.add(TestTransaction(txId++))
             }
-        }
-        nodes[0].statusManager.setBlockIntent(BuildBlockIntent)
-        for (i in 0 until 10) {
+            listeners.forEach({it.releaseBlock()})
             listeners.forEach({it.awaitCommitted()})
         }
-        stopMe.set(true)
-        val queries0 = nodes[0].dataLayer.blockQueries;
+        val queries0 = ebftNodes[0].dataLayer.blockQueries;
         val referenceHeight = queries0.getBestHeight().get()
-        nodes.forEach { node ->
+        ebftNodes.forEach { node ->
             val queries = node.dataLayer.blockQueries;
             assertEquals(referenceHeight, queries.getBestHeight().get())
+            for (height in 0..referenceHeight) {
+                val rids = queries.getBlockRids(height).get()
+                assertEquals(1, rids.size)
+                val txs = queries.getBlockTransactionRids(rids[0]).get()
+                assertEquals(txPerBlock, txs.size)
+                for (tx in 0 until txPerBlock) {
+                    val expectedTx = TestTransaction((height * txPerBlock + tx).toInt())
+                    assertArrayEquals(expectedTx.getRID(), txs[tx])
+                    val actualTx = queries.getTransaction(txs[tx]).get()
+                    assertArrayEquals(expectedTx.getRID(), actualTx.getRID())
+                    assertArrayEquals(expectedTx.getRawData(), actualTx.getRawData())
+                }
+            }
         }
-        assertEquals(1, 1)
-
     }
-
 }
 
-class EbftNode(val syncManager: SyncManager, val dataLayer: DataLayer, val statusManager: BaseStatusManager, val blockManager: BlockManager) {
+class EbftNode(val syncManager: SyncManager, val blockDatabase: BaseBlockDatabase, val dataLayer: DataLayer, val statusManager: BaseStatusManager, val blockManager: BlockManager) {
+    companion object : KLogging()
     fun close() {
-        syncManager.commManager.stop()
+        try {
+            // Ordering is important.
+            // 1. Close the data sources so that new blocks cant be started
+            dataLayer.close()
+            // 2. Close the listening port and all TCP connections
+            syncManager.commManager.stop()
+            // 3. Stop any in-progress blocks
+            blockDatabase.stop()
+        } catch (e: Throwable) {
+            logger.error("Failed closing EbftNode", e);
+        }
     }
 }
 

@@ -3,13 +3,15 @@ package com.chromaway.postchain.base.data
 import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.ProgrammerError
+import mu.KLogging
 import javax.sql.DataSource
 
-class BaseStorage(private val writeDataSource: DataSource, private val readDataSource: DataSource) : Storage {
+class BaseStorage(private val writeDataSource: DataSource, private val readDataSource: DataSource, private val nodeId: Int) : Storage {
+    companion object: KLogging()
 
     private fun getConnection(chainID: Int, dataSource: DataSource): EContext {
         val connection = dataSource.connection
-        return EContext(connection, chainID)
+        return EContext(connection, chainID, nodeId)
     }
 
     override fun openReadConnection(chainID: Int): EContext {
@@ -33,6 +35,7 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
 
     override fun closeWriteConnection(ectxt: EContext, commit: Boolean) {
         val conn = ectxt.conn
+        logger.debug("${ectxt.nodeID} BaseStorage.closeWriteConnection()")
         if (conn.isReadOnly) {
             throw ProgrammerError("trying to close a read-only connection as a writeable connection")
         }

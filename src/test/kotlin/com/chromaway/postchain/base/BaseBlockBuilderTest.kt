@@ -1,17 +1,6 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.core.BlockBuilder
-import com.chromaway.postchain.core.BlockStore
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.InitialBlockData
-import com.chromaway.postchain.core.TransactionFactory
-import com.chromaway.postchain.test.MockCryptoSystem
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Test
-import java.sql.Connection
 
 class BaseBlockBuilderTest {
     @Test
