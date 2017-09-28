@@ -33,7 +33,12 @@ abstract class AbstractBlockBuilder (
         if (!tx.isCorrect()) {
             throw UserError("Transaction ${tx.getRID().toHex()} is not correct")
         }
-        val txctx = store.addTransaction(bctx, tx)
+        val txctx: TxEContext
+        try {
+            txctx = store.addTransaction(bctx, tx)
+        } catch (e: Exception) {
+            throw UserError("Faild to save tx to database", e)
+        }
         // In case of errors, tx.apply may either return false or throw UserError
         if (tx.apply(txctx)) {
             transactions.add(tx.getRawData())

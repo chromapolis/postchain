@@ -290,9 +290,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
                 val primaryBlockRID = this.nodeStatuses[this.primaryIndex()].blockRID
                 if (primaryBlockRID != null) {
                     val _intent = intent
-                    // Don't update intent if
                     if (!(_intent is FetchUnfinishedBlockIntent &&
-//                            _intent.blockRID != null &&
                             Arrays.equals(_intent.blockRID, myStatus.blockRID))) {
                         intent = FetchUnfinishedBlockIntent(primaryBlockRID)
                         return true

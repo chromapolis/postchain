@@ -4,7 +4,10 @@ import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import mu.KLogging
 import nl.komponents.kovenant.Promise
-import java.util.*
+import java.util.Arrays
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import java.util.function.Supplier
 
 class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusManager, val ectxt: ErrContext)
     : BlockManager {
@@ -30,6 +33,25 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
         }
     }
 
+    @Synchronized
+    protected fun<RT> runDBOp2(op: () -> Supplier<RT>, onSuccess: (RT)->Unit) {
+        if (!processing) {
+            processing = true
+            intent = DoNothingIntent
+            CompletableFuture.supplyAsync(op).
+                    thenApply({
+                        processing = false
+                        onSuccess(it.get())
+                    })
+            try {
+                onSuccess(op().get())
+            } catch (e: ExecutionException) {
+                logger.debug("Error in runDBOp()", e.cause)
+            } finally {
+                processing = false
+            }
+        }
+    }
 
     override fun onReceivedUnfinishedBlock(block: BlockData) {
         val theIntent = intent
@@ -52,8 +74,7 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
              && theIntent.height == height)
         {
             runDBOp({
-                blockDB.addBlock(block)
-            }, {
+                blockDB.addBlock(block)}, {
                 if (statusManager.onHeightAdvance(height + 1)) {
                     currentBlock = null
                 }

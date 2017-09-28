@@ -303,7 +303,7 @@ class CommManager<PT> (val myIndex: Int,
         // packet decoding should not be synchronized so we can make
         // use of parallel processing in different threads
         val decodedPacket = packetConverter.decodePacket(peerIndex, packet)
-        logger.debug("Receiving $peerIndex -> ${myIndex}: $decodedPacket")
+        logger.trace("Receiving $peerIndex -> ${myIndex}: $decodedPacket")
         synchronized(this) {
             inboundPackets.add(Pair(peerIndex, decodedPacket))
         }
@@ -327,7 +327,7 @@ class CommManager<PT> (val myIndex: Int,
             // the packet to exactly no recipients. So we don't allow that.
             throw ProgrammerError("Cannot send to no recipients. If you want to broadcast, please use broadcastPacket() instead")
         }
-        logger.debug("Sending $myIndex -> $recipients: $packet")
+        logger.trace("Sending $myIndex -> $recipients: $packet")
         outboundPackets.put(OutboundPacket(packet, recipients))
     }
 

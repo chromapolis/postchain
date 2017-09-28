@@ -7,6 +7,7 @@ import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.Signature
 import nl.komponents.kovenant.*
 import java.util.*
+import java.util.concurrent.Future
 
 interface ErrContext {
     fun fatal(msg: String)

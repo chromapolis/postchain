@@ -4,7 +4,6 @@ import com.chromaway.postchain.base.data.BaseBlockStore
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
 import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.core.BlockQueries
-import com.chromaway.postchain.core.BlockStore
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory
 import com.chromaway.postchain.core.EContext
@@ -22,6 +21,9 @@ import org.apache.commons.dbcp2.BasicDataSource
 import org.apache.commons.dbutils.QueryRunner
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.File
 import javax.sql.DataSource
 
@@ -86,13 +88,14 @@ open class IntegrationTest {
     }
 
     class TestTransactionFactory : TransactionFactory {
-        val specialTxs = mutableMapOf<Byte, Transaction>()
+        val specialTxs = mutableMapOf<Int, Transaction>()
 
         override fun decodeTransaction(data: ByteArray): Transaction {
-            if (specialTxs.containsKey(data[0])) {
-                return specialTxs[data[0]]!!
+            val id = DataInputStream(data.inputStream()).readInt();
+            if (specialTxs.containsKey(DataInputStream(data.inputStream()).readInt())) {
+                return specialTxs[id]!!
             }
-            val result = TestTransaction(data[0].toInt())
+            val result = TestTransaction(id)
             assertArrayEquals(result.getRawData(), data)
             return result
         }
@@ -108,11 +111,21 @@ open class IntegrationTest {
         }
 
         override fun getRawData(): ByteArray {
-            return ByteArray(id + 40, { id.toByte() })
+            return bytes(40)
+        }
+
+        private fun bytes(length: Int): ByteArray {
+            val byteStream = ByteArrayOutputStream(length)
+            val out = DataOutputStream(byteStream)
+            for (i in 0 until 10) {
+                out.writeInt(id)
+            }
+            out.flush()
+            return byteStream.toByteArray()
         }
 
         override fun getRID(): ByteArray {
-            return ByteArray(32, { id.toByte() })
+            return bytes(32)
         }
     }
 

@@ -1,64 +1,55 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.core.*
 import com.chromaway.postchain.base.ManagedBlockBuilder
+import com.chromaway.postchain.core.BlockData
+import com.chromaway.postchain.core.BlockDataWithWitness
+import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
+import com.chromaway.postchain.core.Signature
 import mu.KLogging
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import java.util.concurrent.SynchronousQueue
-import kotlin.concurrent.thread
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 typealias Operation = () -> Unit
 
 class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQueries: BlockQueries, val nodeIndex: Int) : BlockDatabase {
-
-    private val queue = SynchronousQueue<Operation>()
-    @Volatile private var ready = true
-    @Volatile private var keepGoing = true
+    private val executor = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+            SynchronousQueue<Runnable>(), ThreadFactory {
+        val t = Thread(it, "${nodeIndex}-BaseBlockDatabaseWorker")
+        t.isDaemon = true // So it can't block the JVM from exiting if still running
+        t
+    })
     private var blockBuilder: ManagedBlockBuilder? = null
     private var witnessBuilder: MultiSigBlockWitnessBuilder? = null
+
     companion object : KLogging()
 
-    @Synchronized fun stop () {
-        logger.debug("BaseBlockDatabase $nodeIndex stopping");
-        keepGoing = false
-        queue.offer({})
+    fun stop() {
+        logger.debug("BaseBlockDatabase $nodeIndex stopping")
+        executor.shutdownNow()
         maybeRollback()
     }
 
-    @Synchronized
-    private fun <RT>runOp(op: ()->RT): Promise<RT, Exception> {
+    private fun <RT> runOp(op: () -> RT): Promise<RT, Exception> {
         val deferred = deferred<RT, Exception>()
-        if (!ready) {
-            deferred.reject(Exception("Not ready"))
-        } else {
-            ready = false
-            logger.debug("BaseBlockDatabase $nodeIndex putting a job");
-            queue.put({
-                try {
-                    val res = op()
-                    ready = true
-                    deferred.resolve(res)
-                } catch (e: Exception) {
-                    ready = true
-                    deferred.reject(e)
-                }
-            })
-        }
+        logger.trace("BaseBlockDatabase $nodeIndex putting a job");
+        executor.execute({
+            try {
+                val res = op()
+                deferred.resolve(res)
+            } catch (e: Exception) {
+                deferred.reject(e)
+            }
+        })
         return deferred.promise
     }
 
-    init {
-        thread(name="${nodeIndex}-BlockOperationProcessor") {
-            while (keepGoing) {
-                val op = queue.take()
-                op()
-            }
-        }
-    }
-
     private fun maybeRollback() {
-        logger.debug("BaseBlockDatabase $nodeIndex maybeRollback.");
+        logger.trace("BaseBlockDatabase $nodeIndex maybeRollback.");
         if (blockBuilder != null) {
             logger.debug("BaseBlockDatabase $nodeIndex blockBuilder is not null.");
         }
@@ -92,6 +83,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
             witnessBuilder = null
         }
     }
+
     override fun buildBlock(): Promise<Pair<BlockData, Signature>, Exception> {
         return runOp {
             maybeRollback()

@@ -106,7 +106,7 @@ class FullEbftTest : IntegrationTest() {
                 "4, 1, 0",  "4, 2, 0",  "4, 10, 0",
                 "4, 1, 10", "4, 2, 10", "4, 10, 10",
                 "8, 1, 0",  "8, 2, 0",  "8, 10, 0",
-                "8, 1, 10", "8, 2, 10", "8, 10, 10"
+                "8, 1, 10", "8, 2, 10", "8, 10, 10"//"25, 100, 0"
                 )
     fun runXNodesWithYTxPerBlock(nodeCount: Int, blockCount: Int, txPerBlock: Int) {
         ebftNodes = createEbftNodes(nodeCount)
@@ -125,6 +125,12 @@ class FullEbftTest : IntegrationTest() {
             listeners.forEach({it.releaseBlock()})
             listeners.forEach({it.awaitCommitted()})
         }
+
+        // Blocks may be built after last block because updater thread keeps running
+        // If so, we should not block those blocks from executing or we will
+        // block the next test from
+        listeners.forEach({it.releaseBlock()})
+
         val queries0 = ebftNodes[0].dataLayer.blockQueries;
         val referenceHeight = queries0.getBestHeight().get()
         ebftNodes.forEach { node ->
