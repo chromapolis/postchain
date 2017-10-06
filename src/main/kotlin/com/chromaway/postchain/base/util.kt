@@ -8,7 +8,13 @@ fun String.hexStringToByteArray() : ByteArray {
 
     for (i in 0 until length step 2) {
         val firstIndex = HEX_CHARS.indexOf(this[i])
+        if (firstIndex == -1) {
+            throw ArrayIndexOutOfBoundsException("Char ${this[i]} is not a hex digit")
+        }
         val secondIndex = HEX_CHARS.indexOf(this[i + 1])
+        if (secondIndex == -1) {
+            throw ArrayIndexOutOfBoundsException("Char ${this[i]} is not a hex digit")
+        }
 
         val octet = firstIndex.shl(4).or(secondIndex)
         result.set(i.shr(1), octet.toByte())
