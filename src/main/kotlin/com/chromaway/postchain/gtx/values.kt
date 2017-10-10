@@ -13,8 +13,8 @@ enum class GTXValueType {
 
 interface GTXValue {
     val type: GTXValueType
-    fun get(i: Int): GTXValue
-    fun get(s: String): GTXValue?
+    operator fun get(i: Int): GTXValue
+    operator fun get(s: String): GTXValue?
     fun asString(): String
     fun asArray(): Array<out GTXValue>
     fun getSize(): Int
@@ -61,11 +61,11 @@ fun gtx(dict: Map<String, GTXValue>): GTXValue { return DictGTXValue(dict) }
 // gtx("arg1" to gtx(5), "arg2" to GTX_NULL)
 
 abstract class AbstractGTXValue: GTXValue {
-    override fun get(i: Int): GTXValue {
+    override operator fun get(i: Int): GTXValue {
         throw Error("Type error: array expected")
     }
 
-    override fun get(s: String): GTXValue? {
+    override operator fun get(s: String): GTXValue? {
         throw Error("Type error: dict expected")
     }
 
@@ -101,7 +101,7 @@ abstract class AbstractGTXValue: GTXValue {
 class ArrayGTXValue(val array: Array<out GTXValue>): AbstractGTXValue() {
     override val type = GTXValueType.ARRAY
 
-    override fun get(i: Int): GTXValue {
+    override operator fun get(i: Int): GTXValue {
         return array[i]
     }
 
@@ -130,7 +130,7 @@ fun makeDictPair (name: String, value: RawGTXValue): DictPair {
 class DictGTXValue(val dict: Map<String, GTXValue>): AbstractGTXValue() {
     override val type = GTXValueType.DICT
 
-    override fun get(s: String): GTXValue? {
+    override operator fun get(s: String): GTXValue? {
         return dict[s]
     }
 
