@@ -37,6 +37,7 @@ interface PeerCommConfiguration {
 interface CryptoSystem {
     fun digest(bytes: ByteArray): ByteArray
     fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer
+    fun verifyDigest(ddigest: ByteArray, s: Signature): Boolean
     fun makeVerifier(): Verifier
 }
 
