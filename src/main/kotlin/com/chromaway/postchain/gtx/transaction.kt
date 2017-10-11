@@ -1,7 +1,9 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.CryptoSystem
+import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
 import com.chromaway.postchain.core.*
+import org.apache.commons.configuration2.Configuration
 
 class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: CryptoSystem): Transaction {
 
@@ -66,5 +68,21 @@ class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: Crypto
 class GTXTransactionFactory(val module: GTXModule, val cs: CryptoSystem): TransactionFactory {
     override fun decodeTransaction(data: ByteArray): Transaction {
         return GTXTransaction(data, module, cs)
+    }
+}
+
+class GTXBlockchainConfiguration(chainID: Long, config: Configuration, module: GTXModule)
+    :BaseBlockchainConfiguration(chainID, config)
+{
+    val txFactory = GTXTransactionFactory(module, cryptoSystem)
+
+    override fun getTransactionFactory(): TransactionFactory {
+        return txFactory
+    }
+}
+
+class GTXBlockchainConfigurationFactory(val module: GTXModule): BlockchainConfigurationFactory {
+    override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
+        return GTXBlockchainConfiguration(chainID, config, module)
     }
 }

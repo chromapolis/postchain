@@ -19,7 +19,7 @@ import org.apache.commons.configuration2.Configuration
 open class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
         BlockchainConfiguration {
     override val traits = setOf<String>()
-    private val cryptoSystem = SECP256K1CryptoSystem()
+    val cryptoSystem = SECP256K1CryptoSystem()
     val blockStore = BaseBlockStore()
 
     override fun decodeBlockHeader(rawBlockHeader: ByteArray): BlockHeader {

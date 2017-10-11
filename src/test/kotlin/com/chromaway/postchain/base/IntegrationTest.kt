@@ -172,13 +172,17 @@ open class IntegrationTest {
         return Array(count, { createDataLayer(it, count) })
     }
 
+    protected open fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
+        return TestBlockchainConfigurationFactory()
+    }
+
     protected fun createDataLayer(nodeIndex: Int, nodeCount: Int = 1): DataLayer {
         val chainId = 1
         val configs = Configurations()
         val config = configs.properties(File("config.properties"))
         config.listDelimiterHandler = DefaultListDelimiterHandler(',')
 
-        val factory = TestBlockchainConfigurationFactory()
+        val factory = makeTestBlockchainConfigurationFactory()
         config.addProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
         // append nodeIndex to schema name
         config.setProperty("database.schema", config.getString("database.schema") + nodeIndex)
