@@ -2,33 +2,39 @@ package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.SECP256K1CryptoSystem
 import com.chromaway.postchain.base.secp256k1_derivePubKey
+import com.chromaway.postchain.core.Signature
 import org.junit.Assert.*
 import org.junit.Test
-import java.io.ByteArrayOutputStream
 import java.lang.Error
-import java.lang.Exception
+
+fun mustThrowError(msg: String, code: ()->Unit) {
+    try {
+        code()
+        fail(msg)
+    } catch (e: Error) {}
+}
+
+fun privKey(index: Int): ByteArray {
+    // private key index 0 is all zeroes except byte 16 which is 1
+    // private key index 12 is all 12:s except byte 16 which is 1
+    // reason for byte16=1 is that private key cannot be all zeroes
+    return ByteArray(32, { if (it == 16) 1.toByte() else index.toByte() })
+}
+
+fun pubKey(index: Int): ByteArray {
+    return secp256k1_derivePubKey(privKey(index))
+}
+
 
 class GTXDataTest {
 
-    fun privKey(index: Int): ByteArray {
-        // private key index 0 is all zeroes except byte 16 which is 1
-        // private key index 12 is all 12:s except byte 16 which is 1
-        // reason for byte16=1 is that private key cannot be all zeroes
-        return ByteArray(32, { if (it == 16) 1.toByte() else index.toByte() })
-    }
-
-    fun pubKey(index: Int): ByteArray {
-        return secp256k1_derivePubKey(privKey(index))
-    }
-
-
     @Test
     fun testGTXData() {
-        val signerPub = (0..2).map(this::pubKey).toTypedArray()
-        val signerPriv = (0..2).map(this::privKey)
+        val signerPub = (0..3).map(::pubKey).toTypedArray()
+        val signerPriv = (0..3).map(::privKey)
         val crypto = SECP256K1CryptoSystem()
 
-        val b = GTXDataBuilder(signerPub, crypto)
+        val b = GTXDataBuilder(signerPub.slice(0..2).toTypedArray(), crypto)
         // primitives
         b.addOperation("hello", arrayOf(GTXNull, gtx(42), gtx("Wow"), gtx(signerPub[0])))
         // array of primitives
@@ -51,10 +57,16 @@ class GTXDataTest {
         val signature = crypto.makeSigner(signerPub[1], signerPriv[1])(dataForSigning)
         b2.addSignature(signature)
 
-        try {
+        mustThrowError("Allows duplicate signature") {
             b2.addSignature(signature, true)
-            fail("Added second signature")
-        } catch (e: Error) {}
+        }
+        mustThrowError("Allows invalid signature") {
+            b2.addSignature(Signature(signerPub[2], signerPub[2]), true)
+        }
+        mustThrowError("Allows signature from wrong participant") {
+            val wrongSignature = crypto.makeSigner(signerPub[3], signerPriv[3])(dataForSigning)
+            b2.addSignature(wrongSignature, true)
+        }
 
         b2.sign(crypto.makeSigner(signerPub[2], signerPriv[2]))
 
@@ -62,7 +74,9 @@ class GTXDataTest {
 
         val d = decodeGTXData(b2.serialize())
 
-        assertTrue(d.signers.contentDeepEquals(signerPub))
+        assertTrue(d.signers.contentDeepEquals(
+                signerPub.slice(0..2).toTypedArray()
+        ))
         assertEquals(3, d.signatures.size)
         assertEquals(4, d.operations.size)
         assertEquals("bro", d.operations[1].opName)
