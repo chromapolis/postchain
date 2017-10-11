@@ -4,6 +4,7 @@ import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
+import com.sun.org.apache.xpath.internal.operations.Bool
 import java.util.concurrent.CountDownLatch
 
 open class PeerInfo(val host: String, open val port: Int, val pubKey: ByteArray)
@@ -83,4 +84,9 @@ fun withWriteConnection(s: Storage, chainID: Int, fn: (EContext)->Boolean): Bool
 
 interface TransactionQueue {
     fun getTransactions(): Array<Transaction>
+}
+
+interface TransactionEnqueuer {
+    fun enqueue(tx: Transaction)
+    fun hasTx(txHash: ByteArray): Boolean
 }

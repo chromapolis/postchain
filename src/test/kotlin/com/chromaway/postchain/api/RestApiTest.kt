@@ -2,11 +2,10 @@ package com.chromaway.postchain.api
 
 import com.chromaway.postchain.api.rest.Model
 import com.chromaway.postchain.api.rest.RestApi
-import com.chromaway.postchain.api.rest.Transaction
+import com.chromaway.postchain.api.rest.ApiTx
 import com.chromaway.postchain.api.rest.TxHash
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.UserError
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import mu.KLogging
@@ -28,7 +27,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 
-class RestApiTest {
+class RestApiTest : RestTools() {
     val basePath = "/basepath"
     lateinit var restApi: RestApi
     lateinit var model: Model
@@ -41,7 +40,7 @@ class RestApiTest {
 
     @After
     fun tearDown() {
-        restApi?.stop()
+        restApi.stop()
         logger.debug { "Stopped" }
     }
 
@@ -62,7 +61,7 @@ class RestApiTest {
         }
 
     }
-    val hashHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    val hashHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
     @Test
     fun testGetTx404whenMissingHash() {
@@ -99,7 +98,7 @@ class RestApiTest {
 
     @Test
     fun testGetTxOk() {
-        expect(model.getTransaction(TxHash(hashHex.hexStringToByteArray()))).andReturn(Transaction("1234"))
+        expect(model.getTransaction(TxHash(hashHex.hexStringToByteArray()))).andReturn(ApiTx("1234"))
         replay(model)
         testGetTx("/tx/${hashHex}", 200, "{tx: \"1234\"}")
         verify(model)
@@ -113,7 +112,7 @@ class RestApiTest {
     @Test
     fun testPostTx() {
         val expectedTx = "hello".toByteArray().toHex()
-        model.postTransaction(Transaction(expectedTx))
+        model.postTransaction(ApiTx(expectedTx))
         replay(model)
 
         testPostTx(200, "{\"tx\": \"$expectedTx\"}")
@@ -158,78 +157,22 @@ class RestApiTest {
         testPostTx(400, "a")
     }
 
-    private fun requaest(method: String, path: String, reqBody: String?): TestResponse? {
-        try {
-            val url = URL("http://localhost:${restApi.actualPort()}" + basePath + path)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("content-type", "application/json")
-            connection.requestMethod = method
-            if (reqBody != null) {
-                connection.doOutput = true
-            }
-            connection.connect()
-            if (reqBody != null) {
-                val out = connection.outputStream
-                val writer = out.writer()
-                writer.write(reqBody)
-                writer.close()
-            }
-            if (connection.responseCode != 200) {
-                val body = BufferedReader(InputStreamReader(connection.errorStream)).readLine()
-                return TestResponse(connection.responseCode, body)
-            }
-            return TestResponse(connection.responseCode)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            fail("Sending request failed: " + e.message)
-            return null
-        }
+    @Test
+    fun testGetConfirmationProof404whenTxDoesNotExist() {
+        expect(model.getConfirmationProof(TxHash(hashHex.hexStringToByteArray()))).andReturn(null)
+        replay(model)
+        val response = get("/tx/$hashHex/confirmationProof")
+        assertEquals(404, response?.code)
+        verify(model)
     }
 
     private fun post(path: String, reqBody: String?): TestResponse? {
-        try {
-            val url = URL("http://localhost:${restApi.actualPort()}" + basePath + path)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("content-type", "application/json")
-            connection.requestMethod = "POST"
-            connection.doOutput = true
-            connection.connect()
-            val out = connection.outputStream
-            val writer = out.writer()
-            writer.write(reqBody)
-            writer.close()
-            if (connection.responseCode != 200) {
-                val body = BufferedReader(InputStreamReader(connection.errorStream)).readLine()
-                return TestResponse(connection.responseCode, body)
-            }
-            return TestResponse(connection.responseCode)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            fail("Sending request failed: " + e.message)
-            return null
-        }
+        return super.post(restApi.actualPort(), basePath + path, reqBody)
     }
 
 
     private fun get(path: String): TestResponse? {
-        try {
-            val url = URL("http://localhost:${restApi.actualPort()}" + basePath + path)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("content-type", "application/json")
-            connection.requestMethod = "GET"
-            connection.connect()
-            val body = if (connection.responseCode != 200) {
-                BufferedReader(InputStreamReader(connection.errorStream)).readLine()
-            } else {
-                BufferedReader(InputStreamReader(connection.inputStream)).readLine()
-            }
-            return TestResponse(connection.responseCode, body)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            fail("Sending request failed: " + e.message)
-            return null
-        }
+        return super.get(restApi.actualPort(), basePath + path)
     }
 }
 
-private data class TestResponse(val code: Int, val body: String? = null)

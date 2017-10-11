@@ -37,7 +37,7 @@ abstract class AbstractBlockBuilder (
         try {
             txctx = store.addTransaction(bctx, tx)
         } catch (e: Exception) {
-            throw UserError("Faild to save tx to database", e)
+            throw UserError("Failed to save tx to database", e)
         }
         // In case of errors, tx.apply may either return false or throw UserError
         if (tx.apply(txctx)) {

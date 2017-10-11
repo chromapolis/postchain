@@ -5,6 +5,7 @@ import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.Signature
+import com.chromaway.postchain.core.TransactionStatus
 import nl.komponents.kovenant.*
 import java.util.*
 import java.util.concurrent.Future
@@ -59,15 +60,19 @@ object DoNothingIntent : BlockIntent()
 object CommitBlockIntent : BlockIntent()
 object BuildBlockIntent : BlockIntent()
 
-data class FetchBlockAtHeightIntent(val height: Long): BlockIntent() {
+class FetchBlockAtHeightIntent(val height: Long): BlockIntent() {
     override fun equals(other: Any?): Boolean {
         if (!super.equals(other)) return false
         if (other !is FetchBlockAtHeightIntent) return false
         return height == other.height
     }
+
+    override fun hashCode(): Int {
+        return height.hashCode()
+    }
 }
 
-data class FetchUnfinishedBlockIntent(val blockRID: ByteArray) : BlockIntent() {
+class FetchUnfinishedBlockIntent(val blockRID: ByteArray) : BlockIntent() {
     override fun equals(other: Any?): Boolean {
         if (!super.equals(other)) return false
         if (this === other) return true
@@ -75,10 +80,27 @@ data class FetchUnfinishedBlockIntent(val blockRID: ByteArray) : BlockIntent() {
         if (!blockRID.contentEquals(other.blockRID)) return false
         return true
     }
+
+    override fun hashCode(): Int {
+        return Arrays.hashCode(blockRID)
+    }
 }
 
 
-data class FetchCommitSignatureIntent(val blockRID: ByteArray, val nodes: Array<Int>): BlockIntent()
+data class FetchCommitSignatureIntent(val blockRID: ByteArray, val nodes: Array<Int>): BlockIntent() {
+    override fun equals(other: Any?): Boolean {
+        if (!super.equals(other)) return false
+        if (this === other) return true
+        other as FetchCommitSignatureIntent
+        if (!blockRID.contentEquals(other.blockRID)) return false
+        if (!Arrays.equals(nodes, other.nodes)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return Arrays.hashCode(blockRID) + Arrays.hashCode(nodes)
+    }
+}
 
 interface BlockManager {
     var currentBlock: BlockData?

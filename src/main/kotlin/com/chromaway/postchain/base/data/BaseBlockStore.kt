@@ -1,5 +1,6 @@
 package com.chromaway.postchain.base.data
 
+import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockEContext
 import com.chromaway.postchain.core.BlockHeader
@@ -10,23 +11,28 @@ import com.chromaway.postchain.core.InitialBlockData
 import com.chromaway.postchain.core.ProgrammerError
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
+import com.chromaway.postchain.core.TransactionStatus
 import com.chromaway.postchain.core.TxEContext
+import com.chromaway.postchain.core.UserError
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.BeanHandler
 import org.apache.commons.dbutils.handlers.BeanListHandler
 import org.apache.commons.dbutils.handlers.ColumnListHandler
+import org.apache.commons.dbutils.handlers.MapListHandler
 import org.apache.commons.dbutils.handlers.ScalarHandler
+import java.sql.Connection
 
 class BaseBlockStore : BlockStore {
     private val r = QueryRunner()
-    val intRes = ScalarHandler<Int>()
+    private val intRes = ScalarHandler<Int>()
     private val longRes = ScalarHandler<Long>()
-    val signatureRes = BeanListHandler<Signature>(Signature::class.java)
+    private val signatureRes = BeanListHandler<Signature>(Signature::class.java)
     private val nullableByteArrayRes = ScalarHandler<ByteArray?>()
     private val nullableLongRes = ScalarHandler<Long?>()
     private val byteArrayRes = ScalarHandler<ByteArray>()
     private val blockDataRes = BeanHandler<BlockData>(BlockData::class.java)
     private val byteArrayListRes = ColumnListHandler<ByteArray>()
+    private val mapListHandler = MapListHandler()
 
     override fun beginBlock(ctx: EContext): InitialBlockData {
         val prevHeight = getLastBlockHeight(ctx)
@@ -119,10 +125,69 @@ class BaseBlockStore : BlockStore {
                 ColumnListHandler<ByteArray>(), height, ctx.chainID).toTypedArray()
     }
 
-    override fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray {
+    override fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any> {
+        val block = r.query(ctx.conn,
+                """
+                    SELECT b.block_iid, b.block_header_data, b.block_witness
+                    FROM blocks b JOIN transactions t ON b.block_iid=t.block_iid
+                    WHERE b.chain_id=? and t.tx_rid=?
+                    """, mapListHandler, ctx.chainID, txRID)!!
+        if (block.size < 1) throw UserError("Can't get confirmation proof for nonexistent tx")
+        if (block.size > 1) throw ProgrammerError("Expected at most one hit")
+        val blockIid = block[0].get("block_iid") as Long
+        val blockHeader = block[0].get("block_header_data") as ByteArray
+        val witness = block[0].get("block_witness") as ByteArray
+
+        val txs = r.query(ctx.conn,
+                "SELECT tx_rid FROM " +
+                        "transactions t " +
+                        "where t.block_iid=? order by tx_iid",
+                ColumnListHandler<ByteArray>(), blockIid)!!
+        return mapOf<String, Any>("header" to blockHeader,
+                "witness" to witness,
+                "txs" to txs)
+    }
+
+    override fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray? {
         return r.query(ctx.conn, "SELECT tx_data FROM " +
                 "transactions WHERE chain_id=? AND tx_rid=?",
-                byteArrayRes, ctx.chainID, rid)
+                nullableByteArrayRes, ctx.chainID, rid)
+    }
+
+    override fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus? {
+        try {
+            // Note that PostgreSQL does not support READ UNCOMMITTED, so setting
+            // it is useless. It will be run as READ COMMITTED.
+            // I leave this here to mark my intention.
+            // Currently, due to the above, transactions will look like they are unknown if they are in the
+            // middle of block-building.
+            ctx.conn.transactionIsolation = Connection.TRANSACTION_READ_UNCOMMITTED
+            val list = r.query(ctx.conn,
+                    """
+                        SELECT tx_iid, block_witness
+                        FROM transactions t JOIN blocks b ON t.block_iid=b.block_iid
+                        WHERE b.chain_id=? AND t.tx_rid=?
+                        """, mapListHandler, ctx.chainID, txHash)
+            if (list.isEmpty()) return null
+            if (list.size != 1) throw ProgrammerError("Expected at most one result for ${txHash.toHex()}")
+            if (list[0].get("block_witness") == null) return TransactionStatus.WAITING
+            return TransactionStatus.CONFIRMED
+        } finally {
+            ctx.conn.transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+        }
+    }
+
+    /**
+     * This should be implemented by postchain implementation. This is used by the API
+     * to pass queries to a backend implementation.
+     *
+     * @param jsonQuery The query. This string must be any valid json, but the implementation
+     * must be able to understand it.
+     *
+     * @return a String containing valid json. It is up to the implementation to produce the json
+     */
+    override fun query(ctx: EContext, jsonQuery: String): String {
+        TODO("not implemented")
     }
 
     fun initialize(ctx: EContext) {

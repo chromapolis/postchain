@@ -6,6 +6,7 @@ import com.chromaway.postchain.core.MultiSigBlockWitness
 import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.UserError
+import mu.KLogging
 import java.nio.ByteBuffer
 
 class BaseBlockWitness(val _rawData: ByteArray, val _signatures: Array<Signature>)
@@ -55,7 +56,7 @@ class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: B
                               val subjects: Array<ByteArray>,
                               val threshold: Int) : MultiSigBlockWitnessBuilder {
     val signatures = mutableListOf<Signature>()
-
+    companion object: KLogging()
     override fun isComplete(): Boolean {
         return signatures.size >= threshold
     }
@@ -76,6 +77,7 @@ class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: B
         if (signatures.any({it.subjectID.contentEquals(s.subjectID)})) {
             return
         }
+        logger.debug("BlockHeader: ${blockHeader.rawData.toHex()}")
         if (!cryptoSystem.makeVerifier()(blockHeader.rawData, s)) {
             throw UserError("Invalid signature from subject ${s.subjectID.toHex()}")
         }

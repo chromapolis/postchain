@@ -14,13 +14,13 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
 
 
     fun computeRootHash(): ByteArray {
-        val digests = transactions.map { cryptoSystem.digest(it) }
+
+        val digests = transactions.map { txFactory.decodeTransaction(it).getRID() }
         return computeMerkleRootHash(cryptoSystem, digests.toTypedArray())
     }
 
     override fun makeBlockHeader(): BlockHeader {
-        // TODO("timestamp")
-        return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(), 0)
+        return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(), System.currentTimeMillis())
     }
 
     override fun validateBlockHeader(bh: BlockHeader): Boolean {
@@ -47,7 +47,6 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
         if (!finalized) {
             throw ProgrammerError("Block is not finalized yet.")
         }
-        val requiredSigs: Int = getRequiredSigCount()
 
         val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, getRequiredSigCount())
         witnessBuilder.applySignature(blockSigner(_blockData!!.header.rawData))

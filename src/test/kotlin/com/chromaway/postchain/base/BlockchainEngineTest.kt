@@ -28,15 +28,15 @@ class BlockchainEngineTest : IntegrationTest() {
     @Test
     fun testBuildBlock() {
         val node = createDataLayer(0)
-        node.txQueue.add(TestTransaction(0))
+        node.txEnqueuer.enqueue(TestTransaction(0))
         buildBlockAndCommit(node.engine)
         assertEquals(0, getBestHeight(node))
         val riDsAtHeight0 = getTxRidsAtHeight(node, 0)
         assertEquals(1, riDsAtHeight0.size)
         assertArrayEquals(TestTransaction(id = 0).getRID(), riDsAtHeight0[0])
 
-        node.txQueue.add(TestTransaction(1))
-        node.txQueue.add(TestTransaction(2))
+        node.txEnqueuer.enqueue(TestTransaction(1))
+        node.txEnqueuer.enqueue(TestTransaction(2))
         buildBlockAndCommit(node.engine)
         assertEquals(1, getBestHeight(node))
         assertTrue(riDsAtHeight0.contentDeepEquals(getTxRidsAtHeight(node, 0)))
@@ -44,12 +44,12 @@ class BlockchainEngineTest : IntegrationTest() {
         assertTrue(riDsAtHeight1.contentDeepEquals(Array(2, { TestTransaction(it + 1).getRID() })))
 
         // Empty block. All tx will be failing
-        node.txQueue.add(TestTransaction(3, good = true, correct = false))
-        node.txQueue.add(TestTransaction(4, good = false, correct = true))
-        node.txQueue.add(TestTransaction(5, good = false, correct = false))
-        node.txQueue.add(ErrorTransaction(6, true, true))
-        node.txQueue.add(ErrorTransaction(7, false, true))
-        node.txQueue.add(ErrorTransaction(8, true, false))
+        node.txEnqueuer.enqueue(TestTransaction(3, good = true, correct = false))
+        node.txEnqueuer.enqueue(TestTransaction(4, good = false, correct = true))
+        node.txEnqueuer.enqueue(TestTransaction(5, good = false, correct = false))
+        node.txEnqueuer.enqueue(ErrorTransaction(6, true, true))
+        node.txEnqueuer.enqueue(ErrorTransaction(7, false, true))
+        node.txEnqueuer.enqueue(ErrorTransaction(8, true, false))
 
         buildBlockAndCommit(node.engine)
         assertEquals(2, getBestHeight(node))
@@ -162,7 +162,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     private fun createBlockWithTx(dataLayer: DataLayer, txCount: Int, startId: Int = 0): BlockBuilder {
         for (i in startId until startId + txCount) {
-            dataLayer.txQueue.add(TestTransaction(i))
+            dataLayer.txEnqueuer.enqueue(TestTransaction(i))
         }
         return dataLayer.engine.buildBlock()
     }
@@ -180,11 +180,10 @@ class BlockchainEngineTest : IntegrationTest() {
     private fun commitBlock(blockBuilder: BlockBuilder): BlockWitness {
         val witnessBuilder = blockBuilder.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
         assertNotNull(witnessBuilder)
-        blockBuilder.finalizeBlock()
         val blockData = blockBuilder.getBlockData()
         // Simulate other peers sign the block
         val blockHeader = blockData.header
-        var i = 0;
+        var i = 0
         while (!witnessBuilder.isComplete()) {
             witnessBuilder.applySignature(cryptoSystem.makeSigner(pubKey(i), privKey(i))(blockHeader.rawData))
             i++

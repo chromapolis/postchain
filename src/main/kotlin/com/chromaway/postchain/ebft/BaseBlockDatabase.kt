@@ -6,6 +6,7 @@ import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
 import com.chromaway.postchain.core.Signature
+import com.chromaway.postchain.core.TransactionStatus
 import mu.KLogging
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -36,7 +37,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
 
     private fun <RT> runOp(op: () -> RT): Promise<RT, Exception> {
         val deferred = deferred<RT, Exception>()
-        logger.trace("BaseBlockDatabase $nodeIndex putting a job");
+        logger.trace("BaseBlockDatabase $nodeIndex putting a job")
         executor.execute({
             try {
                 val res = op()
@@ -49,9 +50,9 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     private fun maybeRollback() {
-        logger.trace("BaseBlockDatabase $nodeIndex maybeRollback.");
+        logger.trace("BaseBlockDatabase $nodeIndex maybeRollback.")
         if (blockBuilder != null) {
-            logger.debug("BaseBlockDatabase $nodeIndex blockBuilder is not null.");
+            logger.debug("BaseBlockDatabase $nodeIndex blockBuilder is not null.")
         }
         blockBuilder?.rollback()
         blockBuilder = null
@@ -107,7 +108,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     override fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception> {
-        return blockQueries.getBlockSignature(blockRID);
+        return blockQueries.getBlockSignature(blockRID)
     }
 
     override fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception> {

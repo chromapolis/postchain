@@ -1,5 +1,7 @@
 package com.chromaway.postchain.core
 
+import com.chromaway.postchain.base.BaseBlockHeader
+import com.chromaway.postchain.base.ConfirmationProof
 import com.chromaway.postchain.base.Storage
 import nl.komponents.kovenant.Promise
 import org.apache.commons.configuration2.Configuration
@@ -23,10 +25,19 @@ open class BlockEContext(conn: Connection, chainID: Int, nodeID: Int, val blockI
 class TxEContext(conn: Connection, chainID: Int, nodeID: Int, blockIID: Long, val txIID: Long)
     : BlockEContext(conn, chainID, nodeID, blockIID)
 
+enum class Side {LEFT, RIGHT}
+
+class MerklePathItem(val side: Side, val hash: ByteArray)
+
+typealias MerklePath = ArrayList<MerklePathItem>
+
 interface BlockHeader {
     val prevBlockRID: ByteArray
     val rawData: ByteArray
     val blockRID: ByteArray // it's not a part of header but derived from it
+
+    fun merklePath(txRID: ByteArray, txRIDs: Array<ByteArray>): MerklePath
+    fun validateMerklePath(merklePath: MerklePath, targetTxRid: ByteArray): Boolean
 }
 
 open class BlockData(val header: BlockHeader, val transactions: List<ByteArray>)
@@ -122,8 +133,11 @@ interface BlockQueries {
     fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>
     fun getBestHeight(): Promise<Long, Exception>
     fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception>
-    fun getTransaction(txRID: ByteArray): Promise<Transaction, Exception>
+    fun getTransaction(txRID: ByteArray): Promise<Transaction?, Exception>
     fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception>
+    fun query(json: String): Promise<String, Exception>
+    fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
+    fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception>
 }
 
 interface BlockBuilder {
@@ -139,6 +153,8 @@ interface BlockBuilder {
 
 class InitialBlockData(val blockIID: Long, val prevBlockRID: ByteArray, val height: Long)
 
+enum class TransactionStatus {UNKNOWN, REJECTED, WAITING, CONFIRMED}
+
 interface BlockStore {
     fun beginBlock(ctx: EContext): InitialBlockData
     fun addTransaction(bctx: BlockEContext, tx: Transaction): TxEContext
@@ -151,7 +167,11 @@ interface BlockStore {
     fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray
 
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
-    fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray
+    fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
+
+    fun query(ctx: EContext, jsonQuery: String): String
+    fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
+    fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any>
 }
 
 open class BlockLifecycleListener {

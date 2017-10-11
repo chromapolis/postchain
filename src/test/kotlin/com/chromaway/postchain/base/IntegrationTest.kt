@@ -3,6 +3,7 @@ package com.chromaway.postchain.base
 import com.chromaway.postchain.base.data.BaseBlockStore
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
 import com.chromaway.postchain.base.data.BaseStorage
+import com.chromaway.postchain.base.data.BaseTransactionQueue
 import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory
@@ -62,7 +63,7 @@ open class IntegrationTest {
         return pubKey(index).toHex()
     }
 
-    class DataLayer(val engine: BlockchainEngine, val txQueue: TestTxQueue, val blockchainConfiguration: BlockchainConfiguration,
+    class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val blockchainConfiguration: BlockchainConfiguration,
                     private val dataSources: Array<BasicDataSource>, val blockQueries: BlockQueries) {
         fun close() {
             dataSources.forEach {
@@ -91,7 +92,7 @@ open class IntegrationTest {
         val specialTxs = mutableMapOf<Int, Transaction>()
 
         override fun decodeTransaction(data: ByteArray): Transaction {
-            val id = DataInputStream(data.inputStream()).readInt();
+            val id = DataInputStream(data.inputStream()).readInt()
             if (specialTxs.containsKey(DataInputStream(data.inputStream()).readInt())) {
                 return specialTxs[id]!!
             }
@@ -117,7 +118,7 @@ open class IntegrationTest {
         private fun bytes(length: Int): ByteArray {
             val byteStream = ByteArrayOutputStream(length)
             val out = DataOutputStream(byteStream)
-            for (i in 0 until 10) {
+            for (i in 0 until length/4) {
                 out.writeInt(id)
             }
             out.flush()
@@ -164,7 +165,7 @@ open class IntegrationTest {
     fun tearDown() {
         nodes.forEach { it.close() }
         nodes.clear()
-        logger.debug("Closed nodes");
+        logger.debug("Closed nodes")
         peerInfos = null
     }
 
@@ -190,12 +191,13 @@ open class IntegrationTest {
         writeDataSource.maxTotal = 1
 
         val readDataSource = createBasicDataSource(config)
+        readDataSource.defaultAutoCommit = true
         readDataSource.maxTotal = 2
         readDataSource.defaultReadOnly = true
 
         val storage = BaseStorage(writeDataSource, readDataSource, nodeIndex)
 
-        val txQueue = TestTxQueue()
+        val txQueue = BaseTransactionQueue()
 
         val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
                 chainId, txQueue)
