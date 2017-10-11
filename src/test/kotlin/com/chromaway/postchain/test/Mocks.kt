@@ -24,6 +24,10 @@ class MockCryptoSystem : CryptoSystem {
         }
     }
 
+    override fun verifyDigest(ddigest: ByteArray, s: Signature): Boolean {
+        return secp256k1_verify(ddigest, s.subjectID, s.data)
+    }
+
     override fun makeVerifier(): Verifier {
         return { data, signature: Signature ->
             secp256k1_verify(digest(data), signature.subjectID, signature.data)
