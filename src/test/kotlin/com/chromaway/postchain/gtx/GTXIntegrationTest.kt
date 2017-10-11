@@ -15,7 +15,7 @@ class GTXIntegrationTest: IntegrationTest() {
         val node = createDataLayer(0)
         val data = makeNOPGTX()
         val tx = node.blockchainConfiguration.getTransactionFactory().decodeTransaction(data)
-        node.txQueue.add(tx)
+        node.txEnqueuer.enqueue(tx)
         buildBlockAndCommit(node.engine)
         Assert.assertEquals(0, getBestHeight(node))
         val riDsAtHeight0 = getTxRidsAtHeight(node, 0)
@@ -37,7 +37,6 @@ class GTXIntegrationTest: IntegrationTest() {
     private fun commitBlock(blockBuilder: BlockBuilder): BlockWitness {
         val witnessBuilder = blockBuilder.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
         Assert.assertNotNull(witnessBuilder)
-        blockBuilder.finalizeBlock()
         val blockData = blockBuilder.getBlockData()
         // Simulate other peers sign the block
         val blockHeader = blockData.header

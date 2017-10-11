@@ -129,7 +129,7 @@ class ApiIntegrationTest: EbftIntegrationTest() {
 
                 val header = ebftNodes[0].dataLayer.blockchainConfiguration.decodeBlockHeader(blockHeader)
                 val rid = TestTransaction(txId).getRID()
-                assertEquals(rid, hash)
+                assertArrayEquals(rid, hash)
                 assertTrue(header.validateMerklePath(path, rid))
             }
 
