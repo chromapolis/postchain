@@ -117,8 +117,8 @@ interface BlockchainConfiguration {
     fun decodeWitness(rawWitness: ByteArray): BlockWitness
     fun getTransactionFactory(): TransactionFactory
     fun makeBlockBuilder(ctx: EContext): BlockBuilder
-
     fun makeBlockQueries(storage: Storage): BlockQueries
+    fun initializeDB(ctx: EContext)
 }
 
 interface BlockchainConfigurationFactory {

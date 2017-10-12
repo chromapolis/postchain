@@ -1,11 +1,7 @@
 package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.ManagedBlockBuilder
-import com.chromaway.postchain.core.BlockData
-import com.chromaway.postchain.core.BlockDataWithWitness
-import com.chromaway.postchain.core.BlockLifecycleListener
-import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.TransactionStatus
+import com.chromaway.postchain.core.*
 import nl.komponents.kovenant.*
 import java.util.*
 import java.util.concurrent.Future
@@ -128,6 +124,7 @@ interface StatusManager {
 }
 
 interface BlockchainEngine {
+    fun initializeDB()
     fun addBlock(block: BlockDataWithWitness)
     fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder
     fun buildBlock(): ManagedBlockBuilder

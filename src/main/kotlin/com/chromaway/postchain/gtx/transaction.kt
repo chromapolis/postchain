@@ -71,13 +71,18 @@ class GTXTransactionFactory(val module: GTXModule, val cs: CryptoSystem): Transa
     }
 }
 
-class GTXBlockchainConfiguration(chainID: Long, config: Configuration, module: GTXModule)
+class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val module: GTXModule)
     :BaseBlockchainConfiguration(chainID, config)
 {
     val txFactory = GTXTransactionFactory(module, cryptoSystem)
 
     override fun getTransactionFactory(): TransactionFactory {
         return txFactory
+    }
+
+    override fun initializeDB(ctx: EContext) {
+        GTXSchemaManager.initializeDB(ctx)
+        module.initializeDB(ctx)
     }
 }
 

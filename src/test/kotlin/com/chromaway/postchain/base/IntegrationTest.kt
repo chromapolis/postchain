@@ -64,6 +64,7 @@ open class IntegrationTest {
     }
 
     class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val blockchainConfiguration: BlockchainConfiguration,
+                    val storage: Storage,
                     private val dataSources: Array<BasicDataSource>, val blockQueries: BlockQueries) {
         fun close() {
             dataSources.forEach {
@@ -206,9 +207,11 @@ open class IntegrationTest {
         val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
                 chainId, txQueue)
 
+        engine.initializeDB()
+
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val node = DataLayer(engine, txQueue, blockchainConfiguration, arrayOf(readDataSource, writeDataSource), blockQueries)
+        val node = DataLayer(engine, txQueue, blockchainConfiguration, storage, arrayOf(readDataSource, writeDataSource), blockQueries)
         // keep list of nodes to close after test
         nodes.add(node)
         return node

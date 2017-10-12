@@ -52,5 +52,7 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
         return BaseBlockQueries(this, storage, blockStore, chainID.toInt(), blockSigningPublicKey)
     }
 
+    override fun initializeDB(ctx: EContext) {}
+
 }
 

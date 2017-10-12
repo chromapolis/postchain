@@ -4,6 +4,7 @@ import com.chromaway.postchain.base.data.BaseManagedBlockBuilder
 import com.chromaway.postchain.base.ManagedBlockBuilder
 import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.TransactionQueue
+import com.chromaway.postchain.base.withWriteConnection
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockLifecycleListener
@@ -16,6 +17,13 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
 ) : BlockchainEngine
 {
     private val listeners = mutableListOf<BlockLifecycleListener>()
+
+    override fun initializeDB() {
+        withWriteConnection(s, chainID) { ctx ->
+            bc.initializeDB(ctx)
+            true
+        }
+    }
 
     private fun makeBlockBuilder(): ManagedBlockBuilder {
         val ctxt = s.openWriteConnection(chainID)

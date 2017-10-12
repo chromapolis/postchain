@@ -1,16 +1,21 @@
 package com.chromaway.postchain.gtx
 
+import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Transactor
-
+import com.google.gson.JsonObject
 
 interface GTXModule {
     fun makeTransactor(opData: ExtOpData): Transactor
     fun getOperations(): Set<String>
+    fun getQueries(): Set<String>
+    fun query(ctxt: EContext, name: String, args: GTXValue): GTXValue
+    fun initializeDB(ctx: EContext)
 }
 
-open class SimpleGTXModule<ConfT>(
-        val conf: ConfT, val opmap: Map<String,
-        (ConfT, ExtOpData)-> Transactor>
+abstract class SimpleGTXModule<ConfT>(
+        val conf: ConfT,
+        val opmap: Map<String, (ConfT, ExtOpData)-> Transactor>,
+        val querymap: Map<String, (ConfT, EContext, GTXValue)->GTXValue>
 ): GTXModule {
 
     override fun makeTransactor(opData: ExtOpData): Transactor {
@@ -24,23 +29,42 @@ open class SimpleGTXModule<ConfT>(
     override fun getOperations(): Set<String> {
         return opmap.keys
     }
+
+    override fun getQueries(): Set<String> {
+        return querymap.keys
+    }
+
+    override fun query(ctxt: EContext, name: String, args: GTXValue): GTXValue {
+        if (name in querymap) {
+            return querymap[name]!!(conf, ctxt, args)
+        } else throw Error("Unkown query")
+    }
 }
 
 class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean): GTXModule {
 
     val opmap: Map<String, GTXModule>
+    val qmap: Map<String, GTXModule>
     val ops: Set<String>
+    val _queries: Set<String>
 
     init {
-        val map = mutableMapOf<String, GTXModule>()
+        val _opmap = mutableMapOf<String, GTXModule>()
+        val _qmap = mutableMapOf<String, GTXModule>()
         for (m in modules) {
             for (op in m.getOperations()) {
-                if (!allowOverrides && op in map) throw Error("Duplicated operation")
-                map[op] = m
+                if (!allowOverrides && op in _opmap) throw Error("Duplicated operation")
+                _opmap[op] = m
+            }
+            for (q in m.getQueries()) {
+                if (!allowOverrides && q in _qmap) throw Error("Duplicated operation")
+                _qmap[q] = m
             }
         }
-        opmap = map.toMap()
+        opmap = _opmap.toMap()
+        qmap = _qmap.toMap()
         ops = opmap.keys
+        _queries = qmap.keys
     }
 
     override fun makeTransactor(opData: ExtOpData): Transactor {
@@ -53,6 +77,24 @@ class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean
 
     override fun getOperations(): Set<String> {
         return ops
+    }
+
+    override fun getQueries(): Set<String> {
+        return _queries
+    }
+
+    override fun query(ctxt: EContext, name: String, args: GTXValue): GTXValue {
+        if (name in qmap) {
+            return qmap[name]!!.query(ctxt, name, args)
+        } else {
+            throw Error("Unknown query")
+        }
+    }
+
+    override fun initializeDB(ctx: EContext) {
+        for (module in modules) {
+            module.initializeDB(ctx)
+        }
     }
 
 }

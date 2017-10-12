@@ -1,5 +1,8 @@
 package com.chromaway.postchain.base
 
+import com.chromaway.postchain.base.data.BaseStorage
+import com.chromaway.postchain.core.EContext
+
 private val HEX_CHARS = "0123456789abcdef"
 
 fun String.hexStringToByteArray() : ByteArray {
