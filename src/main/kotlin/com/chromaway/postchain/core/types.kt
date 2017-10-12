@@ -1,12 +1,11 @@
 package com.chromaway.postchain.core
 
-import com.chromaway.postchain.base.BaseBlockHeader
 import com.chromaway.postchain.base.ConfirmationProof
 import com.chromaway.postchain.base.Storage
 import nl.komponents.kovenant.Promise
 import org.apache.commons.configuration2.Configuration
 import java.sql.Connection
-import java.util.Arrays
+import java.util.*
 
 /*
 1. Manager reads JSON and finds BlockchainConfigurationFactory class name.
@@ -135,7 +134,8 @@ interface BlockQueries {
     fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception>
     fun getTransaction(txRID: ByteArray): Promise<Transaction?, Exception>
     fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception>
-    fun query(json: String): Promise<String, Exception>
+    fun <T> runQuery(qop: (EContext) -> T): Promise<T, Exception>
+    fun stringQuery(query: String): Promise<String, Exception>
     fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
     fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception>
 }
@@ -169,7 +169,6 @@ interface BlockStore {
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
 
-    fun query(ctx: EContext, jsonQuery: String): String
     fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
     fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any>
 }

@@ -2,10 +2,8 @@ package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.base.cryptoSystem
-import com.chromaway.postchain.base.withReadConnection
 import com.chromaway.postchain.core.*
 import com.chromaway.postchain.ebft.BlockchainEngine
-import org.apache.commons.configuration2.Configuration
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.ScalarHandler
 import org.junit.Assert
@@ -87,12 +85,12 @@ class GTXIntegrationTest: IntegrationTest() {
         Assert.assertArrayEquals(validTx.getRID(), riDsAtHeight0[0])
 
         val myConf = node.blockchainConfiguration as GTXBlockchainConfiguration
-        val value = withReadConnection(node.storage, 0) { ctx ->
+        val value = node.blockQueries.runQuery { ctx ->
             myConf.module.query(ctx, "gtx_test_get_value",
                     gtx("txRID" to gtx(validTx.getRID()))
             )
         }
-        Assert.assertEquals("true", value.asString())
+        Assert.assertEquals("true", value.get().asString())
     }
 
     override fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {

@@ -3,27 +3,16 @@ package com.chromaway.postchain.api.rest
 import com.chromaway.postchain.base.ConfirmationProof
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.MerklePath
-import com.chromaway.postchain.core.MerklePathItem
 import com.chromaway.postchain.core.MultiSigBlockWitness
 import com.chromaway.postchain.core.Side
-import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.TransactionStatus
 import com.chromaway.postchain.core.UserError
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonArray
-import com.google.gson.JsonDeserializationContext
-import com.google.gson.JsonDeserializer
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
-import com.google.gson.JsonSerializationContext
-import com.google.gson.JsonSerializer
+import com.google.gson.*
 import mu.KLogging
 import spark.Request
 import spark.Service
 import java.lang.reflect.Type
-import java.util.Arrays
+import java.util.*
 
 
 class RestApi(private val model: Model, private val listenPort: Int, private val basePath: String) {
@@ -157,8 +146,6 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
 
     }
 }
-
-
 
 data class Query(val json: String)
 data class QueryResult(val json: String)
