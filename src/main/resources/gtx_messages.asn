@@ -1,0 +1,28 @@
+Messages DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+	DictPair ::= SEQUENCE {
+		name UTF8String,
+		value GTXValue
+	}
+	
+	GTXValue ::= CHOICE {
+		null [0] NULL,
+		byteArray [1] OCTET STRING,
+		string [2] UTF8String,
+		integer [3] INTEGER,
+		dict [4] SEQUENCE OF DictPair,
+		array [5] SEQUENCE OF GTXValue
+	}
+	
+	GTXOperation ::= SEQUENCE {
+		opName UTF8String,
+		args SEQUENCE OF GTXValue
+	}
+	
+	GTXTransaction ::= SEQUENCE {
+		operations SEQUENCE OF GTXOperation,
+		signers SEQUENCE OF OCTET STRING,
+		signatures SEQUENCE OF OCTET STRING
+	}
+	
+END
