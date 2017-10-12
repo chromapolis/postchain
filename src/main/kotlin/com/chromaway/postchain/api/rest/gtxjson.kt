@@ -1,5 +1,6 @@
 package com.chromaway.postchain.api.rest
 
+import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.ProgrammerError
 import com.chromaway.postchain.gtx.GTXNull
 import com.chromaway.postchain.gtx.GTXValue
@@ -56,7 +57,7 @@ class GTXValueAdapter : JsonDeserializer<GTXValue>, JsonSerializer<GTXValue> {
             GTXValueType.INTEGER -> return JsonPrimitive(v.asInteger())
             GTXValueType.STRING -> return JsonPrimitive(v.asString())
             GTXValueType.NULL -> return JsonNull.INSTANCE
-            GTXValueType.BYTEARRAY -> return JsonPrimitive("hex")
+            GTXValueType.BYTEARRAY -> return JsonPrimitive(v.asByteArray().toHex())
             GTXValueType.DICT -> return encodeDict(v, t, c)
             GTXValueType.ARRAY -> return encodeArray(v, t, c)
         }
@@ -67,4 +68,8 @@ fun make_gtx_gson(): Gson {
     return GsonBuilder().
             registerTypeAdapter(GTXValue::class.java, GTXValueAdapter()).
             create()!!
+}
+
+fun gtxToJSON(gtxValue: GTXValue, gson: Gson): String {
+    return gson.toJson(gtxValue, GTXValue::class.java)
 }
