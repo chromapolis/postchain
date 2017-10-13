@@ -1,6 +1,6 @@
 package com.chromaway.postchain.api
 
-import com.chromaway.postchain.api.rest.make_gtx_gson
+import com.chromaway.postchain.gtx.make_gtx_gson
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.gtx.GTXValue
 import com.chromaway.postchain.gtx.gtx

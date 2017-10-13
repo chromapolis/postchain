@@ -35,6 +35,6 @@ open class PostchainModel(
     }
 
     override fun query(query: Query): QueryResult {
-        return QueryResult(blockQueries.stringQuery(query.json).get())
+        return QueryResult(blockQueries.query(query.json).get())
     }
 }

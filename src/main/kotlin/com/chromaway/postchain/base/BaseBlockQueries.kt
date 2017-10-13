@@ -7,12 +7,12 @@ import nl.komponents.kovenant.task
 
 class ConfirmationProof(val txRID: ByteArray, val header: ByteArray, val witness: BlockWitness, val merklePath: MerklePath)
 
-class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfiguration,
+open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfiguration,
                        private val storage: Storage, private val blockStore: BlockStore,
                        private val chainId: Int, private val mySubjectId: ByteArray) : BlockQueries {
     companion object : KLogging()
 
-    private fun <T> runOp(operation: (EContext) -> T): Promise<T, Exception> {
+    protected fun <T> runOp(operation: (EContext) -> T): Promise<T, Exception> {
         return task {
             val ctx = storage.openReadConnection(chainId)
             try {
@@ -76,12 +76,8 @@ class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfigurat
         }
     }
 
-    override fun stringQuery(query: String): Promise<String, Exception> {
+    override fun query(query: String): Promise<String, Exception> {
         return Promise.ofFail(UserError("Queries are not supported"))
-    }
-
-    override fun <T> runQuery(qop: (EContext) -> T): Promise<T, Exception> {
-        return runOp(qop)
     }
 
     override fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception> {

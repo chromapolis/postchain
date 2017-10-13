@@ -1,11 +1,7 @@
-package com.chromaway.postchain.api.rest
+package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.ProgrammerError
-import com.chromaway.postchain.gtx.GTXNull
-import com.chromaway.postchain.gtx.GTXValue
-import com.chromaway.postchain.gtx.GTXValueType
-import com.chromaway.postchain.gtx.gtx
 import com.google.gson.*
 import java.lang.reflect.Type
 

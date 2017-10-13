@@ -134,8 +134,7 @@ interface BlockQueries {
     fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception>
     fun getTransaction(txRID: ByteArray): Promise<Transaction?, Exception>
     fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception>
-    fun <T> runQuery(qop: (EContext) -> T): Promise<T, Exception>
-    fun stringQuery(query: String): Promise<String, Exception>
+    fun query(query: String): Promise<String, Exception>
     fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
     fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception>
 }

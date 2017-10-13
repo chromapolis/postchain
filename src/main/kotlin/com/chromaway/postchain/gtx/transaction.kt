@@ -1,8 +1,13 @@
 package com.chromaway.postchain.gtx
 
+import com.chromaway.postchain.base.BaseBlockQueries
 import com.chromaway.postchain.base.CryptoSystem
+import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
+import com.chromaway.postchain.base.hexStringToByteArray
+import com.chromaway.postchain.base.secp256k1_derivePubKey
 import com.chromaway.postchain.core.*
+import nl.komponents.kovenant.Promise
 import org.apache.commons.configuration2.Configuration
 
 class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: CryptoSystem): Transaction {
@@ -83,6 +88,25 @@ class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val modul
     override fun initializeDB(ctx: EContext) {
         GTXSchemaManager.initializeDB(ctx)
         module.initializeDB(ctx)
+    }
+
+    override fun makeBlockQueries(storage: Storage): BlockQueries {
+        val blockSigningPrivateKey = config.getString("blocksigningprivkey").hexStringToByteArray()
+        val blockSigningPublicKey = secp256k1_derivePubKey(blockSigningPrivateKey)
+
+        return object: BaseBlockQueries(this@GTXBlockchainConfiguration, storage, blockStore,
+                chainID.toInt(), blockSigningPublicKey) {
+            private val gson = make_gtx_gson()
+
+            override fun query(query: String): Promise<String, Exception> {
+                val gtxQuery = gson.fromJson<GTXValue>(query, GTXValue::class.java)
+                return runOp {
+                    val type = gtxQuery.asDict().get("type")?: throw UserError("Missing query type")
+                    val queryResult = module.query(it, type.asString(), gtxQuery)
+                    gtxToJSON(queryResult, gson)
+                }
+            }
+        }
     }
 }
 

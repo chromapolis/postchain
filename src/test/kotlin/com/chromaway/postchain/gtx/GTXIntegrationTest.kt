@@ -2,6 +2,7 @@ package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.base.cryptoSystem
+import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.*
 import com.chromaway.postchain.ebft.BlockchainEngine
 import org.apache.commons.configuration2.Configuration
@@ -35,7 +36,7 @@ class GTXTestModule: SimpleGTXModule<Unit>(Unit,
                     """SELECT value FROM gtx_test_value
                     INNER JOIN transactions ON gtx_test_value.tx_iid = transactions.tx_iid
                     WHERE transactions.tx_rid = ?""",
-                    stringReader, args.get("txRID")!!.asByteArray()))
+                    stringReader, args.get("txRID")!!.asByteArray(true)))
         })
 ) {
     override fun initializeDB(ctx: EContext) {
@@ -86,12 +87,9 @@ class GTXIntegrationTest: IntegrationTest() {
         Assert.assertArrayEquals(validTx.getRID(), riDsAtHeight0[0])
 
         val myConf = node.blockchainConfiguration as GTXBlockchainConfiguration
-        val value = node.blockQueries.runQuery { ctx ->
-            myConf.module.query(ctx, "gtx_test_get_value",
-                    gtx("txRID" to gtx(validTx.getRID()))
-            )
-        }
-        Assert.assertEquals("true", value.get().asString())
+        val value = node.blockQueries.query(
+                """{"type"="gtx_test_get_value", "txRID"="${validTx.getRID().toHex()}"}""")
+        Assert.assertEquals("\"true\"", value.get())
     }
 
     override fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
