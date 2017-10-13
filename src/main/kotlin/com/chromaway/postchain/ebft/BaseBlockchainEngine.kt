@@ -1,9 +1,9 @@
 package com.chromaway.postchain.ebft
 
-import com.chromaway.postchain.base.data.BaseManagedBlockBuilder
 import com.chromaway.postchain.base.ManagedBlockBuilder
 import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.TransactionQueue
+import com.chromaway.postchain.base.data.BaseManagedBlockBuilder
 import com.chromaway.postchain.base.withWriteConnection
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness

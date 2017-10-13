@@ -1,17 +1,6 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.core.BlockQueries
-import com.chromaway.postchain.core.BlockStore
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.MerklePath
-import com.chromaway.postchain.core.MultiSigBlockWitness
-import com.chromaway.postchain.core.ProgrammerError
-import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.Transaction
-import com.chromaway.postchain.core.TransactionStatus
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.*
 import mu.KLogging
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
@@ -87,8 +76,12 @@ class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfigurat
         }
     }
 
-    override fun query(json: String): Promise<String, Exception> {
-        return runOp { blockStore.query(it, json) }
+    override fun stringQuery(query: String): Promise<String, Exception> {
+        return Promise.ofFail(UserError("Queries are not supported"))
+    }
+
+    override fun <T> runQuery(qop: (EContext) -> T): Promise<T, Exception> {
+        return runOp(qop)
     }
 
     override fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception> {

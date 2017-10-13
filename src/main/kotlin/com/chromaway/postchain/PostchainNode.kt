@@ -59,7 +59,7 @@ class PostchainNode {
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
         val dbConfig = config.subset("database")
-        val writeDataSource = createBasicDataSource(dbConfig, true)
+        val writeDataSource = createBasicDataSource(dbConfig)
         writeDataSource.maxTotal = 1
 
         val readDataSource = createBasicDataSource(dbConfig)
@@ -81,8 +81,6 @@ class PostchainNode {
         val statusManager = BaseStatusManager(ectxt, peerInfos.size, nodeIndex)
         val blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
         val blockManager = BaseBlockManager(blockDatabase, statusManager, ectxt)
-
-        val signersFile = config.getString("blockchain.$chainId.signersFile")
 
         val privKey = config.getString("messaging.privkey").hexStringToByteArray()
 
@@ -112,7 +110,7 @@ class PostchainNode {
         return factory.makeBlockchainConfiguration(chainId.toLong(), config)
     }
 
-    private fun createBasicDataSource(config: Configuration, wipe: Boolean = false): BasicDataSource {
+    private fun createBasicDataSource(config: Configuration): BasicDataSource {
         val dataSource = BasicDataSource()
         val schema = config.getString("schema", "public")
         dataSource.addConnectionProperty("currentSchema", schema)

@@ -8,9 +8,11 @@ import com.chromaway.postchain.core.TransactionFactory
 import com.chromaway.postchain.core.TransactionStatus.UNKNOWN
 import com.chromaway.postchain.core.TransactionStatus.WAITING
 
-class PostchainModel(private val txEnqueuer: TransactionEnqueuer,
-                     private val transactionFactory: TransactionFactory,
-                     private val blockQueries: BlockQueries): Model {
+open class PostchainModel(
+        val txEnqueuer: TransactionEnqueuer,
+        val transactionFactory: TransactionFactory,
+        val blockQueries: BlockQueries
+) : Model {
     override fun postTransaction(tx: ApiTx) {
         txEnqueuer.enqueue(transactionFactory.decodeTransaction(tx.bytes))
     }
@@ -33,6 +35,6 @@ class PostchainModel(private val txEnqueuer: TransactionEnqueuer,
     }
 
     override fun query(query: Query): QueryResult {
-        return QueryResult(blockQueries.query(query.json).get())
+        return QueryResult(blockQueries.stringQuery(query.json).get())
     }
 }

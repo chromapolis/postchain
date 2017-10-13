@@ -1,5 +1,6 @@
 package com.chromaway.postchain.gtx
 
+import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.gtx.messages.DictPair
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -21,7 +22,7 @@ interface GTXValue {
     fun isNull(): Boolean
     fun asDict(): Map<String, GTXValue>
     fun asInteger(): Long
-    fun asByteArray(): ByteArray
+    fun asByteArray(convert: Boolean = false): ByteArray
     fun getRawGTXValue(): RawGTXValue
 }
 
@@ -93,7 +94,7 @@ abstract class AbstractGTXValue: GTXValue {
         throw Error("Type error: integer expected")
     }
 
-    override fun asByteArray(): ByteArray {
+    override fun asByteArray(convert: Boolean): ByteArray {
         throw Error("Type error: byte array expected")
     }
 }
@@ -177,11 +178,18 @@ class StringGTXValue(val string: String): AbstractGTXValue() {
     override fun getRawGTXValue(): RawGTXValue {
         return RawGTXValue.string(string)
     }
+
+    override fun asByteArray(convert: Boolean): ByteArray {
+        if (convert) {
+            return string.hexStringToByteArray()
+        } else return super.asByteArray(convert)
+    }
+
 }
 
 class ByteArrayGTXValue(val bytearray: ByteArray): AbstractGTXValue() {
     override val type: GTXValueType = GTXValueType.BYTEARRAY
-    override fun asByteArray(): ByteArray {
+    override fun asByteArray(convert: Boolean): ByteArray {
         return bytearray
     }
     override fun getRawGTXValue(): RawGTXValue {

@@ -1,25 +1,9 @@
 package com.chromaway.postchain.base.data
 
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.BlockData
-import com.chromaway.postchain.core.BlockEContext
-import com.chromaway.postchain.core.BlockHeader
-import com.chromaway.postchain.core.BlockStore
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.InitialBlockData
-import com.chromaway.postchain.core.ProgrammerError
-import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.Transaction
-import com.chromaway.postchain.core.TransactionStatus
-import com.chromaway.postchain.core.TxEContext
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.*
 import org.apache.commons.dbutils.QueryRunner
-import org.apache.commons.dbutils.handlers.BeanHandler
-import org.apache.commons.dbutils.handlers.BeanListHandler
-import org.apache.commons.dbutils.handlers.ColumnListHandler
-import org.apache.commons.dbutils.handlers.MapListHandler
-import org.apache.commons.dbutils.handlers.ScalarHandler
+import org.apache.commons.dbutils.handlers.*
 import java.sql.Connection
 
 class BaseBlockStore : BlockStore {
@@ -175,19 +159,6 @@ class BaseBlockStore : BlockStore {
         } finally {
             ctx.conn.transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
         }
-    }
-
-    /**
-     * This should be implemented by postchain implementation. This is used by the API
-     * to pass queries to a backend implementation.
-     *
-     * @param jsonQuery The query. This string must be any valid json, but the implementation
-     * must be able to understand it.
-     *
-     * @return a String containing valid json. It is up to the implementation to produce the json
-     */
-    override fun query(ctx: EContext, jsonQuery: String): String {
-        TODO("not implemented")
     }
 
     fun initialize(ctx: EContext) {

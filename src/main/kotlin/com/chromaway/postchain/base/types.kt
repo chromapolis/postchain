@@ -4,7 +4,6 @@ import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
-import com.sun.org.apache.xpath.internal.operations.Bool
 import java.util.concurrent.CountDownLatch
 
 open class PeerInfo(val host: String, open val port: Int, val pubKey: ByteArray)
@@ -57,7 +56,6 @@ interface Storage {
 
     fun openWriteConnection(chainID: Int): EContext
     fun closeWriteConnection(ectxt: EContext, commit: Boolean)
-
 
     fun withSavepoint( ctxt: EContext, fn: ()->Unit )
 }
