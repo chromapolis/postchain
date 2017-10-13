@@ -29,7 +29,7 @@ import com.google.gson.GsonBuilder
 import java.lang.reflect.Type
 
 
-class ApiIntegrationTest: EbftIntegrationTest() {
+class ApiIntegrationTestNightly : EbftIntegrationTest() {
     lateinit var restApi: RestApi
     val restTools = RestTools()
 

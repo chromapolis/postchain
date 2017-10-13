@@ -1,5 +1,7 @@
-package com.chromaway.postchain.ebft
+package com.chromaway.postchain.integrationtest
 
+import com.chromaway.postchain.ebft.BuildBlockIntent
+import com.chromaway.postchain.ebft.EbftIntegrationTest
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import mu.KLogging
@@ -8,7 +10,7 @@ import org.junit.Assert.*
 import org.junit.runner.RunWith
 
 @RunWith(JUnitParamsRunner::class)
-class FullEbftTest : EbftIntegrationTest() {
+class FullEbftTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
 
     @Test

@@ -86,8 +86,10 @@ class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val modul
     }
 }
 
-class GTXBlockchainConfigurationFactory(val module: GTXModule): BlockchainConfigurationFactory {
+abstract class GTXBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
     override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
-        return GTXBlockchainConfiguration(chainID, config, module)
+        return GTXBlockchainConfiguration(chainID, config, createGtxModule(config))
     }
+
+    abstract internal fun createGtxModule(config: Configuration): GTXModule
 }

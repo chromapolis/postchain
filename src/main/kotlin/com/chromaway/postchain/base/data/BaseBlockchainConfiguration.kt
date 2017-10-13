@@ -35,10 +35,10 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
     }
 
     override fun makeBlockBuilder(ctx: EContext): BlockBuilder {
-        val signersStrings = config.getStringArray("blockchain.$chainID.signers")
+        val signersStrings = config.getStringArray("signers")
         val signerPubKeys = signersStrings.map { hexString -> hexString.hexStringToByteArray() }
 
-        val blockSigningPrivateKey = config.getString("blockchain.$chainID.privkey").hexStringToByteArray()
+        val blockSigningPrivateKey = config.getString("blocksigningprivkey").hexStringToByteArray()
         val blockSigningPublicKey = secp256k1_derivePubKey(blockSigningPrivateKey)
         val blockSigner = cryptoSystem.makeSigner(blockSigningPublicKey, blockSigningPrivateKey)
 
@@ -47,7 +47,7 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
     }
 
     override fun makeBlockQueries(storage: Storage): BlockQueries {
-        val blockSigningPrivateKey = config.getString("blockchain.$chainID.privkey").hexStringToByteArray()
+        val blockSigningPrivateKey = config.getString("blocksigningprivkey").hexStringToByteArray()
         val blockSigningPublicKey = secp256k1_derivePubKey(blockSigningPrivateKey)
         return BaseBlockQueries(this, storage, blockStore, chainID.toInt(), blockSigningPublicKey)
     }

@@ -96,7 +96,11 @@ class GTXIntegrationTest: IntegrationTest() {
     }
 
     override fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
-        return GTXBlockchainConfigurationFactory(GTXTestModule())
+        return object: GTXBlockchainConfigurationFactory() {
+            override fun createGtxModule(config: Configuration): GTXModule {
+                return GTXTestModule()
+            }
+        }
     }
 
     // TODO: these functions are copy-pasted from BlockchainEngineTest, factor them out

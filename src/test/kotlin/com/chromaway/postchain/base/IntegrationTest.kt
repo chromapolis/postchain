@@ -188,9 +188,9 @@ open class IntegrationTest {
         config.addProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
         // append nodeIndex to schema name
         config.setProperty("database.schema", config.getString("database.schema") + nodeIndex)
-        config.setProperty("blockchain.$chainId.privkey", privKeyHex(nodeIndex))
+        config.setProperty("blockchain.$chainId.blocksigningprivkey", privKeyHex(nodeIndex))
 
-        val blockchainConfiguration = factory.makeBlockchainConfiguration(chainId.toLong(), config)
+        val blockchainConfiguration = factory.makeBlockchainConfiguration(chainId.toLong(), config.subset("blockchain.$chainId"))
 
         val writeDataSource = createBasicDataSource(config, true)
         writeDataSource.maxTotal = 1

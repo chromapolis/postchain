@@ -4,6 +4,7 @@ import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.integrationtest.FullEbftTestNightly
 import mu.KLogging
 import org.junit.After
 import org.junit.Before
@@ -67,9 +68,9 @@ open class EbftIntegrationTest : IntegrationTest() {
         val queue = LinkedBlockingQueue<BlockWitness?>()
         var height = 0
         override fun commitDone(witness: BlockWitness?) {
-            FullEbftTest.logger.info("Commit height ${height++} done")
+            FullEbftTestNightly.logger.info("Commit height ${height++} done")
             if (queue.size > 0) {
-                FullEbftTest.logger.error("Committed multiple times", ProgrammerError(""))
+                FullEbftTestNightly.logger.error("Committed multiple times", ProgrammerError(""))
                 fail()
             }
             queue.add(witness)
@@ -77,10 +78,10 @@ open class EbftIntegrationTest : IntegrationTest() {
 
         fun awaitCommitted() {
             try {
-                FullEbftTest.logger.info("Awaiting commit")
+                FullEbftTestNightly.logger.info("Awaiting commit")
                 queue.take()
             } finally {
-                FullEbftTest.logger.info("Finished Awaiting commit")
+                FullEbftTestNightly.logger.info("Finished Awaiting commit")
             }
         }
 
