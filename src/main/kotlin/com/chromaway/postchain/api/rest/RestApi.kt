@@ -6,7 +6,7 @@ import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.MultiSigBlockWitness
 import com.chromaway.postchain.core.Side
 import com.chromaway.postchain.core.TransactionStatus
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.UserMistake
 import com.google.gson.*
 import mu.KLogging
 import spark.Request
@@ -26,6 +26,8 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
 
     init {
         route(http)
+        logger.info { "Rest API listening on port ${actualPort()}" }
+        logger.info { "Rest API attached on ${basePath}/" }
     }
 
     fun actualPort(): Int {
@@ -41,7 +43,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
 //            val tx = Transaction(txString)
 //            return tx
         } catch (e: Exception) {
-            throw UserError("Could not parse json", e)
+            throw UserMistake("Could not parse json", e)
         }
     }
 
@@ -56,13 +58,13 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
         try {
             bytes = hashHex.hexStringToByteArray()
         } catch (e: Exception) {
-            throw UserError("Can't parse hashHex $hashHex", e)
+            throw UserMistake("Can't parse hashHex $hashHex", e)
         }
         val txHash: TxHash
         try {
             txHash = TxHash(bytes)
         } catch (e: Exception) {
-            throw UserError("Bytes $hashHex is not a proper hash", e)
+            throw UserMistake("Bytes $hashHex is not a proper hash", e)
         }
         return txHash
     }
@@ -79,8 +81,8 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
             res.body(error(e))
         }
 
-        http.exception(UserError::class.java) { e, _, res ->
-            logger.error("UserError:", e)
+        http.exception(UserMistake::class.java) { e, _, res ->
+            logger.error("UserMistake:", e)
             res.status(400)
             res.body(error(e))
         }
@@ -89,7 +91,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
             res.status(500)
             res.body(error(e))
         }
-        http.notFound({ _, _ -> error(UserError("Not found")) })
+        http.notFound({ _, _ -> error(UserMistake("Not found")) })
         //http.before()
         http.port(listenPort)
 
@@ -102,7 +104,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
             logger.debug("Request body: $b")
             val tx = toTransaction(req)
             if (!tx.tx.matches(Regex("[0-9a-f]{2,}"))) {
-                throw UserError("Invalid tx format. Expected {\"tx\": <hexString>}")
+                throw UserMistake("Invalid tx format. Expected {\"tx\": <hexString>}")
             }
             model.postTransaction(tx)
         }
@@ -125,6 +127,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
         }, gson::toJson)
 
         http.post("$basePath/query") { req, res ->
+            model.query(Query(req.body())).json
         }
 
         http.awaitInitialization()
@@ -181,7 +184,7 @@ private class ConfirmationProofSerializer: JsonSerializer<ConfirmationProof> {
 private class TransactionDeserializer: JsonDeserializer<ApiTx> {
     override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): ApiTx {
         if (json == null) {
-            throw UserError("Can't parse tx")
+            throw UserMistake("Can't parse tx")
         }
         val root = json as JsonObject
         return ApiTx(root.get("tx")!!.asString)

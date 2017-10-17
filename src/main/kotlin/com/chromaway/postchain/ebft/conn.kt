@@ -10,8 +10,8 @@ import kotlin.concurrent.thread
 
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.ProgrammerError
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.ProgrammerMistake
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.message.Identification
 import com.chromaway.postchain.ebft.message.EbftMessage
 import com.chromaway.postchain.ebft.message.SignedMessage
@@ -325,7 +325,7 @@ class CommManager<PT> (val myIndex: Int,
             // Using recipients=emptySet() to broadcast may cause
             // code to accidentaly broadcast, when in fact they want to send
             // the packet to exactly no recipients. So we don't allow that.
-            throw ProgrammerError("Cannot send to no recipients. If you want to broadcast, please use broadcastPacket() instead")
+            throw ProgrammerMistake("Cannot send to no recipients. If you want to broadcast, please use broadcastPacket() instead")
         }
         logger.trace("Sending $myIndex -> $recipients: $packet")
         outboundPackets.put(OutboundPacket(packet, recipients))
@@ -401,16 +401,16 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
             val signedMessage = decodeSignedMessage(bytes)
             val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubKey) }
             if (peerIndex == -1) {
-                throw UserError("I don't know pubkey ${signedMessage.pubKey.toHex()}")
+                throw UserMistake("I don't know pubkey ${signedMessage.pubKey.toHex()}")
             }
             val message = decodeAndVerify(bytes, peerInfo[peerIndex].pubKey, verifier)
 
             if (message !is Identification) {
-                throw UserError("Packet was not an Identification. Got ${message::class}")
+                throw UserMistake("Packet was not an Identification. Got ${message::class}")
             }
 
             if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
-                throw UserError("'yourPubKey' ${message.yourPubKey.toHex()} of Identification is not mine")
+                throw UserMistake("'yourPubKey' ${message.yourPubKey.toHex()} of Identification is not mine")
             }
             return peerIndex
         }

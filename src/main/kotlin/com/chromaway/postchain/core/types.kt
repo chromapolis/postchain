@@ -6,6 +6,7 @@ import nl.komponents.kovenant.Promise
 import org.apache.commons.configuration2.Configuration
 import java.sql.Connection
 import java.util.*
+import java.util.stream.Stream
 
 /*
 1. Manager reads JSON and finds BlockchainConfigurationFactory class name.
@@ -137,6 +138,7 @@ interface BlockQueries {
     fun query(query: String): Promise<String, Exception>
     fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
     fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception>
+    fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception>
 }
 
 interface BlockBuilder {
@@ -162,11 +164,13 @@ interface BlockStore {
     fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long? // returns null if not found
     fun getBlockRIDs(ctx: EContext, height: Long): List<ByteArray> // returns null if height is out of range
     fun getLastBlockHeight(ctx: EContext): Long // height of the last block, first block has height 0
-    fun getBlockData(ctx: EContext, blockRID: ByteArray): BlockData
+//    fun getBlockData(ctx: EContext, blockRID: ByteArray): BlockData
     fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray
+    fun getBlockHeader(ctx: EContext, blockRID: ByteArray): ByteArray
 
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
+    fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray>
 
     fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
     fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any>

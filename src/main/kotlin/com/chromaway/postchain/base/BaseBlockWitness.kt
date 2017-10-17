@@ -5,7 +5,7 @@ import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.MultiSigBlockWitness
 import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
 import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.UserMistake
 import mu.KLogging
 import java.nio.ByteBuffer
 
@@ -72,14 +72,14 @@ class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: B
 
     override fun applySignature(s: Signature) {
         if (!subjects.any( { s.subjectID.contentEquals(it) } )) {
-            throw UserError("Unexpected subject ${s.subjectID.toHex()} of signature")
+            throw UserMistake("Unexpected subject ${s.subjectID.toHex()} of signature")
         }
         if (signatures.any({it.subjectID.contentEquals(s.subjectID)})) {
             return
         }
-        logger.debug("BlockHeader: ${blockHeader.rawData.toHex()}")
+//        logger.debug("BlockHeader: ${blockHeader.rawData.toHex()}")
         if (!cryptoSystem.makeVerifier()(blockHeader.rawData, s)) {
-            throw UserError("Invalid signature from subject ${s.subjectID.toHex()}")
+            throw UserMistake("Invalid signature from subject ${s.subjectID.toHex()}")
         }
         signatures.add(s)
     }

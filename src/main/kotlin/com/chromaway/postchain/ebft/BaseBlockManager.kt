@@ -33,26 +33,6 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
         }
     }
 
-    @Synchronized
-    protected fun<RT> runDBOp2(op: () -> Supplier<RT>, onSuccess: (RT)->Unit) {
-        if (!processing) {
-            processing = true
-            intent = DoNothingIntent
-            CompletableFuture.supplyAsync(op).
-                    thenApply({
-                        processing = false
-                        onSuccess(it.get())
-                    })
-            try {
-                onSuccess(op().get())
-            } catch (e: ExecutionException) {
-                logger.debug("Error in runDBOp()", e.cause)
-            } finally {
-                processing = false
-            }
-        }
-    }
-
     override fun onReceivedUnfinishedBlock(block: BlockData) {
         val theIntent = intent
         if (theIntent is FetchUnfinishedBlockIntent

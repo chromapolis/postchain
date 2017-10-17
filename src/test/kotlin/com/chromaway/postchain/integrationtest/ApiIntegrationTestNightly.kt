@@ -138,13 +138,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     }
 
     private fun awaitConfirmed(tx: Transaction) {
-        do {
-            val response = get("/tx/${tx.getRID().toHex()}/status")
-            if (response == null) throw Error()
-            assertEquals(200, response.code)
-            val resultMap: Map<String, Any> = gson.fromJson(response.body, mapType)
-            assertTrue(resultMap.containsKey("status"))
-        } while (resultMap.get("status") != "confirmed")
+        restTools.awaitConfirmed(restApi.actualPort(), tx)
     }
 
     private fun testStatusGet(path: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {

@@ -1,35 +1,45 @@
 package com.chromaway.postchain
 
+import com.chromaway.postchain.api.rest.PostchainModel
+import com.chromaway.postchain.api.rest.RestApi
 import com.chromaway.postchain.base.BasePeerCommConfiguration
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.SECP256K1CryptoSystem
+import com.chromaway.postchain.base.data.BaseBlockStore
 import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.base.data.BaseTransactionQueue
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory
+import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.ebft.BaseBlockDatabase
 import com.chromaway.postchain.ebft.BaseBlockManager
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BaseStatusManager
+import com.chromaway.postchain.ebft.BuildBlockIntent
 import com.chromaway.postchain.ebft.ErrContext
 import com.chromaway.postchain.ebft.SyncManager
 import com.chromaway.postchain.ebft.makeCommManager
-import com.chromaway.postchain.gtx.GTXBlockchainConfigurationFactory
-import com.chromaway.postchain.gtx.GTXModule
-import com.chromaway.postchain.gtx.GTX_NOP_Module
 import mu.KLogging
 import org.apache.commons.configuration2.Configuration
+import org.apache.commons.configuration2.PropertiesConfiguration
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
 import org.apache.commons.configuration2.builder.fluent.Configurations
+import org.apache.commons.configuration2.builder.fluent.Parameters
+import org.apache.commons.configuration2.convert.DefaultConversionHandler
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.apache.commons.dbcp2.BasicDataSource
+import org.apache.commons.dbutils.QueryRunner
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.sql.DataSource
 import kotlin.concurrent.thread
+
 
 class PostchainNode {
     lateinit var updateLoop: Thread
     val stopMe = AtomicBoolean(false)
+    var restApi: RestApi? = null
 
     protected fun startUpdateLoop(syncManager: SyncManager) {
         updateLoop = thread(name = "updateLoop") {
@@ -38,9 +48,6 @@ class PostchainNode {
                     break
                 }
                 syncManager.update()
-                if (stopMe.get()) {
-                    break
-                }
                 Thread.sleep(100)
             }
         }
@@ -48,19 +55,27 @@ class PostchainNode {
 
     fun stop() {
         stopMe.set(true)
+        restApi?.stop()
     }
 
-    fun start(nodeIndex: Int): SyncManager {
-        val chainId = 1
-        val configs = Configurations()
-        val config = configs.properties(File("config.$nodeIndex.properties"))
-        config.listDelimiterHandler = DefaultListDelimiterHandler(',')
+    fun start(configFile: String, nodeIndex: Int) {
+        val params = Parameters();
+        val builder = FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration::class.java).
+                configure(params.properties().
+                        setFileName(configFile).
+                        setListDelimiterHandler(DefaultListDelimiterHandler(',')))
+        val config = builder.getConfiguration()
+
+        // This will eventually become a list of chain ids.
+        // But for now it's just a single integer.
+        val chainId = config.getInt("activechainids")
 
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
         val dbConfig = config.subset("database")
         val writeDataSource = createBasicDataSource(dbConfig)
         writeDataSource.maxTotal = 1
+        createSchemaIfNotExists(writeDataSource, config.getString("database.schema"))
 
         val readDataSource = createBasicDataSource(dbConfig)
         readDataSource.defaultAutoCommit = true
@@ -74,11 +89,15 @@ class PostchainNode {
         val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
                 chainId, txQueue)
 
+        engine.initializeDB()
+
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
         val ectxt = ErrorContext()
         val peerInfos = createPeerInfos(config)
-        val statusManager = BaseStatusManager(ectxt, peerInfos.size, nodeIndex)
+
+        val bestHeight = blockQueries.getBestHeight().get()
+        val statusManager = BaseStatusManager(ectxt, peerInfos.size, nodeIndex, bestHeight+1)
         val blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
         val blockManager = BaseBlockManager(blockDatabase, statusManager, ectxt)
 
@@ -87,7 +106,18 @@ class PostchainNode {
         val commConfiguration = BasePeerCommConfiguration(peerInfos, nodeIndex, SECP256K1CryptoSystem(), privKey)
         val commManager = makeCommManager(commConfiguration)
 
-        return SyncManager(statusManager, blockManager, blockDatabase, commManager, blockchainConfiguration)
+        val port = config.getInt("api.port", 7740)
+        if (port != -1) {
+            val model = PostchainModel(txQueue, blockchainConfiguration.getTransactionFactory(), blockQueries)
+            val basePath = config.getString("api.basepath", "")
+            restApi = RestApi(model, port, basePath)
+        }
+
+//        statusManager.intent = BuildBlockIntent
+
+        val syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager, blockchainConfiguration)
+        statusManager.recomputeStatus()
+        startUpdateLoop(syncManager)
     }
 
     fun createPeerInfos(config: Configuration): Array<PeerInfo> {
@@ -122,13 +152,53 @@ class PostchainNode {
 
         return dataSource
     }
+
+    private fun createSchemaIfNotExists(dataSource: DataSource, schema: String) {
+        val queryRunner = QueryRunner()
+        val conn = dataSource.connection
+        try {
+            queryRunner.update(conn, "CREATE SCHEMA IF NOT EXISTS $schema")
+            conn.commit()
+        } finally {
+            conn.close()
+        }
+    }
+
+    private fun wipeDatabase(dataSource: DataSource, schema: String) {
+        val queryRunner = QueryRunner()
+        val conn = dataSource.connection
+        queryRunner.update(conn, "DROP SCHEMA IF EXISTS $schema CASCADE")
+        queryRunner.update(conn, "CREATE SCHEMA $schema")
+        // Implementation specific initialization.
+        BaseBlockStore().initialize(EContext(conn, 1, 0))
+        conn.commit()
+        conn.close()
+    }
 }
 
-fun main(args : Array<String>) {
+/**
+ * args: [ { --nodeIndex | -i } <index> ] [ { --config | -c } <configFile> ]
+ */
+fun main(args: Array<String>) {
+    var i = 0
+    var nodeIndex = 0;
+    var config = ""
+    while (i < args.size) {
+        when (args[i]) {
+            "-i", "--nodeIndex" -> {
+                nodeIndex = parseInt(args[++i])!!
+            }
+            "-c", "--config" -> {
+                config = args[++i]
+            }
+        }
+        i++
+    }
+    if (config == "") {
+        config = "config.$nodeIndex.properties"
+    }
     val node = PostchainNode()
-    val nodeIndex = parseInt(args[0])!!
-    node.start(nodeIndex)
-
+    node.start(config, nodeIndex)
 }
 
 class ErrorContext: ErrContext {
@@ -144,11 +214,5 @@ class ErrorContext: ErrContext {
 
     override fun log(msg: String) {
         logger.info { msg }
-    }
-}
-
-class TestGtxConfigurationFactory(): GTXBlockchainConfigurationFactory() {
-    override fun createGtxModule(config: Configuration): GTXModule {
-        return GTX_NOP_Module()
     }
 }

@@ -76,7 +76,7 @@ class GTXTransactionFactory(val module: GTXModule, val cs: CryptoSystem): Transa
     }
 }
 
-class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val module: GTXModule)
+open class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val module: GTXModule)
     :BaseBlockchainConfiguration(chainID, config)
 {
     val txFactory = GTXTransactionFactory(module, cryptoSystem)
@@ -86,6 +86,7 @@ class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val modul
     }
 
     override fun initializeDB(ctx: EContext) {
+        super.initializeDB(ctx)
         GTXSchemaManager.initializeDB(ctx)
         module.initializeDB(ctx)
     }
@@ -101,7 +102,7 @@ class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val modul
             override fun query(query: String): Promise<String, Exception> {
                 val gtxQuery = gson.fromJson<GTXValue>(query, GTXValue::class.java)
                 return runOp {
-                    val type = gtxQuery.asDict().get("type")?: throw UserError("Missing query type")
+                    val type = gtxQuery.asDict().get("type")?: throw UserMistake("Missing query type")
                     val queryResult = module.query(it, type.asString(), gtxQuery)
                     gtxToJSON(queryResult, gson)
                 }
@@ -110,10 +111,26 @@ class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val modul
     }
 }
 
-abstract class GTXBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
+open class GTXBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
     override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
-        return GTXBlockchainConfiguration(chainID, config, createGtxModule(config))
+        return GTXBlockchainConfiguration(chainID, config, createGtxModule(config.subset("gtx")))
     }
 
-    abstract internal fun createGtxModule(config: Configuration): GTXModule
+    open fun createGtxModule(config: Configuration): GTXModule {
+        val list = config.getList(String::class.java, "modules")
+        if (list == null || list.size == 0) {
+            throw UserMistake("Missing GTX module in config. expected property 'blockchain.<chainId>.gtxmodules'")
+        }
+        return if (list.size == 1) {
+            val moduleClass = Class.forName(list[0])
+            moduleClass.newInstance() as GTXModule
+        } else {
+            val moduleList = list.map {
+                val moduleClass = Class.forName(list[0])
+                moduleClass.newInstance() as GTXModule
+            }
+            val allowOverrides = config.getBoolean("allowoverrides", false)
+            CompositeGTXModule(moduleList.toTypedArray(), allowOverrides)
+        }
+    }
 }

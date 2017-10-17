@@ -1,6 +1,7 @@
 package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.ManagedBlockBuilder
+import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockQueries
@@ -35,14 +36,17 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
         maybeRollback()
     }
 
-    private fun <RT> runOp(op: () -> RT): Promise<RT, Exception> {
+    private fun <RT> runOp(name: String, op: () -> RT): Promise<RT, Exception> {
         val deferred = deferred<RT, Exception>()
         logger.trace("BaseBlockDatabase $nodeIndex putting a job")
         executor.execute({
             try {
+                logger.debug("Starting job $name")
                 val res = op()
+                logger.debug("Finish job $name")
                 deferred.resolve(res)
             } catch (e: Exception) {
+                logger.debug("Failed job $name", e)
                 deferred.reject(e)
             }
         })
@@ -60,14 +64,14 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     override fun addBlock(block: BlockDataWithWitness): Promise<Unit, Exception> {
-        return runOp {
+        return runOp("addBlock ${block.header.blockRID.toHex()}") {
             engine.addBlock(block)
         }
     }
 
 
     override fun loadUnfinishedBlock(block: BlockData): Promise<Signature, Exception> {
-        return runOp {
+        return runOp("loadUnfinishedBlock ${block.header.blockRID.toHex()}") {
             maybeRollback()
             blockBuilder = engine.loadUnfinishedBlock(block)
             witnessBuilder = blockBuilder!!.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
@@ -76,8 +80,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     override fun commitBlock(signatures: Array<Signature?>): Promise<Unit, Exception> {
-        return runOp {
-
+        return runOp("commitBlock") {
             // TODO: process signatures
             blockBuilder!!.commit(witnessBuilder!!.getWitness())
             blockBuilder = null
@@ -86,7 +89,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     override fun buildBlock(): Promise<Pair<BlockData, Signature>, Exception> {
-        return runOp {
+        return runOp("buildBlock") {
             maybeRollback()
             blockBuilder = engine.buildBlock()
             witnessBuilder = blockBuilder!!.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
@@ -112,7 +115,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
     }
 
     override fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return blockQueries.getBlockAtHeight(height)
     }
 
 }

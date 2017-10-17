@@ -2,7 +2,7 @@ package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.base.PeerCommConfiguration
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.parseInt
 import mu.KLogging
 import org.junit.After
@@ -153,7 +153,7 @@ class CommManagerTest : IntegrationTest() {
         }
 
         override fun decodePacket(index: Int, bytes: ByteArray): DummyMessage {
-            if (bytes[0].toInt() != index) throw UserError("Invalid signature")
+            if (bytes[0].toInt() != index) throw UserMistake("Invalid signature")
             return DummyMessage(index, String(bytes.sliceArray(1 until bytes.size)))
         }
 

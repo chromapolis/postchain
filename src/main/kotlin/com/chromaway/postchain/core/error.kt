@@ -1,8 +1,5 @@
 package com.chromaway.postchain.core
 
-import java.lang.Exception
+class ProgrammerMistake(message: String, cause: Exception? = null) : RuntimeException(message, cause)
 
-
-class ProgrammerError(message: String, cause: Exception? = null) : Exception(message, cause)
-
-class UserError(message: String, cause: Exception? = null) : Exception(message, cause)
+class UserMistake(message: String, cause: Exception? = null) : RuntimeException(message, cause)

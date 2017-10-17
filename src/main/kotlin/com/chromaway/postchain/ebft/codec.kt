@@ -4,7 +4,7 @@ import com.chromaway.postchain.base.Signer
 import com.chromaway.postchain.base.Verifier
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.message.EbftMessage
 import com.chromaway.postchain.ebft.message.SignedMessage
 import java.util.Arrays
@@ -20,7 +20,7 @@ fun decodeSignedMessage(bytes: ByteArray): SignedMessage {
     try {
         return  SignedMessage.decode(bytes)
     } catch (e: Exception) {
-        throw UserError("bytes ${bytes.toHex()} cannot be decoded", e)
+        throw UserMistake("bytes ${bytes.toHex()} cannot be decoded", e)
     }
 }
 
@@ -29,7 +29,7 @@ fun decodeWithoutVerification(bytes: ByteArray): SignedMessage {
         val sm = SignedMessage.decode(bytes)
         return sm
     } catch (e: Exception) {
-        throw UserError("bytes cannot be decoded", e)
+        throw UserMistake("bytes cannot be decoded", e)
     }
 }
 
@@ -39,6 +39,6 @@ fun decodeAndVerify(bytes: ByteArray, pubkey: ByteArray, verify: Verifier): Ebft
             && verify(sm.message, Signature(sm.pubKey, sm.signature))) {
         return EbftMessage.decode(sm.message)
     } else {
-        throw UserError("Verification failed")
+        throw UserMistake("Verification failed")
     }
 }

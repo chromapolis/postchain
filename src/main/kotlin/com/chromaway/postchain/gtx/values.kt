@@ -1,6 +1,7 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.hexStringToByteArray
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.gtx.messages.DictPair
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -180,9 +181,13 @@ class StringGTXValue(val string: String): AbstractGTXValue() {
     }
 
     override fun asByteArray(convert: Boolean): ByteArray {
-        if (convert) {
-            return string.hexStringToByteArray()
-        } else return super.asByteArray(convert)
+        try {
+            if (convert) {
+                return string.hexStringToByteArray()
+            } else return super.asByteArray(convert)
+        } catch (e: Exception) {
+            throw UserMistake("Can't create ByteArray from string '$string'")
+        }
     }
 
 }

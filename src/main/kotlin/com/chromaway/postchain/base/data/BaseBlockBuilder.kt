@@ -8,8 +8,8 @@ import com.chromaway.postchain.base.computeMerkleRootHash
 import com.chromaway.postchain.core.*
 import java.util.*
 
-class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store: BlockStore,
-                       txFactory: TransactionFactory, val subjects: Array<ByteArray>, val blockSigner: Signer)
+open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store: BlockStore,
+                            txFactory: TransactionFactory, val subjects: Array<ByteArray>, val blockSigner: Signer)
     : AbstractBlockBuilder(eContext, store, txFactory ) {
 
 
@@ -34,7 +34,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
 
     override fun validateWitness(w: BlockWitness): Boolean {
         if (!(w is MultiSigBlockWitness)) {
-            throw ProgrammerError("Invalid BlockWitness impelmentation.")
+            throw ProgrammerMistake("Invalid BlockWitness impelmentation.")
         }
         val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, getRequiredSigCount())
         for (signature in w.getSignatures()) {
@@ -45,7 +45,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
 
     override fun getBlockWitnessBuilder(): BlockWitnessBuilder? {
         if (!finalized) {
-            throw ProgrammerError("Block is not finalized yet.")
+            throw ProgrammerMistake("Block is not finalized yet.")
         }
 
         val witnessBuilder = BaseBlockWitnessBuilder(cryptoSystem, _blockData!!.header, subjects, getRequiredSigCount())
@@ -53,7 +53,7 @@ class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store
         return witnessBuilder
     }
 
-    private fun getRequiredSigCount(): Int {
+    protected open fun getRequiredSigCount(): Int {
         val requiredSigs: Int
         if (subjects.size == 3) {
             requiredSigs = 3

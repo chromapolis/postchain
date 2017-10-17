@@ -3,7 +3,7 @@ package com.chromaway.postchain.ebft
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.integrationtest.FullEbftTestNightly
 import mu.KLogging
 import org.junit.After
@@ -24,7 +24,7 @@ open class EbftIntegrationTest : IntegrationTest() {
     fun createEBFTNode(nodeCount: Int, myIndex: Int): EbftNode {
         val dataLayer = createDataLayer(myIndex, nodeCount)
         val ectxt = TestErrorContext()
-        val statusManager = BaseStatusManager(ectxt, nodeCount, myIndex)
+        val statusManager = BaseStatusManager(ectxt, nodeCount, myIndex, 0)
         val blockDatabase = BaseBlockDatabase(dataLayer.engine, dataLayer.blockQueries, myIndex)
         val blockManager = BaseBlockManager(blockDatabase, statusManager, ectxt)
 
@@ -70,7 +70,7 @@ open class EbftIntegrationTest : IntegrationTest() {
         override fun commitDone(witness: BlockWitness?) {
             FullEbftTestNightly.logger.info("Commit height ${height++} done")
             if (queue.size > 0) {
-                FullEbftTestNightly.logger.error("Committed multiple times", ProgrammerError(""))
+                FullEbftTestNightly.logger.error("Committed multiple times", ProgrammerMistake(""))
                 fail()
             }
             queue.add(witness)

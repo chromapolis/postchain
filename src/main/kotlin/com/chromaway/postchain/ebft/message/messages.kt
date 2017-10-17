@@ -1,6 +1,6 @@
 package com.chromaway.postchain.ebft.message
 
-import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.ebft.messages.BlockData
 import com.chromaway.postchain.ebft.messages.BlockSignature
 import com.chromaway.postchain.ebft.messages.CompleteBlock
@@ -12,7 +12,6 @@ import com.chromaway.postchain.ebft.messages.Identification
 import com.chromaway.postchain.ebft.messages.Signature
 import com.chromaway.postchain.ebft.messages.SignedMessage
 import com.chromaway.postchain.ebft.messages.Status
-import com.chromaway.postchain.ebft.messages.UnfinishedBlock
 import java.io.ByteArrayOutputStream
 import java.util.Vector
 
@@ -51,7 +50,8 @@ sealed class EbftMessage {
                 Message.blockDataChosen -> com.chromaway.postchain.ebft.message.UnfinishedBlock(message.blockData.header, message.blockData.transactions)
                 Message.getBlockSignatureChosen -> com.chromaway.postchain.ebft.message.GetBlockSignature(message.getBlockSignature.blockRID)
                 Message.blockSignatureChosen -> com.chromaway.postchain.ebft.message.BlockSignature(message.blockSignature.blockRID, com.chromaway.postchain.core.Signature(message.blockSignature.signature.subjectID, message.blockSignature.signature.data))
-                else -> throw ProgrammerError("Message type ${message.choiceID} is not handeled")
+                Message.completeBlockChosen -> com.chromaway.postchain.ebft.message.CompleteBlock(message.completeBlock.blockData.header, message.completeBlock.blockData.transactions, message.completeBlock.height, message.completeBlock.witness)
+                else -> throw ProgrammerMistake("Message type ${message.choiceID} is not handeled")
             }
 
         }

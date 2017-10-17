@@ -4,7 +4,7 @@ import com.chromaway.postchain.core.Signature
 import mu.KLogging
 import java.util.*
 
-class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: Int)
+class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: Int, myNextHeight: Long)
     : StatusManager {
     override val nodeStatuses = Array(nodeCount, {NodeStatus()})
     override val commitSignatures: Array<Signature?> = arrayOfNulls(nodeCount)
@@ -15,6 +15,7 @@ class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: 
 
     init {
         myStatus = nodeStatuses[myIndex]
+        myStatus.height = myNextHeight
     }
 
     private fun countNodes (state: NodeState, height: Long, blockRID: ByteArray?): Int {

@@ -11,7 +11,7 @@ import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.TransactionFactory
 import com.chromaway.postchain.core.TxEContext
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BlockchainEngine
 import mu.KLogging
@@ -29,7 +29,7 @@ import java.io.File
 import javax.sql.DataSource
 
 open class IntegrationTest {
-    private val nodes = mutableListOf<DataLayer>()
+    protected val nodes = mutableListOf<DataLayer>()
 
     companion object : KLogging()
 //    private val privKeysHex = arrayOf("3132333435363738393031323334353637383930313233343536373839303131",
@@ -73,7 +73,7 @@ open class IntegrationTest {
         }
     }
 
-    private class TestBlockchainConfigurationFactory : BlockchainConfigurationFactory {
+    protected open class TestBlockchainConfigurationFactory : BlockchainConfigurationFactory {
 
         override fun makeBlockchainConfiguration(chainID: Long, config: Configuration):
                 BlockchainConfiguration {
@@ -81,7 +81,7 @@ open class IntegrationTest {
         }
     }
 
-    protected class TestBlockchainConfiguration(chainID: Long, config: Configuration) : BaseBlockchainConfiguration(chainID, config) {
+    protected open class TestBlockchainConfiguration(chainID: Long, config: Configuration) : BaseBlockchainConfiguration(chainID, config) {
         val transactionFactory = TestTransactionFactory()
 
         override fun getTransactionFactory(): TransactionFactory {
@@ -133,12 +133,12 @@ open class IntegrationTest {
 
     inner class ErrorTransaction(id: Int, private val applyThrows: Boolean, private val isCorrectThrows: Boolean) : TestTransaction(id) {
         override fun isCorrect(): Boolean {
-            if (isCorrectThrows) throw UserError("Thrown from isCorrect()")
+            if (isCorrectThrows) throw UserMistake("Thrown from isCorrect()")
             return true
         }
 
         override fun apply(ctx: TxEContext): Boolean {
-            if (applyThrows) throw UserError("Thrown from apply()")
+            if (applyThrows) throw UserMistake("Thrown from apply()")
             return true
         }
     }

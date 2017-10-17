@@ -16,7 +16,7 @@ class GTX_NOP(u: Unit, opData: ExtOpData): GTXOperation(opData) {
 
 class GTX_NOP_Module: SimpleGTXModule<Unit>(Unit, mapOf(
         "nop" to ::GTX_NOP
-), mapOf()) {
+), mapOf("reflect" to {_, _, value -> value})) {
 
     override fun initializeDB(ctx: EContext) {}
 }

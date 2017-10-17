@@ -3,7 +3,7 @@ package com.chromaway.postchain.ebft
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.ebft.message.BlockSignature
 import com.chromaway.postchain.ebft.message.CompleteBlock
@@ -121,7 +121,7 @@ class SyncManager(
                     is GetUnfinishedBlock -> sendUnfinishedBlock(nodeIndex)
                     is GetBlockAtHeight -> sendBlockAtHeight(nodeIndex, message.height)
                     is GetBlockSignature -> sendBlockSignature(nodeIndex, message.blockRID)
-                    else -> throw ProgrammerError("Unhandled type ${message::class}")
+                    else -> throw ProgrammerMistake("Unhandled type ${message::class}")
                 }
             } catch (e: Exception) {
                 logger.error("Couldn't handle message ${message}. Ignoring and continuing", e)
@@ -211,7 +211,7 @@ class SyncManager(
             is FetchBlockAtHeightIntent -> fetchBlockAtHeight(intent.height)
             is FetchCommitSignatureIntent -> fetchCommitSignatures(intent.blockRID, intent.nodes)
             is FetchUnfinishedBlockIntent -> fetchUnfinishedBlock(intent.blockRID)
-            else -> throw ProgrammerError("Unrecognized intent: ${intent::class}")
+            else -> throw ProgrammerMistake("Unrecognized intent: ${intent::class}")
         }
     }
 

@@ -27,23 +27,23 @@ abstract class AbstractBlockBuilder (
     }
 
     override fun appendTransaction(tx: Transaction) {
-        if (finalized) throw ProgrammerError("Block is already finalized")
-        // tx.isCorrect may also throw UserError to provide
+        if (finalized) throw ProgrammerMistake("Block is already finalized")
+        // tx.isCorrect may also throw UserMistake to provide
         // a meaningful error message to log.
         if (!tx.isCorrect()) {
-            throw UserError("Transaction ${tx.getRID().toHex()} is not correct")
+            throw UserMistake("Transaction ${tx.getRID().toHex()} is not correct")
         }
         val txctx: TxEContext
         try {
             txctx = store.addTransaction(bctx, tx)
         } catch (e: Exception) {
-            throw UserError("Failed to save tx to database", e)
+            throw UserMistake("Failed to save tx to database", e)
         }
-        // In case of errors, tx.apply may either return false or throw UserError
+        // In case of errors, tx.apply may either return false or throw UserMistake
         if (tx.apply(txctx)) {
             transactions.add(tx.getRawData())
         } else {
-            throw UserError("Transaction ${tx.getRID().toHex()} failed")
+            throw UserMistake("Transaction ${tx.getRID().toHex()} failed")
         }
     }
 
@@ -64,7 +64,7 @@ abstract class AbstractBlockBuilder (
             _blockData = BlockData(bh, transactions)
             finalized = true
         } else {
-            throw UserError("Invalid block header")
+            throw UserMistake("Invalid block header")
         }
     }
 

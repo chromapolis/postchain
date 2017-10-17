@@ -3,9 +3,13 @@ package com.chromaway.postchain.api
 import com.chromaway.postchain.api.rest.Model
 import com.chromaway.postchain.api.rest.RestApi
 import com.chromaway.postchain.api.rest.ApiTx
+import com.chromaway.postchain.api.rest.Query
+import com.chromaway.postchain.api.rest.QueryResult
 import com.chromaway.postchain.api.rest.TxHash
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
+import com.chromaway.postchain.core.ProgrammerMistake
+import com.chromaway.postchain.core.UserMistake
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import mu.KLogging
@@ -17,14 +21,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 class RestApiTest : RestTools() {
@@ -164,6 +162,46 @@ class RestApiTest : RestTools() {
         val response = get("/tx/$hashHex/confirmationProof")
         assertEquals(404, response?.code)
         verify(model)
+    }
+
+    @Test
+    fun testQuery() {
+        val qString = """{"a"="b", "c"=3}"""
+        val query = Query(qString)
+        val rString = """{"d"=false}"""
+        val queryResult = QueryResult(rString)
+        expect(model.query(query)).andReturn(queryResult)
+        replay(model)
+        val response = post("/query", qString)
+        verify(model)
+        assertEquals(200, response!!.code)
+        assertJsonEquals(rString, response.body!!)
+    }
+
+
+    @Test
+    fun testQueryUserError() {
+        val qString = """{"a"="b", "c"=3}"""
+        val query = Query(qString)
+        expect(model.query(query)).andThrow(UserMistake("expected error"))
+        replay(model)
+        val response = post("/query", qString)
+        verify(model)
+        assertEquals(400, response!!.code)
+        assertJsonEquals("""{"error": "expected error"}""", response.body!!)
+    }
+
+
+    @Test
+    fun testQueryOtherError() {
+        val qString = """{"a"="b", "c"=3}"""
+        val query = Query(qString)
+        expect(model.query(query)).andThrow(ProgrammerMistake("expected error"))
+        replay(model)
+        val response = post("/query", qString)
+        verify(model)
+        assertEquals(500, response!!.code)
+        assertJsonEquals("""{"error": "expected error"}""", response.body!!)
     }
 
     private fun post(path: String, reqBody: String?): TestResponse? {

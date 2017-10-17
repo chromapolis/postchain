@@ -2,7 +2,7 @@ package com.chromaway.postchain.base.data
 
 import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.core.ProgrammerMistake
 import mu.KLogging
 import javax.sql.DataSource
 
@@ -17,14 +17,14 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
     override fun openReadConnection(chainID: Int): EContext {
         val eContext = getConnection(chainID, readDataSource)
         if (!eContext.conn.isReadOnly) {
-            throw ProgrammerError("Connection is not read-only")
+            throw ProgrammerMistake("Connection is not read-only")
         }
         return eContext
     }
 
     override fun closeReadConnection(ectxt: EContext) {
         if (!ectxt.conn.isReadOnly) {
-            throw ProgrammerError("trying to close a writable connection as a read-only connection")
+            throw ProgrammerMistake("trying to close a writable connection as a read-only connection")
         }
         ectxt.conn.close()
     }
@@ -35,9 +35,9 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
 
     override fun closeWriteConnection(ectxt: EContext, commit: Boolean) {
         val conn = ectxt.conn
-        logger.debug("${ectxt.nodeID} BaseStorage.closeWriteConnection()")
+//        logger.debug("${ectxt.nodeID} BaseStorage.closeWriteConnection()")
         if (conn.isReadOnly) {
-            throw ProgrammerError("trying to close a read-only connection as a writeable connection")
+            throw ProgrammerMistake("trying to close a read-only connection as a writeable connection")
         }
         if (commit) conn.commit() else conn.rollback()
         conn.close()

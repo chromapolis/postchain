@@ -33,7 +33,7 @@ class BaseManagedBlockBuilder(
     }
 
     override fun appendTransaction(tx: Transaction) {
-        throw ProgrammerError("appendTransaction is not allowed on a ManagedBlockBuilder")
+        throw ProgrammerMistake("appendTransaction is not allowed on a ManagedBlockBuilder")
     }
 
     override fun appendTransaction(txData: ByteArray) {
@@ -46,12 +46,12 @@ class BaseManagedBlockBuilder(
             s.withSavepoint(ctxt) {
                 try {
                     bb.appendTransaction(tx)
-                } catch (userError: UserError) {
-                    logger.info("Failed to append transaction ${tx.getRID().toHex()}", userError)
-                    throw userError
+                } catch (userMistake: UserMistake) {
+                    logger.info("Failed to append transaction ${tx.getRID().toHex()}", userMistake)
+                    throw userMistake
                 }
             }
-        } catch (userError: UserError) {
+        } catch (userMistake: UserMistake) {
             return false
         }
         lifecycleListeners.forEach({it.appendTxDone(tx)})

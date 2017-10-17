@@ -2,6 +2,7 @@ package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Transactor
+import com.chromaway.postchain.core.UserMistake
 import com.google.gson.JsonObject
 
 interface GTXModule {
@@ -37,7 +38,7 @@ abstract class SimpleGTXModule<ConfT>(
     override fun query(ctxt: EContext, name: String, args: GTXValue): GTXValue {
         if (name in querymap) {
             return querymap[name]!!(conf, ctxt, args)
-        } else throw Error("Unkown query")
+        } else throw UserMistake("Unkown query")
     }
 }
 

@@ -5,7 +5,7 @@ import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
-import com.chromaway.postchain.core.UserError
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.BlockchainEngine
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -108,7 +108,7 @@ class BlockchainEngineTest : IntegrationTest() {
         try {
             loadUnfinishedAndCommit(node1, blockData)
             fail()
-        } catch (userError: UserError) {
+        } catch (userMistake: UserMistake) {
             // Expected
         }
         // Block must not have been created.
@@ -132,7 +132,7 @@ class BlockchainEngineTest : IntegrationTest() {
         try {
             loadUnfinishedAndCommit(node1, blockData)
             fail()
-        } catch (userError: UserError) {
+        } catch (userMistake: UserMistake) {
             // Expected
         }
         // Block must not have been created.

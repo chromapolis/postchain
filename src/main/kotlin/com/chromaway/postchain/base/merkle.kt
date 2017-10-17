@@ -2,7 +2,7 @@ package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.MerklePath
 import com.chromaway.postchain.core.MerklePathItem
-import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.Side
 
 val internalNodePrefix = byteArrayOf(0)
@@ -71,11 +71,11 @@ fun internalMerklePath(cryptoSystem: CryptoSystem, hashes: Array<ByteArray>, tar
  */
 fun merklePath(cryptoSystem: CryptoSystem, hashes: Array<ByteArray>, target: ByteArray): MerklePath {
     if (hashes.size == 0) {
-        throw ProgrammerError("Cannot make merkle path from empty transaction set")
+        throw ProgrammerMistake("Cannot make merkle path from empty transaction set")
     }
     val index = hashes.indexOfFirst { target.contentEquals(it) }
     if (index == -1) {
-        throw ProgrammerError("Target is not in list of hashes")
+        throw ProgrammerMistake("Target is not in list of hashes")
     }
 
     val leafDepth =  log2ceil(hashes.size)

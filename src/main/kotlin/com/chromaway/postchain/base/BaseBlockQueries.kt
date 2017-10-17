@@ -32,7 +32,7 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
             val witness = blockchainConfiguration.decodeWitness(witnessData) as MultiSigBlockWitness
             val signature = witness.getSignatures().find { it.subjectID.contentEquals(mySubjectId) }
             if (signature == null) {
-                throw UserError("Trying to get a signature from a node that doesn't have one")
+                throw UserMistake("Trying to get a signature from a node that doesn't have one")
             }
             signature!!
         })
@@ -48,7 +48,7 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
         return runOp {
             val height = blockStore.getBlockHeight(it, blockRID)
             if (height == null) {
-                throw ProgrammerError("BlockRID does not exist")
+                throw ProgrammerMistake("BlockRID does not exist")
             }
             blockStore.getTxRIDsAtHeight(it, height).toList()
         }
@@ -77,7 +77,7 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
     }
 
     override fun query(query: String): Promise<String, Exception> {
-        return Promise.ofFail(UserError("Queries are not supported"))
+        return Promise.ofFail(UserMistake("Queries are not supported"))
     }
 
     override fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception> {
@@ -91,6 +91,36 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
 
             val merklePath = decodedBlockHeader.merklePath(txRID, txIds.toTypedArray())
             ConfirmationProof(txRID, header, decodedWitness, merklePath)
+        }
+    }
+
+    override fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception> {
+        return runOp {
+            val blockRIDs = blockStore.getBlockRIDs(it, height)
+            if (blockRIDs.size == 0) {
+                throw UserMistake("No block at height $height")
+            }
+            if (blockRIDs.size > 1) {
+                throw ProgrammerMistake("Multiple blocks at height $height found")
+            }
+            val blockRID = blockRIDs[0]
+            val headerBytes = blockStore.getBlockHeader(it, blockRID)
+            val witnessBytes = blockStore.getWitnessData(it, blockRID)
+            val txBytes = blockStore.getBlockTransactions(it, blockRID)
+            val header = blockchainConfiguration.decodeBlockHeader(headerBytes)
+            val witness = blockchainConfiguration.decodeWitness(witnessBytes)
+
+            // txBytes is a stream, and it would be nice to be able to stream all transaction data
+            // all the way from database connection to the peer's socket.
+            // For now we store it in an ArrayList below.
+            // Using this streaming stuff actually makes it worse than using
+            // ArrayList, because the data is not really streamed from the database connection
+            // but from an intermediary ArrayList in BaseBlockStore. So now we store all
+            // the txdata both in the blockStore and in the following list. Not cool.
+            val list = ArrayList<ByteArray>()
+            txBytes.forEach { list.add(it) }
+
+            BlockDataWithWitness(header, list, witness)
         }
     }
 }

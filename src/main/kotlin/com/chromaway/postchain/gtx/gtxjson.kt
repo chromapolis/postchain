@@ -1,7 +1,7 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.ProgrammerError
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.google.gson.*
 import java.lang.reflect.Type
 
@@ -16,7 +16,7 @@ class GTXValueAdapter : JsonDeserializer<GTXValue>, JsonSerializer<GTXValue> {
                 return gtx(prim.asLong)
             else if (prim.isString)
                 return gtx(prim.asString)
-            else throw ProgrammerError("Can't deserialize JSON primitive")
+            else throw ProgrammerMistake("Can't deserialize JSON primitive")
         } else if (json.isJsonArray) {
             val arr = json.asJsonArray
             return gtx(*arr.map({ deserialize(it, typeOfT, context) }).toTypedArray())
@@ -29,7 +29,7 @@ class GTXValueAdapter : JsonDeserializer<GTXValue>, JsonSerializer<GTXValue> {
                 mut[it.key] = deserialize(it.value, typeOfT, context)
             }
             return gtx(mut)
-        } else throw ProgrammerError("Could not deserialize JSON element")
+        } else throw ProgrammerMistake("Could not deserialize JSON element")
     }
 
     private fun encodeDict(d: GTXValue, t: Type, c: JsonSerializationContext): JsonObject {
