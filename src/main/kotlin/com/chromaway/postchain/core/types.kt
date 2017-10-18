@@ -106,6 +106,11 @@ interface Transaction : Transactor {
     fun getRID(): ByteArray
 }
 
+interface BlockBuildingStrategy {
+    fun shouldBuildBlock(): Boolean
+    fun blockCommitted(blockData: BlockData)
+}
+
 // BlockchainConfiguration is a stateless objects which describes
 // an individual blockchain instance within Postchain system
 
@@ -119,6 +124,7 @@ interface BlockchainConfiguration {
     fun makeBlockBuilder(ctx: EContext): BlockBuilder
     fun makeBlockQueries(storage: Storage): BlockQueries
     fun initializeDB(ctx: EContext)
+    fun getBlockBuildingStrategy(blockQueries: BlockQueries, transactionQueue: TransactionQueue): BlockBuildingStrategy
 }
 
 interface BlockchainConfigurationFactory {
@@ -129,16 +135,28 @@ interface TransactionFactory {
     fun decodeTransaction(data: ByteArray): Transaction
 }
 
+interface TransactionQueue {
+    fun dequeueTransactions(): Array<Transaction>
+    fun peekTransactions(): List<Transaction>
+}
+
+interface TransactionEnqueuer {
+    fun enqueue(tx: Transaction)
+    fun hasTx(txHash: ByteArray): Boolean
+}
+
 interface BlockQueries {
     fun getBlockSignature(blockRID: ByteArray): Promise<Signature, Exception>
     fun getBestHeight(): Promise<Long, Exception>
+    fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception>
+    fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception>
+    fun getBlockHeader(blockRID: ByteArray): Promise<BlockHeader, Exception>
+
     fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception>
     fun getTransaction(txRID: ByteArray): Promise<Transaction?, Exception>
-    fun getBlockRids(height: Long): Promise<List<ByteArray>, Exception>
     fun query(query: String): Promise<String, Exception>
     fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
     fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception>
-    fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception>
 }
 
 interface BlockBuilder {

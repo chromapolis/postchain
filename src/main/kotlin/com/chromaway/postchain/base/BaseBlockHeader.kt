@@ -10,6 +10,7 @@ import java.util.*
 class BaseBlockHeader(override val rawData: ByteArray, private val cryptoSystem: CryptoSystem) : BlockHeader {
     override val prevBlockRID: ByteArray
     override val blockRID: ByteArray
+    val timestamp: Long get() = blockHeaderRec.timestamp
     val blockHeaderRec: com.chromaway.postchain.base.messages.BlockHeader
 
     init {

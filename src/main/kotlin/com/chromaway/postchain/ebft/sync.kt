@@ -31,8 +31,8 @@ fun decodeBlockData(block: UnfinishedBlock, bc: BlockchainConfiguration)
 
 class RevoltTracker(private val revoltTimeout: Int, private val statusManager: StatusManager) {
     var deadLine = newDeadLine()
-    var height = statusManager.myStatus.height
-    var round = statusManager.myStatus.round
+    var prevHeight = statusManager.myStatus.height
+    var prevRound = statusManager.myStatus.round
 
     private fun newDeadLine(): Long {
         return Date().time + revoltTimeout
@@ -40,13 +40,13 @@ class RevoltTracker(private val revoltTimeout: Int, private val statusManager: S
 
     // Starts a revolt if certain conditions are met.
     fun update() {
-        val myStatus = statusManager.myStatus
-        if (myStatus.height > height ||
-                myStatus.height == height && myStatus.round > round) {
-            height = myStatus.height
-            round = myStatus.round
+        val current = statusManager.myStatus
+        if (current.height > prevHeight ||
+                current.height == prevHeight && current.round > prevRound) {
+            prevHeight = current.height
+            prevRound = current.round
             deadLine = newDeadLine()
-        } else if (Date().time > deadLine && !myStatus.revolting) {
+        } else if (Date().time > deadLine && !current.revolting) {
             this.statusManager.onStartRevolting()
         }
     }

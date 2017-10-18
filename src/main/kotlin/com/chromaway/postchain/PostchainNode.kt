@@ -16,21 +16,15 @@ import com.chromaway.postchain.ebft.BaseBlockDatabase
 import com.chromaway.postchain.ebft.BaseBlockManager
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BaseStatusManager
-import com.chromaway.postchain.ebft.BuildBlockIntent
-import com.chromaway.postchain.ebft.ErrContext
 import com.chromaway.postchain.ebft.SyncManager
 import com.chromaway.postchain.ebft.makeCommManager
-import mu.KLogging
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
-import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.apache.commons.configuration2.builder.fluent.Parameters
-import org.apache.commons.configuration2.convert.DefaultConversionHandler
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.apache.commons.dbcp2.BasicDataSource
 import org.apache.commons.dbutils.QueryRunner
-import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.sql.DataSource
 import kotlin.concurrent.thread
@@ -93,13 +87,14 @@ class PostchainNode {
 
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val ectxt = ErrorContext()
+        val blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
+
         val peerInfos = createPeerInfos(config)
 
         val bestHeight = blockQueries.getBestHeight().get()
-        val statusManager = BaseStatusManager(ectxt, peerInfos.size, nodeIndex, bestHeight+1)
+        val statusManager = BaseStatusManager(peerInfos.size, nodeIndex, bestHeight+1)
         val blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
-        val blockManager = BaseBlockManager(blockDatabase, statusManager, ectxt)
+        val blockManager = BaseBlockManager(blockDatabase, statusManager, blockStrategy)
 
         val privKey = config.getString("messaging.privkey").hexStringToByteArray()
 
@@ -199,20 +194,4 @@ fun main(args: Array<String>) {
     }
     val node = PostchainNode()
     node.start(config, nodeIndex)
-}
-
-class ErrorContext: ErrContext {
-    companion object : KLogging()
-
-    override fun fatal(msg: String) {
-        logger.error(msg)
-    }
-
-    override fun warn(msg: String) {
-        logger.warn(msg)
-    }
-
-    override fun log(msg: String) {
-        logger.info { msg }
-    }
 }

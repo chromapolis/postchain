@@ -1,15 +1,14 @@
 package com.chromaway.postchain.ebft
 
+import com.chromaway.postchain.core.BlockBuildingStrategy
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
 import mu.KLogging
 import nl.komponents.kovenant.Promise
 import java.util.Arrays
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
-import java.util.function.Supplier
 
-class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusManager, val ectxt: ErrContext)
+class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusManager,
+                       val blockStrategy: BlockBuildingStrategy)
     : BlockManager {
     @Volatile var processing = false
     var intent : BlockIntent = DoNothingIntent
@@ -54,7 +53,9 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
              && theIntent.height == height)
         {
             runDBOp({
-                blockDB.addBlock(block)}, {
+                blockDB.addBlock(block)
+            }, {
+                blockStrategy.blockCommitted(block)
                 if (statusManager.onHeightAdvance(height + 1)) {
                     currentBlock = null
                 }
@@ -70,17 +71,28 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
         when (smIntent) {
             is CommitBlockIntent -> {
                 if (currentBlock == null) {
-                    ectxt.fatal("Don't have a block StatusManager wants me to commit")
+                    logger.error("Don't have a block StatusManager wants me to commit")
                     return
                 }
                 runDBOp({
                     blockDB.commitBlock(statusManager.commitSignatures)
                 }, {
+                    blockStrategy.blockCommitted(currentBlock!!)
                     statusManager.onCommittedBlock(currentBlock!!.header.blockRID)
                     currentBlock = null
                 })
             }
             is BuildBlockIntent -> {
+                // It's our turn to build a block. But we need to consult the
+                // BlockBuildingStrategy in order to figure out if this is the
+                // right time. For example, the strategy may decide that
+                // we won't build a block until we have at least three transactions
+                // in the transaction queue. Or it will only build a block every 10 minutes.
+                // Be careful not to have a BlockBuildingStrategy that conflicts with the
+                // RevoltTracker of SyncManager.
+                if (!blockStrategy.shouldBuildBlock()) {
+                    return
+                }
                 runDBOp({
                     blockDB.buildBlock()
                 }, {

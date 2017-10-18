@@ -79,13 +79,3 @@ fun withWriteConnection(s: Storage, chainID: Int, fn: (EContext)->Boolean): Bool
     }
     return commit
 }
-
-
-interface TransactionQueue {
-    fun getTransactions(): Array<Transaction>
-}
-
-interface TransactionEnqueuer {
-    fun enqueue(tx: Transaction)
-    fun hasTx(txHash: ByteArray): Boolean
-}

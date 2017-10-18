@@ -4,7 +4,7 @@ import com.chromaway.postchain.core.Signature
 import mu.KLogging
 import java.util.*
 
-class BaseStatusManager(val ectxt: ErrContext, val nodeCount: Int, val myIndex: Int, myNextHeight: Long)
+class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long)
     : StatusManager {
     override val nodeStatuses = Array(nodeCount, {NodeStatus()})
     override val commitSignatures: Array<Signature?> = arrayOfNulls(nodeCount)

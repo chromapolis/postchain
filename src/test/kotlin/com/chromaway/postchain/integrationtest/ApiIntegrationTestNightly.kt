@@ -34,7 +34,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     val restTools = RestTools()
 
     fun createSystem(count: Int) {
-        ebftNodes = createEbftNodes(count)
+        createEbftNodes(count)
         val model = PostchainModel(ebftNodes[0].dataLayer.txEnqueuer, ebftNodes[0].dataLayer.blockchainConfiguration.getTransactionFactory(),
                 ebftNodes[0].dataLayer.blockQueries)
         restApi = RestApi(model, 0, "")
@@ -70,8 +70,6 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     @Test
     fun testMixedAPICalls() {
         createSystem(3)
-        startUpdateLoop()
-        ebftNodes[0].statusManager.setBlockIntent(BuildBlockIntent)
         testStatusGet("/tx/$hashHex", 404)
         testStatusGet("/tx/${hashHex}/status", 200,
                 {checkJson(it, "{\"status\"=\"unknown\"}")})
@@ -85,8 +83,6 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     @Test
     fun testConfirmationProof() {
         createSystem(3)
-        startUpdateLoop()
-        ebftNodes[0].statusManager.setBlockIntent(BuildBlockIntent)
 
         for (txCount in 1..16) {
             for (i in 1..txCount) {

@@ -94,6 +94,13 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
         }
     }
 
+    override fun getBlockHeader(blockRID: ByteArray): Promise<BlockHeader, Exception> {
+        return runOp {
+            val headerBytes = blockStore.getBlockHeader(it, blockRID)
+            blockchainConfiguration.decodeBlockHeader(headerBytes)
+        }
+    }
+
     override fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception> {
         return runOp {
             val blockRIDs = blockStore.getBlockRIDs(it, height)

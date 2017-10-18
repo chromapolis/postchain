@@ -1,48 +1,60 @@
 package com.chromaway.postchain.integrationtest
 
-import com.chromaway.postchain.ebft.BuildBlockIntent
+import com.chromaway.postchain.core.BlockBuildingStrategy
+import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.BlockchainConfiguration
+import com.chromaway.postchain.core.BlockchainConfigurationFactory
+import com.chromaway.postchain.core.TransactionQueue
 import com.chromaway.postchain.ebft.EbftIntegrationTest
+import com.chromaway.postchain.ebft.EbftNode
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import mu.KLogging
+import org.apache.commons.configuration2.Configuration
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.junit.Assert.*
 import org.junit.runner.RunWith
 
 @RunWith(JUnitParamsRunner::class)
 class FullEbftTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
 
+    override fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
+        return object: TestBlockchainConfigurationFactory() {
+            override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
+                return object: TestBlockchainConfiguration(chainID, config) {
+                    override fun getBlockBuildingStrategy(blockQueries: BlockQueries, txQueue: TransactionQueue): BlockBuildingStrategy {
+                        return OnDemandBlockBuildingStrategy()
+                    }
+                }
+            }
+        }
+    }
+
+    fun strat(node: EbftNode): OnDemandBlockBuildingStrategy {
+        return node.blockStrategy as OnDemandBlockBuildingStrategy
+    }
+
     @Test
-    @Parameters("3, 1, 0",  "3, 2, 0",  "3, 10, 0",
+    @Parameters("3, 1, 0",  "3, 2, 0", "3, 10, 0",
                 "3, 1, 10", "3, 2, 10", "3, 10, 10",
                 "4, 1, 0",  "4, 2, 0",  "4, 10, 0",
                 "4, 1, 10", "4, 2, 10", "4, 10, 10",
                 "8, 1, 0",  "8, 2, 0",  "8, 10, 0",
-                "8, 1, 10", "8, 2, 10", "8, 10, 10"//"25, 100, 0"
+                "8, 1, 10", "8, 2, 10", "8, 10, 10" //"25, 100, 0"
                 )
     fun runXNodesWithYTxPerBlock(nodeCount: Int, blockCount: Int, txPerBlock: Int) {
-        ebftNodes = createEbftNodes(nodeCount)
-        startUpdateLoop()
+        createEbftNodes(nodeCount)
 
-        val listeners = ebftNodes.map { CommitListener() }
-
-        ebftNodes.forEachIndexed { index, ebftNode -> ebftNode.dataLayer.engine.addBlockLifecycleListener(listeners[index]) }
-
-        ebftNodes[0].statusManager.setBlockIntent(BuildBlockIntent)
         var txId = 0
         for (i in 0 until blockCount) {
             for (tx in 0 until txPerBlock) {
                 ebftNodes[i % nodeCount].dataLayer.txEnqueuer.enqueue(TestTransaction(txId++))
             }
-            listeners.forEach({it.releaseBlock()})
-            listeners.forEach({it.awaitCommitted()})
+            strat(ebftNodes[i % nodeCount]).triggerBlock()
+            ebftNodes.forEach { strat(it).awaitCommitted(i) }
         }
-
-        // Blocks may be built after last block because updater thread keeps running
-        // If so, we should not block those blocks from executing or we will
-        // block the next test from
-        listeners.forEach({it.releaseBlock()})
 
         val queries0 = ebftNodes[0].dataLayer.blockQueries
         val referenceHeight = queries0.getBestHeight().get()

@@ -10,6 +10,8 @@ import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.secp256k1_derivePubKey
 import com.chromaway.postchain.core.BlockBuilder
+import com.chromaway.postchain.core.BlockBuildingStrategy
+import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.BlockStore
@@ -17,9 +19,9 @@ import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.TransactionFactory
+import com.chromaway.postchain.core.TransactionQueue
 import org.apache.commons.configuration2.Configuration
-import org.apache.commons.configuration2.SubsetConfiguration
-import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
+import java.util.Date
 
 open class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
         BlockchainConfiguration {
@@ -68,5 +70,35 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
         blockStore.initialize(ctx)
     }
 
+    override fun getBlockBuildingStrategy(blockQueries: BlockQueries, txQueue: TransactionQueue): BlockBuildingStrategy {
+        return BaseBlockBuildingStrategy(blockQueries, txQueue)
+    }
 }
 
+class BaseBlockBuildingStrategy(private val blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
+    var lastBlockTime: Long
+    init {
+        val height = blockQueries.getBestHeight().get()
+        if (height == -1L) {
+            lastBlockTime = System.currentTimeMillis()
+        } else {
+            val blockRID = blockQueries.getBlockRids(height).get()[0]
+            lastBlockTime = (blockQueries.getBlockHeader(blockRID).get() as BaseBlockHeader).timestamp
+        }
+    }
+
+    override fun blockCommitted(blockData: BlockData) {
+        lastBlockTime = (blockData.header as BaseBlockHeader).timestamp
+    }
+
+    override fun shouldBuildBlock(): Boolean {
+        if (System.currentTimeMillis() - lastBlockTime > 30000) {
+            return true
+        }
+        if (txQueue.peekTransactions().size > 0) {
+            return true
+        }
+        return false
+    }
+
+}

@@ -1,9 +1,9 @@
 package com.chromaway.postchain.api.rest
 
 import com.chromaway.postchain.base.ConfirmationProof
-import com.chromaway.postchain.base.TransactionEnqueuer
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.TransactionEnqueuer
 import com.chromaway.postchain.core.TransactionFactory
 import com.chromaway.postchain.core.TransactionStatus.UNKNOWN
 import com.chromaway.postchain.core.TransactionStatus.WAITING

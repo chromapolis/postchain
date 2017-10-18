@@ -66,6 +66,7 @@ open class RestTools {
             assertEquals(200, response.code)
             val resultMap: Map<String, Any> = Gson().fromJson(response.body, mapType)
             Assert.assertTrue(resultMap.containsKey("status"))
+            Thread.sleep(100)
         } while (resultMap.get("status") != "confirmed")
     }
 

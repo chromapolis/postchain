@@ -9,7 +9,9 @@ import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Transaction
+import com.chromaway.postchain.core.TransactionEnqueuer
 import com.chromaway.postchain.core.TransactionFactory
+import com.chromaway.postchain.core.TransactionQueue
 import com.chromaway.postchain.core.TxEContext
 import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
@@ -63,7 +65,7 @@ open class IntegrationTest {
         return pubKey(index).toHex()
     }
 
-    class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val blockchainConfiguration: BlockchainConfiguration,
+    class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val txQueue: TransactionQueue, val blockchainConfiguration: BlockchainConfiguration,
                     val storage: Storage,
                     private val dataSources: Array<BasicDataSource>, val blockQueries: BlockQueries) {
         fun close() {
@@ -146,10 +148,14 @@ open class IntegrationTest {
     class TestTxQueue : TransactionQueue {
         private val q = ArrayList<Transaction>()
 
-        override fun getTransactions(): Array<Transaction> {
+        override fun dequeueTransactions(): Array<Transaction> {
             val result = Array(q.size, { q[it] })
             q.clear()
             return result
+        }
+
+        override fun peekTransactions(): List<Transaction> {
+            return q
         }
 
         fun add(tx: Transaction) {
@@ -211,7 +217,7 @@ open class IntegrationTest {
 
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val node = DataLayer(engine, txQueue, blockchainConfiguration, storage, arrayOf(readDataSource, writeDataSource), blockQueries)
+        val node = DataLayer(engine, txQueue, txQueue, blockchainConfiguration, storage, arrayOf(readDataSource, writeDataSource), blockQueries)
         // keep list of nodes to close after test
         nodes.add(node)
         return node
