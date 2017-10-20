@@ -190,7 +190,7 @@ fun main(args: Array<String>) {
         i++
     }
     if (config == "") {
-        config = "config.$nodeIndex.properties"
+        config = "config/config.$nodeIndex.properties"
     }
     val node = PostchainNode()
     node.start(config, nodeIndex)
