@@ -26,7 +26,7 @@ class RestApiTestManual {
         return b.serialize()
     }
 
-    @Test
+//    @Test
     fun testGtxTestModuleBackend() {
         val restTools = RestTools()
         val query = """{"type"="gtx_test_get_value", "txRID"="abcd"}"""

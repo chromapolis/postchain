@@ -2,11 +2,11 @@ package com.chromaway.postchain.base.data
 
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.*
-import com.chromaway.postchain.parseInt
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.ResultSetHandler
-import org.apache.commons.dbutils.ResultSetIterator
 import org.apache.commons.dbutils.handlers.*
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.sql.Connection
 import java.sql.ResultSet
 import java.util.stream.Stream
@@ -29,7 +29,12 @@ class BaseBlockStore : BlockStore {
         val prevHeight = getLastBlockHeight(ctx)
         val prevBlockRID: ByteArray?
         if (prevHeight == -1L) {
-            prevBlockRID = kotlin.ByteArray(32)
+            if (ctx.chainID < 0) {
+                throw UserMistake("ChainId must be >=0, got ${ctx.chainID}")
+            }
+            val arrayOut = ByteArrayOutputStream()
+            val dataOut = DataOutputStream(arrayOut).writeLong(ctx.chainID.toLong())
+            prevBlockRID = ByteArray(24)+arrayOut.toByteArray()
         } else {
             val prevBlockRIDs = getBlockRIDs(ctx, prevHeight)
             if (prevBlockRIDs.isEmpty()) {
@@ -41,7 +46,7 @@ class BaseBlockStore : BlockStore {
         val blockIid = r.insert(ctx.conn,
                 "INSERT INTO blocks (chain_id, block_height) VALUES (?, ?) RETURNING block_iid",
                 longRes, ctx.chainID, prevHeight + 1)
-        val blockData = InitialBlockData(blockIid, prevBlockRID, prevHeight + 1)
+        val blockData = InitialBlockData(blockIid, ctx.chainID, prevBlockRID, prevHeight + 1)
         return blockData
     }
 

@@ -48,6 +48,10 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
 //        if (transactions.isEmpty()) throw Error("No transactions to build a block")
         val blockBuilder = makeBlockBuilder()
         blockBuilder.begin()
+
+        // TODO Potential problem: if the block fails for some reason,
+        // the transaction queue is gone. This could potentially happen
+        // during a revolt. We might need a "transactional" tx queue...
         val transactions = tq.dequeueTransactions()
         for (tx in transactions) {
             blockBuilder.maybeAppendTransaction(tx)

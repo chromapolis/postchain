@@ -77,6 +77,8 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
 
 class BaseBlockBuildingStrategy(private val blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
     var lastBlockTime: Long
+    var lastTxTime = System.currentTimeMillis()
+    var lastTxSize = 0
     init {
         val height = blockQueries.getBestHeight().get()
         if (height == -1L) {
@@ -93,10 +95,22 @@ class BaseBlockBuildingStrategy(private val blockQueries: BlockQueries, private 
 
     override fun shouldBuildBlock(): Boolean {
         if (System.currentTimeMillis() - lastBlockTime > 30000) {
+            lastTxSize = 0
+            lastTxTime = System.currentTimeMillis()
             return true
         }
-        if (txQueue.peekTransactions().size > 0) {
-            return true
+        val peekTransactions = txQueue.peekTransactions()
+        if (peekTransactions.size > 0) {
+            if (peekTransactions.size == lastTxSize && lastTxTime + 1000 < System.currentTimeMillis()) {
+                lastTxSize = 0
+                lastTxTime = System.currentTimeMillis()
+                return true
+            }
+            if (peekTransactions.size > lastTxSize) {
+                lastTxTime = System.currentTimeMillis()
+                lastTxSize = peekTransactions.size
+            }
+            return false
         }
         return false
     }

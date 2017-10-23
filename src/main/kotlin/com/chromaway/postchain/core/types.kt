@@ -170,7 +170,7 @@ interface BlockBuilder {
     fun commit(w: BlockWitness?)
 }
 
-class InitialBlockData(val blockIID: Long, val prevBlockRID: ByteArray, val height: Long)
+class InitialBlockData(val blockIID: Long, val chainID: Int, val prevBlockRID: ByteArray, val height: Long)
 
 enum class TransactionStatus {UNKNOWN, REJECTED, WAITING, CONFIRMED}
 

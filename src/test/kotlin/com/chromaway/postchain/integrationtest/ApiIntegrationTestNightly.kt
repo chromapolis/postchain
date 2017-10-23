@@ -30,19 +30,22 @@ import java.lang.reflect.Type
 
 
 class ApiIntegrationTestNightly : EbftIntegrationTest() {
-    lateinit var restApi: RestApi
+    lateinit var apis: List<RestApi>
     val restTools = RestTools()
 
     fun createSystem(count: Int) {
         createEbftNodes(count)
-        val model = PostchainModel(ebftNodes[0].dataLayer.txEnqueuer, ebftNodes[0].dataLayer.blockchainConfiguration.getTransactionFactory(),
-                ebftNodes[0].dataLayer.blockQueries)
-        restApi = RestApi(model, 0, "")
+        apis = ebftNodes.map { ebftNode ->
+            val model = PostchainModel(ebftNode.dataLayer.txEnqueuer,
+                    ebftNode.dataLayer.blockchainConfiguration.getTransactionFactory(),
+                    ebftNode.dataLayer.blockQueries)
+            RestApi(model, 0, "")
+        }
     }
 
     @After
     fun tearDownApi() {
-        restApi.stop()
+        apis.forEach { it.stop() }
     }
 
     var hashHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -74,7 +77,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
         testStatusGet("/tx/${hashHex}/status", 200,
                 {checkJson(it, "{\"status\"=\"unknown\"}")})
         val tx1 = TestTransaction(1)
-        testStatusPost("/tx",
+        testStatusPost(0,"/tx",
                 "{\"tx\": \"${tx1.getRawData().toHex()}\"}",
                 200)
         awaitConfirmed(tx1)
@@ -82,20 +85,21 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
 
     @Test
     fun testConfirmationProof() {
-        createSystem(3)
-
+        val nodeCount = 3
+        createSystem(nodeCount)
+        var blockHeight = 0;
+        var currentId = 0;
         for (txCount in 1..16) {
             for (i in 1..txCount) {
-
-                val tx = TestTransaction((txCount*(txCount-1)/2)+i)
-                testStatusPost("/tx",
+                val tx = TestTransaction(++currentId)
+                testStatusPost(blockHeight%nodeCount, "/tx",
                         "{\"tx\": \"${tx.getRawData().toHex()}\"}",
                         200)
             }
-            awaitConfirmed(TestTransaction(((txCount+1)*txCount/2)))
-
-            for (i in 1..txCount) {
-                val txId = txCount*(txCount-1)/2+i
+            awaitConfirmed(TestTransaction(currentId))
+            blockHeight++
+            for (i in 0 until txCount) {
+                val txId = currentId - i
                 val response = get("/tx/${TestTransaction(txId).getRID().toHex()}/confirmationProof")
                 assertEquals(200, response!!.code)
                 val body = response.body!!
@@ -134,7 +138,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     }
 
     private fun awaitConfirmed(tx: Transaction) {
-        restTools.awaitConfirmed(restApi.actualPort(), tx)
+        restTools.awaitConfirmed(apis[0].actualPort(), tx)
     }
 
     private fun testStatusGet(path: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
@@ -146,8 +150,8 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
         extraChecks(response)
     }
 
-    private fun testStatusPost(path: String, body: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
-        val response = post(path, body)
+    private fun testStatusPost(toIndex: Int, path: String, body: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
+        val response = restTools.post(apis[toIndex].actualPort(), path, body)
         if (response == null) {
             fail()
         }
@@ -155,14 +159,8 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
         extraChecks(response)
     }
 
-
-    private fun post(path: String, reqBody: String?): TestResponse? {
-        return restTools.post(restApi.actualPort(), path, reqBody)
-    }
-
-
     private fun get(path: String): TestResponse? {
-        return restTools.get(restApi.actualPort(), path)
+        return restTools.get(apis[0].actualPort(), path)
     }
 
 }
