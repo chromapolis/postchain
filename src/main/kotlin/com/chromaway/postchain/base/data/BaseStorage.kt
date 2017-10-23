@@ -9,12 +9,12 @@ import javax.sql.DataSource
 class BaseStorage(private val writeDataSource: DataSource, private val readDataSource: DataSource, private val nodeId: Int) : Storage {
     companion object: KLogging()
 
-    private fun getConnection(chainID: Int, dataSource: DataSource): EContext {
+    private fun getConnection(chainID: Long, dataSource: DataSource): EContext {
         val connection = dataSource.connection
         return EContext(connection, chainID, nodeId)
     }
 
-    override fun openReadConnection(chainID: Int): EContext {
+    override fun openReadConnection(chainID: Long): EContext {
         val eContext = getConnection(chainID, readDataSource)
         if (!eContext.conn.isReadOnly) {
             throw ProgrammerMistake("Connection is not read-only")
@@ -29,7 +29,7 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
         ectxt.conn.close()
     }
 
-    override fun openWriteConnection(chainID: Int): EContext {
+    override fun openWriteConnection(chainID: Long): EContext {
         return getConnection(chainID, writeDataSource)
     }
 

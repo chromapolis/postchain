@@ -96,7 +96,7 @@ open class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val 
         val blockSigningPublicKey = secp256k1_derivePubKey(blockSigningPrivateKey)
 
         return object: BaseBlockQueries(this@GTXBlockchainConfiguration, storage, blockStore,
-                chainID.toInt(), blockSigningPublicKey) {
+                chainID, blockSigningPublicKey) {
             private val gson = make_gtx_gson()
 
             override fun query(query: String): Promise<String, Exception> {

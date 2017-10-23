@@ -185,7 +185,7 @@ open class IntegrationTest {
     }
 
     protected fun createDataLayer(nodeIndex: Int, nodeCount: Int = 1): DataLayer {
-        val chainId = 1
+        val chainId = 1L
         val configs = Configurations()
         val config = configs.properties(File("config.properties"))
         config.listDelimiterHandler = DefaultListDelimiterHandler(',')

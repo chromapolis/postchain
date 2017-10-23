@@ -1,7 +1,5 @@
-package com.chromaway.postchain.base.data
+package com.chromaway.postchain.base
 
-import com.chromaway.postchain.base.BaseBlockHeader
-import com.chromaway.postchain.base.SECP256K1CryptoSystem
 import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.InitialBlockData
 import com.chromaway.postchain.core.UserMistake
@@ -48,15 +46,21 @@ class BaseBlockHeaderTest {
 
     @Test
     fun decodeMakeHeaderChainIdMax() {
-        val prevBlockRid = ByteArray(28)+ByteArray(4, {if (it==0) 127 else -1})
+        val prevBlockRid = ByteArray(24)+ByteArray(8, {if (it==0) 127 else -1})
 
-        val header0 = createHeader(2L, Integer.MAX_VALUE, prevBlockRid, 0)
+        val header0 = createHeader(2L, Long.MAX_VALUE, prevBlockRid, 0)
 
         val decodedHeader0 = BaseBlockHeader(header0.rawData, cryptoSystem)
         assertArrayEquals(prevBlockRid, decodedHeader0.prevBlockRID)
     }
 
-    private fun createHeader(blockIID: Long, chainId: Int, prevBlockRid: ByteArray, height: Long): BlockHeader {
+    @Test(expected = UserMistake::class)
+    fun makeHeaderWithNegativeChainId() {
+        val badPrevBlockRID = ByteArray(32, { if (it >= 31) 127 else 0 }) // -1
+        createHeader(2L, -1L, badPrevBlockRID, 0)
+    }
+
+    private fun createHeader(blockIID: Long, chainId: Long, prevBlockRid: ByteArray, height: Long): BlockHeader {
         val blockData = InitialBlockData(blockIID, chainId, prevBlockRid, height)
         val rootHash = ByteArray(32, {0})
         val timestamp = 10000L + height

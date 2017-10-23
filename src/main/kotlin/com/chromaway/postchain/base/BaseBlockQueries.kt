@@ -9,7 +9,7 @@ class ConfirmationProof(val txRID: ByteArray, val header: ByteArray, val witness
 
 open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfiguration,
                        private val storage: Storage, private val blockStore: BlockStore,
-                       private val chainId: Int, private val mySubjectId: ByteArray) : BlockQueries {
+                       private val chainId: Long, private val mySubjectId: ByteArray) : BlockQueries {
     companion object : KLogging()
 
     protected fun <T> runOp(operation: (EContext) -> T): Promise<T, Exception> {

@@ -51,16 +51,16 @@ interface ManagedBlockBuilder : BlockBuilder {
 }
 
 interface Storage {
-    fun openReadConnection(chainID: Int): EContext
+    fun openReadConnection(chainID: Long): EContext
     fun closeReadConnection(ectxt: EContext)
 
-    fun openWriteConnection(chainID: Int): EContext
+    fun openWriteConnection(chainID: Long): EContext
     fun closeWriteConnection(ectxt: EContext, commit: Boolean)
 
     fun withSavepoint( ctxt: EContext, fn: ()->Unit )
 }
 
-fun<RT> withReadConnection(s: Storage, chainID: Int, fn: (EContext)->RT): RT {
+fun<RT> withReadConnection(s: Storage, chainID: Long, fn: (EContext)->RT): RT {
     val ctx = s.openReadConnection(chainID)
     try {
         return fn(ctx)
@@ -69,7 +69,7 @@ fun<RT> withReadConnection(s: Storage, chainID: Int, fn: (EContext)->RT): RT {
     }
 }
 
-fun withWriteConnection(s: Storage, chainID: Int, fn: (EContext)->Boolean): Boolean {
+fun withWriteConnection(s: Storage, chainID: Long, fn: (EContext)->Boolean): Boolean {
     val ctx = s.openWriteConnection(chainID)
     var commit = false
     try {

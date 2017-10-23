@@ -62,7 +62,7 @@ class PostchainNode {
 
         // This will eventually become a list of chain ids.
         // But for now it's just a single integer.
-        val chainId = config.getInt("activechainids")
+        val chainId = config.getInt("activechainids").toLong()
 
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
@@ -128,7 +128,7 @@ class PostchainNode {
         )
     }
 
-    private fun getBlockchainConfiguration(config: Configuration, chainId: Int): BlockchainConfiguration {
+    private fun getBlockchainConfiguration(config: Configuration, chainId: Long): BlockchainConfiguration {
         val bcfClass = Class.forName(config.getString("configurationfactory"))
         val factory = (bcfClass.newInstance() as BlockchainConfigurationFactory)
 

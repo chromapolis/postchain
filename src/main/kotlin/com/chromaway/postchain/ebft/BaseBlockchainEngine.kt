@@ -12,7 +12,7 @@ import com.chromaway.postchain.core.TransactionQueue
 
 open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                                 val s: Storage,
-                                private val chainID: Int,
+                                private val chainID: Long,
                                 private val tq: TransactionQueue
 ) : BlockchainEngine
 {

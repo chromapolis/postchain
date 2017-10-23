@@ -17,12 +17,12 @@ import java.util.stream.Stream
 6. Transaction object can perform its duties according to the configuration it received, perhaps creating sub-objects called transactors and passing them the configuration.
  */
 // TODO: can we generalize conn? We can make it an Object, but then we have to do typecast everywhere...
-open class EContext(val conn: Connection, val chainID: Int, val nodeID: Int)
+open class EContext(val conn: Connection, val chainID: Long, val nodeID: Int)
 
-open class BlockEContext(conn: Connection, chainID: Int, nodeID: Int, val blockIID: Long)
+open class BlockEContext(conn: Connection, chainID: Long, nodeID: Int, val blockIID: Long)
     : EContext(conn, chainID, nodeID)
 
-class TxEContext(conn: Connection, chainID: Int, nodeID: Int, blockIID: Long, val txIID: Long)
+class TxEContext(conn: Connection, chainID: Long, nodeID: Int, blockIID: Long, val txIID: Long)
     : BlockEContext(conn, chainID, nodeID, blockIID)
 
 enum class Side {LEFT, RIGHT}
@@ -170,7 +170,7 @@ interface BlockBuilder {
     fun commit(w: BlockWitness?)
 }
 
-class InitialBlockData(val blockIID: Long, val chainID: Int, val prevBlockRID: ByteArray, val height: Long)
+class InitialBlockData(val blockIID: Long, val chainID: Long, val prevBlockRID: ByteArray, val height: Long)
 
 enum class TransactionStatus {UNKNOWN, REJECTED, WAITING, CONFIRMED}
 
