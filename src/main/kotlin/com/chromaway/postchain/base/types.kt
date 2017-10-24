@@ -58,6 +58,8 @@ interface Storage {
     fun closeWriteConnection(ectxt: EContext, commit: Boolean)
 
     fun withSavepoint( ctxt: EContext, fn: ()->Unit )
+
+    fun close()
 }
 
 fun<RT> withReadConnection(s: Storage, chainID: Long, fn: (EContext)->RT): RT {

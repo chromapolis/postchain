@@ -26,8 +26,9 @@ class ModuleTest: IntegrationTest() {
                 SECP256K1CryptoSystem()
         )
         val module = FTModule(config)
-
-        val storage = makeBaseStorage()
+        val configs = Configurations()
+        val conf = configs.properties(File("config.properties"))
+        val storage = baseStorage(conf, 0)
 
         withWriteConnection(storage, 0L) {
             GTXSchemaManager.initializeDB(it)
@@ -35,22 +36,4 @@ class ModuleTest: IntegrationTest() {
             true
         }
     }
-
-    // TODO: factor out
-    private fun makeBaseStorage(): BaseStorage {
-        val configs = Configurations()
-        val config = configs.properties(File("config.properties"))
-        config.listDelimiterHandler = DefaultListDelimiterHandler(',')
-
-        val writeDataSource = createBasicDataSource(config, true)
-        writeDataSource.maxTotal = 1
-
-        val readDataSource = createBasicDataSource(config)
-        readDataSource.defaultAutoCommit = true
-        readDataSource.maxTotal = 2
-        readDataSource.defaultReadOnly = true
-
-        return  BaseStorage(writeDataSource, readDataSource, 0)
-    }
-
 }

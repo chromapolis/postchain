@@ -10,8 +10,10 @@ open class BaseDBOps: FTDBOps {
     private val r = QueryRunner()
     private val byteArrayRes = ScalarHandler<ByteArray>()
 
+    private val unitHandler = ScalarHandler<Unit>()
+
     override fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, allowNeg: Boolean) {
-        r.update(ctx.txCtx.conn, "SELECT ft_update_raw(\$1, \$2, \$3, \$4, \$5, \$6, \$7)",
+        r.query(ctx.txCtx.conn, "SELECT ft_update_raw(?, ?, ?, ?, ?, ?, ?)", unitHandler,
                 ctx.txCtx.chainID,
                 ctx.txCtx.txIID,
                 ctx.opIndex,
@@ -19,12 +21,12 @@ open class BaseDBOps: FTDBOps {
     }
 
     override fun getDescriptor(ctx: OpEContext, accountID: ByteArray): GTXValue {
-        return decodeGTXValue(r.query(ctx.txCtx.conn, "SELECT ft_get_account_desc(\$1, \$2)",
+        return decodeGTXValue(r.query(ctx.txCtx.conn, "SELECT ft_get_account_desc(?, ?)",
                 byteArrayRes, ctx.txCtx.chainID, accountID))
     }
 
     override fun registerAccount(ctx: OpEContext, accountID: ByteArray, accountType: Int, accountDesc: ByteArray) {
-        r.update(ctx.txCtx.conn, "SELECT ft_register_account($1, $2, $3, $4, $5, $6)",
+        r.query(ctx.txCtx.conn, "SELECT ft_register_account(?, ?, ?, ?, ?, ?)", unitHandler,
                 ctx.txCtx.chainID,
                 ctx.txCtx.txIID,
                 ctx.opIndex,

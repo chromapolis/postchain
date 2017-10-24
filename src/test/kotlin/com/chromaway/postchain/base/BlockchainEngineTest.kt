@@ -16,15 +16,6 @@ import org.junit.Test
 
 class BlockchainEngineTest : IntegrationTest() {
 
-    private fun getTxRidsAtHeight(node: DataLayer, height: Int): Array<ByteArray> {
-        val list = node.blockQueries.getBlockRids(height.toLong()).get()
-        return node.blockQueries.getBlockTransactionRids(list[0]).get().toTypedArray()
-    }
-
-    private fun getBestHeight(node: DataLayer): Long {
-        return node.blockQueries.getBestHeight().get()
-    }
-
     @Test
     fun testBuildBlock() {
         val node = createDataLayer(0)
@@ -43,19 +34,22 @@ class BlockchainEngineTest : IntegrationTest() {
         val riDsAtHeight1 = getTxRidsAtHeight(node, 1)
         assertTrue(riDsAtHeight1.contentDeepEquals(Array(2, { TestTransaction(it + 1).getRID() })))
 
-        // Empty block. All tx will be failing
+        // Empty block. All tx but last (10) will be failing
         node.txEnqueuer.enqueue(TestTransaction(3, good = true, correct = false))
         node.txEnqueuer.enqueue(TestTransaction(4, good = false, correct = true))
         node.txEnqueuer.enqueue(TestTransaction(5, good = false, correct = false))
         node.txEnqueuer.enqueue(ErrorTransaction(6, true, true))
         node.txEnqueuer.enqueue(ErrorTransaction(7, false, true))
         node.txEnqueuer.enqueue(ErrorTransaction(8, true, false))
+        node.txEnqueuer.enqueue(UnexpectedExceptionTransaction(9))
+        node.txEnqueuer.enqueue(TestTransaction(10))
 
         buildBlockAndCommit(node.engine)
         assertEquals(2, getBestHeight(node))
         assertTrue(riDsAtHeight1.contentDeepEquals(getTxRidsAtHeight(node, 1)))
         val txRIDsAtHeight2 = getTxRidsAtHeight(node, 2)
-        assertEquals(0, txRIDsAtHeight2.size)
+        assertEquals(1, txRIDsAtHeight2.size)
+        assertArrayEquals(TestTransaction(10).getRID(), txRIDsAtHeight2[0])
     }
 
     @Test
@@ -169,11 +163,6 @@ class BlockchainEngineTest : IntegrationTest() {
 
     private fun loadUnfinishedAndCommit(dataLayer: DataLayer, blockData: BlockData) {
         val blockBuilder = dataLayer.engine.loadUnfinishedBlock(blockData)
-        commitBlock(blockBuilder)
-    }
-
-    private fun buildBlockAndCommit(engine: BlockchainEngine) {
-        val blockBuilder = engine.buildBlock()
         commitBlock(blockBuilder)
     }
 

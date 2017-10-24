@@ -4,6 +4,7 @@ import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.ProgrammerMistake
 import mu.KLogging
+import org.apache.commons.dbcp2.BasicDataSource
 import javax.sql.DataSource
 
 class BaseStorage(private val writeDataSource: DataSource, private val readDataSource: DataSource, private val nodeId: Int) : Storage {
@@ -48,11 +49,19 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
         val savepoint = ctxt.conn.setSavepoint(savepointName)
         try {
             fn()
-        } catch (e: Exception) {
-            ctxt.conn.rollback(savepoint)
-            throw e
-        } finally {
             ctxt.conn.releaseSavepoint(savepoint)
+        } catch (e: Exception) {
+            logger.debug("Exception in savepoint $savepointName", e)
+            ctxt.conn.rollback(savepoint)
+        }
+    }
+
+    override fun close() {
+        if (readDataSource is AutoCloseable) {
+            readDataSource.close()
+        }
+        if (writeDataSource is AutoCloseable) {
+            writeDataSource.close()
         }
     }
 }

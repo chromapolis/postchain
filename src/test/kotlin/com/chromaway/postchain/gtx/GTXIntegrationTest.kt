@@ -63,40 +63,4 @@ class GTXIntegrationTest: IntegrationTest() {
             }
         }
     }
-
-    // TODO: these functions are copy-pasted from BlockchainEngineTest, factor them out
-    private fun buildBlockAndCommit(engine: BlockchainEngine) {
-        val blockBuilder = engine.buildBlock()
-        commitBlock(blockBuilder)
-    }
-
-    // TODO: these functions are copy-pasted from BlockchainEngineTest, factor them out
-    private fun commitBlock(blockBuilder: BlockBuilder): BlockWitness {
-        val witnessBuilder = blockBuilder.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
-        Assert.assertNotNull(witnessBuilder)
-        val blockData = blockBuilder.getBlockData()
-        // Simulate other peers sign the block
-        val blockHeader = blockData.header
-        var i = 0;
-        while (!witnessBuilder.isComplete()) {
-            witnessBuilder.applySignature(cryptoSystem.makeSigner(pubKey(i), privKey(i))(blockHeader.rawData))
-            i++
-        }
-        val witness = witnessBuilder.getWitness()
-        blockBuilder.commit(witness)
-        return witness
-    }
-
-    // TODO: these functions are copy-pasted from BlockchainEngineTest, factor them out
-    private fun getTxRidsAtHeight(node: DataLayer, height: Int): Array<ByteArray> {
-        val list = node.blockQueries.getBlockRids(height.toLong()).get()
-        return node.blockQueries.getBlockTransactionRids(list[0]).get().toTypedArray()
-    }
-
-    // TODO: these functions are copy-pasted from BlockchainEngineTest, factor them out
-    private fun getBestHeight(node: DataLayer): Long {
-        return node.blockQueries.getBestHeight().get()
-    }
-
-
 }

@@ -4,10 +4,13 @@ import com.chromaway.postchain.base.data.BaseBlockStore
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
 import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.base.data.BaseTransactionQueue
+import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory
 import com.chromaway.postchain.core.EContext
+import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.TransactionEnqueuer
 import com.chromaway.postchain.core.TransactionFactory
@@ -18,12 +21,13 @@ import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BlockchainEngine
 import mu.KLogging
 import org.apache.commons.configuration2.Configuration
+import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.apache.commons.dbcp2.BasicDataSource
 import org.apache.commons.dbutils.QueryRunner
 import org.junit.After
-import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.*
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -66,12 +70,9 @@ open class IntegrationTest {
     }
 
     class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val txQueue: TransactionQueue, val blockchainConfiguration: BlockchainConfiguration,
-                    val storage: Storage,
-                    private val dataSources: Array<BasicDataSource>, val blockQueries: BlockQueries) {
+                    val storage: Storage, val blockQueries: BlockQueries) {
         fun close() {
-            dataSources.forEach {
-                it.close()
-            }
+            storage.close()
         }
     }
 
@@ -130,6 +131,12 @@ open class IntegrationTest {
 
         override fun getRID(): ByteArray {
             return bytes(32)
+        }
+    }
+
+    class UnexpectedExceptionTransaction(id: Int): TestTransaction(id) {
+        override fun apply(ctx: TxEContext): Boolean {
+            return throw RuntimeException("Expected exception")
         }
     }
 
@@ -198,15 +205,7 @@ open class IntegrationTest {
 
         val blockchainConfiguration = factory.makeBlockchainConfiguration(chainId.toLong(), config.subset("blockchain.$chainId"))
 
-        val writeDataSource = createBasicDataSource(config, true)
-        writeDataSource.maxTotal = 1
-
-        val readDataSource = createBasicDataSource(config)
-        readDataSource.defaultAutoCommit = true
-        readDataSource.maxTotal = 2
-        readDataSource.defaultReadOnly = true
-
-        val storage = BaseStorage(writeDataSource, readDataSource, nodeIndex)
+        val storage = baseStorage(config, nodeIndex)
 
         val txQueue = BaseTransactionQueue()
 
@@ -217,13 +216,28 @@ open class IntegrationTest {
 
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val node = DataLayer(engine, txQueue, txQueue, blockchainConfiguration, storage, arrayOf(readDataSource, writeDataSource), blockQueries)
+        val node = DataLayer(engine, txQueue, txQueue, blockchainConfiguration, storage, blockQueries)
         // keep list of nodes to close after test
         nodes.add(node)
         return node
     }
 
-    protected fun createBasicDataSource(config: Configuration, wipe: Boolean = false): BasicDataSource {
+    protected fun baseStorage(config: PropertiesConfiguration, nodeIndex: Int): BaseStorage {
+        val writeDataSource = createBasicDataSource(config)
+        writeDataSource.defaultAutoCommit = false
+        writeDataSource.maxTotal = 1
+        wipeDatabase(writeDataSource, config)
+
+        val readDataSource = createBasicDataSource(config)
+        readDataSource.defaultAutoCommit = true
+        readDataSource.maxTotal = 2
+        readDataSource.defaultReadOnly = true
+
+        val storage = BaseStorage(writeDataSource, readDataSource, nodeIndex)
+        return storage
+    }
+
+    protected fun createBasicDataSource(config: Configuration): BasicDataSource {
         val dataSource = BasicDataSource()
         val schema = config.getString("database.schema", "public")
         dataSource.addConnectionProperty("currentSchema", schema)
@@ -232,21 +246,15 @@ open class IntegrationTest {
         dataSource.username = config.getString("database.username")
         dataSource.password = config.getString("database.password")
         dataSource.defaultAutoCommit = false
-        if (wipe) {
-            wipeDatabase(dataSource, schema)
-
-        }
-
         return dataSource
     }
 
-    private fun wipeDatabase(dataSource: DataSource, schema: String) {
+    private fun wipeDatabase(dataSource: DataSource, config: Configuration) {
+        val schema = config.getString("database.schema", "public")
         val queryRunner = QueryRunner()
         val conn = dataSource.connection
         queryRunner.update(conn, "DROP SCHEMA IF EXISTS $schema CASCADE")
         queryRunner.update(conn, "CREATE SCHEMA $schema")
-        // Implementation specific initialization.
-        BaseBlockStore().initialize(EContext(conn, 1, 0))
         conn.commit()
         conn.close()
     }
@@ -267,5 +275,35 @@ open class IntegrationTest {
 
     protected fun arrayOfBasePeerCommConfigurations(count: Int): Array<BasePeerCommConfiguration> {
         return Array(count, { createBasePeerCommConfiguration(count, it) })
+    }
+
+    protected fun buildBlockAndCommit(engine: BlockchainEngine) {
+        val blockBuilder = engine.buildBlock()
+        commitBlock(blockBuilder)
+    }
+
+    private fun commitBlock(blockBuilder: BlockBuilder): BlockWitness {
+        val witnessBuilder = blockBuilder.getBlockWitnessBuilder() as MultiSigBlockWitnessBuilder
+        assertNotNull(witnessBuilder)
+        val blockData = blockBuilder.getBlockData()
+        // Simulate other peers sign the block
+        val blockHeader = blockData.header
+        var i = 0;
+        while (!witnessBuilder.isComplete()) {
+            witnessBuilder.applySignature(cryptoSystem.makeSigner(pubKey(i), privKey(i))(blockHeader.rawData))
+            i++
+        }
+        val witness = witnessBuilder.getWitness()
+        blockBuilder.commit(witness)
+        return witness
+    }
+
+    protected fun getTxRidsAtHeight(node: DataLayer, height: Int): Array<ByteArray> {
+        val list = node.blockQueries.getBlockRids(height.toLong()).get()
+        return node.blockQueries.getBlockTransactionRids(list[0]).get().toTypedArray()
+    }
+
+    protected fun getBestHeight(node: DataLayer): Long {
+        return node.blockQueries.getBestHeight().get()
     }
 }
