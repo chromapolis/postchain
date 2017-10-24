@@ -223,7 +223,7 @@ open class IntegrationTest {
         return node
     }
 
-    private fun createBasicDataSource(config: Configuration, wipe: Boolean = false): BasicDataSource {
+    protected fun createBasicDataSource(config: Configuration, wipe: Boolean = false): BasicDataSource {
         val dataSource = BasicDataSource()
         val schema = config.getString("database.schema", "public")
         dataSource.addConnectionProperty("currentSchema", schema)
