@@ -47,7 +47,7 @@ sealed class EbftMessage {
                     com.chromaway.postchain.ebft.message.Status(s.blockRID, s.height, s.revolting, s.round, s.serial, s.state.toInt())
                 }
                 Message.getUnfinishedBlockChosen -> com.chromaway.postchain.ebft.message.GetUnfinishedBlock(message.getUnfinishedBlock.blockRID)
-                Message.blockDataChosen -> com.chromaway.postchain.ebft.message.UnfinishedBlock(message.blockData.header, message.blockData.transactions)
+                Message.unfinishedBlockChosen -> com.chromaway.postchain.ebft.message.UnfinishedBlock(message.unfinishedBlock.header, message.unfinishedBlock.transactions)
                 Message.getBlockSignatureChosen -> com.chromaway.postchain.ebft.message.GetBlockSignature(message.getBlockSignature.blockRID)
                 Message.blockSignatureChosen -> com.chromaway.postchain.ebft.message.BlockSignature(message.blockSignature.blockRID, com.chromaway.postchain.core.Signature(message.blockSignature.signature.subjectID, message.blockSignature.signature.data))
                 Message.completeBlockChosen -> com.chromaway.postchain.ebft.message.CompleteBlock(message.completeBlock.blockData.header, message.completeBlock.blockData.transactions, message.completeBlock.height, message.completeBlock.witness)
@@ -144,10 +144,10 @@ class Status(val blockRId: ByteArray?, val height: Long, val revolting: Boolean,
 
 class UnfinishedBlock(val header: ByteArray, val transactions: List<ByteArray>) : EbftMessage() {
     override fun getBackingInstance(): Message {
-        val result = com.chromaway.postchain.ebft.messages.BlockData()
+        val result = com.chromaway.postchain.ebft.messages.UnfinishedBlock()
         result.header = header
         result.transactions = Vector(transactions)
-        return Message.blockData(result)
+        return Message.unfinishedBlock(result)
     }
 }
 
