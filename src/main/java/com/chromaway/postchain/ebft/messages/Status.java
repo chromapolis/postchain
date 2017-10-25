@@ -48,7 +48,7 @@ public class Status {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65542);
+	public final static AsnType TYPE = Messages.type(65543);
 
 	public final static CompositeConverter CONV;
 

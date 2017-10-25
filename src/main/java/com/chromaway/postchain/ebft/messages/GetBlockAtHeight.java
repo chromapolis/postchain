@@ -33,7 +33,7 @@ public class GetBlockAtHeight {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65540);
+	public final static AsnType TYPE = Messages.type(65541);
 
 	public final static CompositeConverter CONV;
 

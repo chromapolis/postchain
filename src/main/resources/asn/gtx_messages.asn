@@ -20,6 +20,7 @@ Messages DEFINITIONS AUTOMATIC TAGS ::= BEGIN
 	}
 	
 	GTXTransaction ::= SEQUENCE {
+		blockchainID OCTET STRING,
 		operations SEQUENCE OF GTXOperation,
 		signers SEQUENCE OF OCTET STRING,
 		signatures SEQUENCE OF OCTET STRING

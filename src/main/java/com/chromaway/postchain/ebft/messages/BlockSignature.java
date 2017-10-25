@@ -35,7 +35,7 @@ public class BlockSignature {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65546);
+	public final static AsnType TYPE = Messages.type(65547);
 
 	public final static CompositeConverter CONV;
 
