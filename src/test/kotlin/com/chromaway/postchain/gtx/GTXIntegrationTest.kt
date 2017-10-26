@@ -1,18 +1,11 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.IntegrationTest
-import com.chromaway.postchain.base.cryptoSystem
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.configurations.GTXTestModule
-import com.chromaway.postchain.core.*
-import com.chromaway.postchain.ebft.BlockchainEngine
-import org.apache.commons.configuration2.Configuration
-import org.apache.commons.dbutils.QueryRunner
-import org.apache.commons.dbutils.handlers.ScalarHandler
+import com.chromaway.postchain.core.Transaction
 import org.junit.Assert
 import org.junit.Test
-
-
 
 
 fun makeTestTx(id: Long, value: String): ByteArray {
@@ -27,6 +20,8 @@ class GTXIntegrationTest: IntegrationTest() {
 
     @Test
     fun testBuildBlock() {
+        configOverrides.setProperty("blockchain.1.configurationfactory", GTXBlockchainConfigurationFactory::class.qualifiedName)
+        configOverrides.setProperty("blockchain.1.gtx.modules", GTXTestModule::class.qualifiedName)
         val node = createDataLayer(0)
 
         fun enqueueTx(data: ByteArray): Transaction? {
@@ -54,13 +49,5 @@ class GTXIntegrationTest: IntegrationTest() {
         val value = node.blockQueries.query(
                 """{"type"="gtx_test_get_value", "txRID"="${validTx.getRID().toHex()}"}""")
         Assert.assertEquals("\"true\"", value.get())
-    }
-
-    override fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
-        return object: GTXBlockchainConfigurationFactory() {
-            override fun createGtxModule(config: Configuration): GTXModule {
-                return GTXTestModule()
-            }
-        }
     }
 }

@@ -1,6 +1,5 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.base.data.BaseBlockStore
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
 import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.base.data.BaseTransactionQueue
@@ -9,7 +8,6 @@ import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.BlockWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.BlockchainConfigurationFactory
-import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.core.TransactionEnqueuer
@@ -19,15 +17,18 @@ import com.chromaway.postchain.core.TxEContext
 import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BlockchainEngine
+import com.chromaway.postchain.getBlockchainConfiguration
 import mu.KLogging
+import org.apache.commons.configuration2.CompositeConfiguration
 import org.apache.commons.configuration2.Configuration
-import org.apache.commons.configuration2.PropertiesConfiguration
+import org.apache.commons.configuration2.MapConfiguration
 import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.apache.commons.dbcp2.BasicDataSource
 import org.apache.commons.dbutils.QueryRunner
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertNotNull
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -36,19 +37,9 @@ import javax.sql.DataSource
 
 open class IntegrationTest {
     protected val nodes = mutableListOf<DataLayer>()
+    val configOverrides = MapConfiguration(mutableMapOf<String, String>())
 
     companion object : KLogging()
-//    private val privKeysHex = arrayOf("3132333435363738393031323334353637383930313233343536373839303131",
-//            "3132333435363738393031323334353637383930313233343536373839303132",
-//            "3132333435363738393031323334353637383930313233343536373839303133",
-//            "3132333435363738393031323334353637383930313233343536373839303134")
-//    protected val privKeys = privKeysHex.map { it.hexStringToByteArray() }
-//
-//    private val pubKeysHex = arrayOf("0350fe40766bc0ce8d08b3f5b810e49a8352fdd458606bd5fafe5acdcdc8ff3f57",
-//            "035676109c54b9a16d271abeb4954316a40a32bcce023ac14c8e26e958aa68fba9",
-//            "03f811d3e806e6d093a4bcce49c145ba78f9a4b2fbd167753ecab2a13530b081f8",
-//            "03ef3f5be98d499b048ba28b247036b611a1ced7fcf87c17c8b5ca3b3ce1ee23a4")
-//    protected val pubKeys = pubKeysHex.map { it.hexStringToByteArray() }
 
     fun privKey(index: Int): ByteArray {
         // private key index 0 is all zeroes except byte 16 which is 1
@@ -76,15 +67,7 @@ open class IntegrationTest {
         }
     }
 
-    protected open class TestBlockchainConfigurationFactory : BlockchainConfigurationFactory {
-
-        override fun makeBlockchainConfiguration(chainID: Long, config: Configuration):
-                BlockchainConfiguration {
-            return TestBlockchainConfiguration(chainID, config)
-        }
-    }
-
-    protected open class TestBlockchainConfiguration(chainID: Long, config: Configuration) : BaseBlockchainConfiguration(chainID, config) {
+    open class TestBlockchainConfiguration(chainID: Long, config: Configuration) : BaseBlockchainConfiguration(chainID, config) {
         val transactionFactory = TestTransactionFactory()
 
         override fun getTransactionFactory(): TransactionFactory {
@@ -181,29 +164,42 @@ open class IntegrationTest {
         nodes.clear()
         logger.debug("Closed nodes")
         peerInfos = null
+        configOverrides.clear()
     }
 
     protected fun createEngines(count: Int): Array<DataLayer> {
         return Array(count, { createDataLayer(it, count) })
     }
 
-    protected open fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
-        return TestBlockchainConfigurationFactory()
+    protected fun createConfig(nodeIndex: Int, nodeCount: Int = 1): Configuration {
+        val configs = Configurations()
+        val baseConfig = configs.properties(File("config.properties"))
+        baseConfig.listDelimiterHandler = DefaultListDelimiterHandler(',')
+        val chainId = baseConfig.getLong("activechainids")
+        baseConfig.setProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
+        // append nodeIndex to schema name
+        baseConfig.setProperty("database.schema", baseConfig.getString("database.schema") + nodeIndex)
+        baseConfig.setProperty("blockchain.$chainId.blocksigningprivkey", privKeyHex(nodeIndex))
+        for (i in 0 until nodeCount) {
+            baseConfig.setProperty("node.$i.id", "node$i")
+            baseConfig.setProperty("node.$i.host", "127.0.0.1")
+            baseConfig.setProperty("node.$i.port", "0")
+            baseConfig.setProperty("node.$i.pubkey", pubKeyHex(i))
+        }
+        val composite = CompositeConfiguration()
+        composite.addConfiguration(configOverrides)
+        composite.addConfiguration(baseConfig)
+        return composite
     }
 
     protected fun createDataLayer(nodeIndex: Int, nodeCount: Int = 1): DataLayer {
-        val chainId = 1L
-        val configs = Configurations()
-        val config = configs.properties(File("config.properties"))
-        config.listDelimiterHandler = DefaultListDelimiterHandler(',')
 
-        val factory = makeTestBlockchainConfigurationFactory()
-        config.addProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
-        // append nodeIndex to schema name
-        config.setProperty("database.schema", config.getString("database.schema") + nodeIndex)
-        config.setProperty("blockchain.$chainId.blocksigningprivkey", privKeyHex(nodeIndex))
+        val config = createConfig(nodeIndex, nodeCount)
+        //config.getKeys().forEach { logger.debug("$it = ${config.getString(it)}") }
+        //logger.debug { config.getProperties("") }
+        val chainId = config.getLong("activechainids")
 
-        val blockchainConfiguration = factory.makeBlockchainConfiguration(chainId.toLong(), config.subset("blockchain.$chainId"))
+        val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
         val storage = baseStorage(config, nodeIndex)
 
@@ -222,7 +218,7 @@ open class IntegrationTest {
         return node
     }
 
-    protected fun baseStorage(config: PropertiesConfiguration, nodeIndex: Int): BaseStorage {
+    protected fun baseStorage(config: Configuration, nodeIndex: Int): BaseStorage {
         val writeDataSource = createBasicDataSource(config)
         writeDataSource.defaultAutoCommit = false
         writeDataSource.maxTotal = 1
@@ -305,5 +301,15 @@ open class IntegrationTest {
 
     protected fun getBestHeight(node: DataLayer): Long {
         return node.blockQueries.getBestHeight().get()
+    }
+}
+
+
+
+class TestBlockchainConfigurationFactory : BlockchainConfigurationFactory {
+
+    override fun makeBlockchainConfiguration(chainID: Long, config: Configuration):
+            BlockchainConfiguration {
+        return IntegrationTest.TestBlockchainConfiguration(chainID, config)
     }
 }

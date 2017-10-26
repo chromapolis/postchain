@@ -21,7 +21,6 @@ import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.TransactionFactory
 import com.chromaway.postchain.core.TransactionQueue
 import org.apache.commons.configuration2.Configuration
-import java.util.Date
 
 open class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
         BlockchainConfiguration {
@@ -71,14 +70,23 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
     }
 
     override fun getBlockBuildingStrategy(blockQueries: BlockQueries, txQueue: TransactionQueue): BlockBuildingStrategy {
-        return BaseBlockBuildingStrategy(blockQueries, txQueue)
+        val strategyClassName = config.getString("blockstrategy", "")
+        if (strategyClassName == "") {
+            return BaseBlockBuildingStrategy(config, blockQueries, txQueue)
+        }
+        val strategyClass = Class.forName(strategyClassName)
+        val ctor = strategyClass.getConstructor(Configuration::class.java, BlockQueries::class.java, TransactionQueue::class.java)
+        val strategy = ctor.newInstance(config, blockQueries, txQueue) as BlockBuildingStrategy
+        return strategy
     }
 }
 
-class BaseBlockBuildingStrategy(private val blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
+class BaseBlockBuildingStrategy(val config: Configuration, private val blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
     var lastBlockTime: Long
     var lastTxTime = System.currentTimeMillis()
     var lastTxSize = 0
+    val maxBlockTime = config.getLong("basestrategy.maxblocktime", 30000)
+    val blockDelay = config.getLong("basestrategy.blockdelay", 1000)
     init {
         val height = blockQueries.getBestHeight().get()
         if (height == -1L) {
@@ -94,14 +102,14 @@ class BaseBlockBuildingStrategy(private val blockQueries: BlockQueries, private 
     }
 
     override fun shouldBuildBlock(): Boolean {
-        if (System.currentTimeMillis() - lastBlockTime > 30000) {
+        if (System.currentTimeMillis() - lastBlockTime > maxBlockTime) {
             lastTxSize = 0
             lastTxTime = System.currentTimeMillis()
             return true
         }
         val peekTransactions = txQueue.peekTransactions()
         if (peekTransactions.size > 0) {
-            if (peekTransactions.size == lastTxSize && lastTxTime + 1000 < System.currentTimeMillis()) {
+            if (peekTransactions.size == lastTxSize && lastTxTime + blockDelay < System.currentTimeMillis()) {
                 lastTxSize = 0
                 lastTxTime = System.currentTimeMillis()
                 return true

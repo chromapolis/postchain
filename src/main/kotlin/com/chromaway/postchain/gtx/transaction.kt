@@ -123,7 +123,7 @@ open class GTXBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
     open fun createGtxModule(config: Configuration): GTXModule {
         val list = config.getList(String::class.java, "modules")
         if (list == null || list.size == 0) {
-            throw UserMistake("Missing GTX module in config. expected property 'blockchain.<chainId>.gtxmodules'")
+            throw UserMistake("Missing GTX module in config. expected property 'blockchain.<chainId>.gtx.modules'")
         }
         return if (list.size == 1) {
             val moduleClass = Class.forName(list[0])

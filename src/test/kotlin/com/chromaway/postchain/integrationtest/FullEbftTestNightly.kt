@@ -1,16 +1,11 @@
 package com.chromaway.postchain.integrationtest
 
-import com.chromaway.postchain.core.BlockBuildingStrategy
-import com.chromaway.postchain.core.BlockQueries
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.BlockchainConfigurationFactory
-import com.chromaway.postchain.core.TransactionQueue
 import com.chromaway.postchain.ebft.EbftIntegrationTest
 import com.chromaway.postchain.ebft.EbftNode
+import com.chromaway.postchain.ebft.OnDemandBlockBuildingStrategy
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import mu.KLogging
-import org.apache.commons.configuration2.Configuration
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -19,18 +14,6 @@ import org.junit.runner.RunWith
 @RunWith(JUnitParamsRunner::class)
 class FullEbftTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
-
-    override fun makeTestBlockchainConfigurationFactory(): BlockchainConfigurationFactory {
-        return object: TestBlockchainConfigurationFactory() {
-            override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
-                return object: TestBlockchainConfiguration(chainID, config) {
-                    override fun getBlockBuildingStrategy(blockQueries: BlockQueries, txQueue: TransactionQueue): BlockBuildingStrategy {
-                        return OnDemandBlockBuildingStrategy()
-                    }
-                }
-            }
-        }
-    }
 
     fun strat(node: EbftNode): OnDemandBlockBuildingStrategy {
         return node.blockStrategy as OnDemandBlockBuildingStrategy
@@ -45,6 +28,7 @@ class FullEbftTestNightly : EbftIntegrationTest() {
                 "8, 1, 10", "8, 2, 10", "8, 10, 10" //"25, 100, 0"
                 )
     fun runXNodesWithYTxPerBlock(nodeCount: Int, blockCount: Int, txPerBlock: Int) {
+        configOverrides.setProperty("blockchain.1.blockstrategy", OnDemandBlockBuildingStrategy::class.qualifiedName)
         createEbftNodes(nodeCount)
 
         var txId = 0

@@ -108,8 +108,6 @@ class PostchainNode {
             restApi = RestApi(model, port, basePath)
         }
 
-//        statusManager.intent = BuildBlockIntent
-
         val syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager, blockchainConfiguration)
         statusManager.recomputeStatus()
         startUpdateLoop(syncManager)
@@ -126,13 +124,6 @@ class PostchainNode {
                     config.getString("node.$it.pubkey").hexStringToByteArray()
             )}
         )
-    }
-
-    private fun getBlockchainConfiguration(config: Configuration, chainId: Long): BlockchainConfiguration {
-        val bcfClass = Class.forName(config.getString("configurationfactory"))
-        val factory = (bcfClass.newInstance() as BlockchainConfigurationFactory)
-
-        return factory.makeBlockchainConfiguration(chainId.toLong(), config)
     }
 
     private fun createBasicDataSource(config: Configuration): BasicDataSource {
@@ -157,15 +148,6 @@ class PostchainNode {
         } finally {
             conn.close()
         }
-    }
-
-    private fun wipeDatabase(dataSource: DataSource, schema: String) {
-        val queryRunner = QueryRunner()
-        val conn = dataSource.connection
-        queryRunner.update(conn, "DROP SCHEMA IF EXISTS $schema CASCADE")
-        queryRunner.update(conn, "CREATE SCHEMA $schema")
-        conn.commit()
-        conn.close()
     }
 }
 

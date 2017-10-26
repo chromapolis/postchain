@@ -1,10 +1,12 @@
 package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.IntegrationTest
-import com.chromaway.postchain.base.data.BaseBlockBuildingStrategy
 import com.chromaway.postchain.core.BlockBuildingStrategy
 import com.chromaway.postchain.core.BlockData
+import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.TransactionQueue
 import mu.KLogging
+import org.apache.commons.configuration2.Configuration
 import org.junit.After
 import org.junit.Before
 import java.util.concurrent.LinkedBlockingQueue
@@ -16,30 +18,6 @@ open class EbftIntegrationTest : IntegrationTest() {
 
     open fun createEbftNodes(count: Int) {
         ebftNodes = Array(count, { createEBFTNode(count, it) })
-    }
-
-    class OnDemandBlockBuildingStrategy() : BlockBuildingStrategy {
-        val triggerBlock = AtomicBoolean(false)
-        val blocks = LinkedBlockingQueue<BlockData>()
-        var committedHeight = -1
-        override fun shouldBuildBlock(): Boolean {
-            return triggerBlock.getAndSet(false)
-        }
-
-        fun triggerBlock() {
-            triggerBlock.set(true)
-        }
-
-        override fun blockCommitted(blockData: BlockData) {
-            blocks.add(blockData)
-        }
-
-        fun awaitCommitted(blockHeight: Int) {
-            while (committedHeight < blockHeight) {
-                blocks.take()
-                committedHeight++
-            }
-        }
     }
 
     private fun createEBFTNode(nodeCount: Int, myIndex: Int): EbftNode {
@@ -72,6 +50,30 @@ open class EbftIntegrationTest : IntegrationTest() {
             it.close()
         }
         ebftNodes = arrayOf()
+    }
+}
+
+class OnDemandBlockBuildingStrategy(config: Configuration, blockQueries: BlockQueries, txQueue: TransactionQueue) : BlockBuildingStrategy {
+    val triggerBlock = AtomicBoolean(false)
+    val blocks = LinkedBlockingQueue<BlockData>()
+    var committedHeight = -1
+    override fun shouldBuildBlock(): Boolean {
+        return triggerBlock.getAndSet(false)
+    }
+
+    fun triggerBlock() {
+        triggerBlock.set(true)
+    }
+
+    override fun blockCommitted(blockData: BlockData) {
+        blocks.add(blockData)
+    }
+
+    fun awaitCommitted(blockHeight: Int) {
+        while (committedHeight < blockHeight) {
+            blocks.take()
+            committedHeight++
+        }
     }
 }
 

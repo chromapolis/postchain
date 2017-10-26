@@ -5,27 +5,26 @@ import com.chromaway.postchain.api.TestResponse
 import com.chromaway.postchain.api.rest.PostchainModel
 import com.chromaway.postchain.api.rest.RestApi
 import com.chromaway.postchain.base.cryptoSystem
-import com.chromaway.postchain.base.data.BaseTransactionQueue
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.base.validateMerklePath
 import com.chromaway.postchain.core.MerklePath
 import com.chromaway.postchain.core.MerklePathItem
 import com.chromaway.postchain.core.Side
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
-import com.chromaway.postchain.ebft.BuildBlockIntent
 import com.chromaway.postchain.ebft.EbftIntegrationTest
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import org.junit.After
-import org.junit.Test
-import org.junit.Assert.*
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializationContext
-import com.google.gson.JsonElement
 import com.google.gson.JsonSerializer
-import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
+import org.junit.After
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Test
 import java.lang.reflect.Type
 
 
