@@ -164,8 +164,6 @@ class PostchainNode {
         val conn = dataSource.connection
         queryRunner.update(conn, "DROP SCHEMA IF EXISTS $schema CASCADE")
         queryRunner.update(conn, "CREATE SCHEMA $schema")
-        // Implementation specific initialization.
-        BaseBlockStore().initialize(EContext(conn, 1, 0))
         conn.commit()
         conn.close()
     }

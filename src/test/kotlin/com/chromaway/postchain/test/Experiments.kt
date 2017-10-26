@@ -1,10 +1,15 @@
 package com.chromaway.postchain.test
 
+import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.ebft.BaseBlockDatabase
 import nl.komponents.kovenant.deferred
+import org.apache.commons.configuration2.Configuration
+import org.apache.commons.configuration2.MapConfiguration
+import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.junit.Test
 import org.junit.Assert.*
 import sun.nio.ch.ThreadPool
+import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.function.Supplier
 import java.util.concurrent.ExecutionException
@@ -14,7 +19,32 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class Experiments {
+class Experiments: IntegrationTest() {
+
+    @Test
+    fun testSavepoint() {
+        val configs = Configurations()
+        val conf = configs.properties(File("config.properties"))
+        val storage = baseStorage(conf, 0)
+        val ctx = storage.openWriteConnection(1);
+
+        val savepoint = ctx.conn.setSavepoint("A")
+        try {
+            var statement = ctx.conn.prepareStatement("SELECT ft_register_account($1, $2, $3, $4, $5, $6)")
+                    statement.setInt(1, 1)
+            //        statement.setInt(2, 2)
+            //        statement.setInt(3, 3)
+            //        statement.setInt(4, 4)
+            //        statement.setInt(5, 5)
+            //        statement.setInt(6, 6)
+            statement.execute()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ctx.conn.rollback(savepoint)
+            storage.closeWriteConnection(ctx, false)
+        }
+//        ctx.conn.rollback(savepoint)
+    }
 //    @Test
 //    fun testLineBreaks() {
 //

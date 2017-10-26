@@ -60,10 +60,10 @@ class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: Crypto
     }
 
     override fun apply(ctx: TxEContext): Boolean {
-        if (!isCorrect()) throw Error("Transaction is not correct")
+        if (!isCorrect()) throw UserMistake("Transaction is not correct")
         for (op in ops) {
             if (!op.apply(ctx))
-                throw Error("Operation failed")
+                throw UserMistake("Operation failed")
         }
         return true
     }

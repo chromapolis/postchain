@@ -7,12 +7,20 @@ import com.chromaway.postchain.core.MultiSigBlockWitness
 import com.chromaway.postchain.core.Side
 import com.chromaway.postchain.core.TransactionStatus
 import com.chromaway.postchain.core.UserMistake
-import com.google.gson.*
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
+import com.google.gson.JsonSerializationContext
+import com.google.gson.JsonSerializer
 import mu.KLogging
 import spark.Request
 import spark.Service
 import java.lang.reflect.Type
-import java.util.*
+import java.util.Arrays
 
 
 class RestApi(private val model: Model, private val listenPort: Int, private val basePath: String) {
@@ -95,42 +103,56 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
         //http.before()
         http.port(listenPort)
 
-        http.before({ _, res ->
+        http.before({ req, res ->
             res.type("application/json")
         })
 
-        http.post("$basePath/tx") { req, _ ->
-            val b = req.body()
-            logger.debug("Request body: $b")
-            val tx = toTransaction(req)
-            if (!tx.tx.matches(Regex("[0-9a-f]{2,}"))) {
-                throw UserMistake("Invalid tx format. Expected {\"tx\": <hexString>}")
+        http.path(basePath, {
+            http.post("/tx") { req, _ ->
+                val b = req.body()
+                logger.debug("Request body: $b")
+                val tx = toTransaction(req)
+                if (!tx.tx.matches(Regex("[0-9a-f]{2,}"))) {
+                    throw UserMistake("Invalid tx format. Expected {\"tx\": <hexString>}")
+                }
+                model.postTransaction(tx)
+                "{}"
             }
-            model.postTransaction(tx)
-        }
 
-        http.get("$basePath/tx/:hashHex", "application/json", { req, _ ->
-            checkHashHex(req)
-            val transaction = toTransactionFromHash(req)
-            transaction
-        }, gson::toJson)
+            http.get("/tx/:hashHex", "application/json", { req, _ ->
+                checkHashHex(req)
+                val transaction = toTransactionFromHash(req)
+                transaction
+            }, gson::toJson)
 
-        http.get("$basePath/tx/:hashHex/confirmationProof", { req, _ ->
-            val hashHex = checkHashHex(req)
-            model.getConfirmationProof(TxHash(hashHex.hexStringToByteArray()))?:throw NotFoundError("")
-        }, gson::toJson)
+            http.get("/tx/:hashHex/confirmationProof", { req, _ ->
+                val hashHex = checkHashHex(req)
+                model.getConfirmationProof(TxHash(hashHex.hexStringToByteArray())) ?: throw NotFoundError("")
+            }, gson::toJson)
 
-        http.get("$basePath/tx/:hashHex/status", { req, res ->
-            checkHashHex(req)
-            val txHash = toTxHash(req.params(":hashHex"))
-            model.getStatus(txHash)
-        }, gson::toJson)
+            http.get("/tx/:hashHex/status", { req, res ->
+                checkHashHex(req)
+                val txHash = toTxHash(req.params(":hashHex"))
+                model.getStatus(txHash)
+            }, gson::toJson)
 
-        http.post("$basePath/query") { req, res ->
-            model.query(Query(req.body())).json
-        }
+            http.post("/query") { req, res ->
+                handleQuery(req)
+            }
+
+            // This is to provide compatibility with old postchain-client code
+            http.post("/query/") { req, res ->
+                handleQuery(req)
+            }
+        })
 
         http.awaitInitialization()
+    }
+
+    private fun handleQuery(req: Request): String {
+        val b = req.body()
+        logger.debug("Request body: $b")
+        return model.query(Query(b)).json
     }
 
     private fun checkHashHex(req: Request): String {

@@ -19,7 +19,8 @@ open class RestTools {
         try {
             val url = URL("http://localhost:${port}" + path)
             val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("content-type", "application/json")
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Accept", "application/json")
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.connect()

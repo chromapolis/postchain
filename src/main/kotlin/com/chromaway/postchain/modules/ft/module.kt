@@ -24,7 +24,7 @@ class FTModule(config: FTConfig): SimpleGTXModule<FTConfig>(
             val r = QueryRunner()
             val schemaURI = javaClass.getResource("schema.sql").toURI()
             val schemaSQL = String(Files.readAllBytes(Paths.get(schemaURI)))
-            r.batch(ctx.conn, schemaSQL, arrayOf())
+            r.update(ctx.conn, schemaSQL)
             GTXSchemaManager.setModuleVersion(ctx, moduleName, 0)
         }
     }
