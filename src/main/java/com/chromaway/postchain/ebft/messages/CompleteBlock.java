@@ -39,7 +39,7 @@ public class CompleteBlock {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65541);
+	public final static AsnType TYPE = Messages.type(65542);
 
 	public final static CompositeConverter CONV;
 

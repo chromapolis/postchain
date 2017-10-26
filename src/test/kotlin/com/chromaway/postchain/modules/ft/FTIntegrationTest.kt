@@ -21,7 +21,7 @@ fun makeTestTx(): ByteArray {
             gtx(pubKey(0))
     ))
 
-    val b = GTXDataBuilder(arrayOf(pubKey(0)), myCS)
+    val b = GTXDataBuilder(EMPTY_SIGNATURE, arrayOf(pubKey(0)), myCS)
 
     b.addOperation("ft_register", arrayOf(gtx(accountDesc)))
     b.finish()

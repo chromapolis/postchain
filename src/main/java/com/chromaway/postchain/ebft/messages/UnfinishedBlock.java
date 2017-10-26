@@ -36,7 +36,7 @@ public class UnfinishedBlock {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65548);
+	public final static AsnType TYPE = Messages.type(65540);
 
 	public final static CompositeConverter CONV;
 

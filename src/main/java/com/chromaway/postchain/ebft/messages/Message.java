@@ -13,13 +13,14 @@ import org.asnlab.asndt.runtime.value.*;
 public class Message {
 
 	public static final int getUnfinishedBlockChosen = 0;
-	public static final int blockDataChosen = 1;
+	public static final int unfinishedBlockChosen = 1;
 	public static final int getBlockAtHeightChosen = 2;
 	public static final int completeBlockChosen = 3;
 	public static final int statusChosen = 4;
 	public static final int identificationChosen = 5;
 	public static final int getBlockSignatureChosen = 6;
 	public static final int blockSignatureChosen = 7;
+	public static final int transactionChosen = 8;
 
 	public final int choiceID;
 
@@ -27,7 +28,7 @@ public class Message {
 	public final GetUnfinishedBlock getUnfinishedBlock;
 
 	@Alternative(1)
-	public final BlockData blockData;
+	public final UnfinishedBlock unfinishedBlock;
 
 	@Alternative(2)
 	public final GetBlockAtHeight getBlockAtHeight;
@@ -47,49 +48,57 @@ public class Message {
 	@Alternative(7)
 	public final BlockSignature blockSignature;
 
+	@Alternative(8)
+	public final Transaction transaction;
 
-	private Message(int choiceID, GetUnfinishedBlock getUnfinishedBlock, BlockData blockData, GetBlockAtHeight getBlockAtHeight, CompleteBlock completeBlock, Status status, Identification identification, GetBlockSignature getBlockSignature, BlockSignature blockSignature) {
+
+	private Message(int choiceID, GetUnfinishedBlock getUnfinishedBlock, UnfinishedBlock unfinishedBlock, GetBlockAtHeight getBlockAtHeight, CompleteBlock completeBlock, Status status, Identification identification, GetBlockSignature getBlockSignature, BlockSignature blockSignature, Transaction transaction) {
 		this.choiceID = choiceID;
 		this.getUnfinishedBlock = getUnfinishedBlock;
-		this.blockData = blockData;
+		this.unfinishedBlock = unfinishedBlock;
 		this.getBlockAtHeight = getBlockAtHeight;
 		this.completeBlock = completeBlock;
 		this.status = status;
 		this.identification = identification;
 		this.getBlockSignature = getBlockSignature;
 		this.blockSignature = blockSignature;
+		this.transaction = transaction;
 	}
 
 	public static Message getUnfinishedBlock(GetUnfinishedBlock getUnfinishedBlock) {
-		return new Message(getUnfinishedBlockChosen, getUnfinishedBlock, null, null, null, null, null, null, null);
+		return new Message(getUnfinishedBlockChosen, getUnfinishedBlock, null, null, null, null, null, null, null, null);
 	}
 
-	public static Message blockData(BlockData blockData) {
-		return new Message(blockDataChosen, null, blockData, null, null, null, null, null, null);
+	public static Message unfinishedBlock(UnfinishedBlock unfinishedBlock) {
+		return new Message(unfinishedBlockChosen, null, unfinishedBlock, null, null, null, null, null, null, null);
 	}
 
 	public static Message getBlockAtHeight(GetBlockAtHeight getBlockAtHeight) {
-		return new Message(getBlockAtHeightChosen, null, null, getBlockAtHeight, null, null, null, null, null);
+		return new Message(getBlockAtHeightChosen, null, null, getBlockAtHeight, null, null, null, null, null, null);
 	}
 
 	public static Message completeBlock(CompleteBlock completeBlock) {
-		return new Message(completeBlockChosen, null, null, null, completeBlock, null, null, null, null);
+		return new Message(completeBlockChosen, null, null, null, completeBlock, null, null, null, null, null);
 	}
 
 	public static Message status(Status status) {
-		return new Message(statusChosen, null, null, null, null, status, null, null, null);
+		return new Message(statusChosen, null, null, null, null, status, null, null, null, null);
 	}
 
 	public static Message identification(Identification identification) {
-		return new Message(identificationChosen, null, null, null, null, null, identification, null, null);
+		return new Message(identificationChosen, null, null, null, null, null, identification, null, null, null);
 	}
 
 	public static Message getBlockSignature(GetBlockSignature getBlockSignature) {
-		return new Message(getBlockSignatureChosen, null, null, null, null, null, null, getBlockSignature, null);
+		return new Message(getBlockSignatureChosen, null, null, null, null, null, null, getBlockSignature, null, null);
 	}
 
 	public static Message blockSignature(BlockSignature blockSignature) {
-		return new Message(blockSignatureChosen, null, null, null, null, null, null, null, blockSignature);
+		return new Message(blockSignatureChosen, null, null, null, null, null, null, null, blockSignature, null);
+	}
+
+	public static Message transaction(Transaction transaction) {
+		return new Message(transactionChosen, null, null, null, null, null, null, null, null, transaction);
 	}
 
 	public boolean equals(Object obj) {
@@ -108,21 +117,22 @@ public class Message {
 	}
 
 
-	public final static AsnType TYPE = Messages.type(65547);
+	public final static AsnType TYPE = Messages.type(65549);
 
 	public final static ChoiceConverter CONV;
 
 	static {
 		CONV = new AnnotationChoiceConverter(Message.class);
 		AsnConverter getUnfinishedBlockConverter = GetUnfinishedBlock.CONV;
-		AsnConverter blockDataConverter = BlockData.CONV;
+		AsnConverter unfinishedBlockConverter = UnfinishedBlock.CONV;
 		AsnConverter getBlockAtHeightConverter = GetBlockAtHeight.CONV;
 		AsnConverter completeBlockConverter = CompleteBlock.CONV;
 		AsnConverter statusConverter = Status.CONV;
 		AsnConverter identificationConverter = Identification.CONV;
 		AsnConverter getBlockSignatureConverter = GetBlockSignature.CONV;
 		AsnConverter blockSignatureConverter = BlockSignature.CONV;
-		CONV.setAlternativeConverters(new AsnConverter[] { getUnfinishedBlockConverter, blockDataConverter, getBlockAtHeightConverter, completeBlockConverter, statusConverter, identificationConverter, getBlockSignatureConverter, blockSignatureConverter });
+		AsnConverter transactionConverter = Transaction.CONV;
+		CONV.setAlternativeConverters(new AsnConverter[] { getUnfinishedBlockConverter, unfinishedBlockConverter, getBlockAtHeightConverter, completeBlockConverter, statusConverter, identificationConverter, getBlockSignatureConverter, blockSignatureConverter, transactionConverter });
 	}
 
 

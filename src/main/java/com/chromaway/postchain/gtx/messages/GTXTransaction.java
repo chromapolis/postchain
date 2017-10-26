@@ -14,12 +14,15 @@ import org.asnlab.asndt.runtime.value.*;
 public class GTXTransaction {
 
 	@Component(0)
-	public Vector<GTXOperation> operations;
+	public byte[] blockchainID;
 
 	@Component(1)
-	public Vector<byte[]> signers;
+	public Vector<GTXOperation> operations;
 
 	@Component(2)
+	public Vector<byte[]> signers;
+
+	@Component(3)
 	public Vector<byte[]> signatures;
 
 
@@ -45,10 +48,11 @@ public class GTXTransaction {
 
 	static {
 		CONV = new AnnotationCompositeConverter(GTXTransaction.class);
+		AsnConverter blockchainIDConverter = OctetStringConverter.INSTANCE;
 		AsnConverter operationsConverter = new VectorConverter(GTXOperation.CONV);
 		AsnConverter signersConverter = new VectorConverter(OctetStringConverter.INSTANCE);
 		AsnConverter signaturesConverter = new VectorConverter(OctetStringConverter.INSTANCE);
-		CONV.setComponentConverters(new AsnConverter[] { operationsConverter, signersConverter, signaturesConverter });
+		CONV.setComponentConverters(new AsnConverter[] { blockchainIDConverter, operationsConverter, signersConverter, signaturesConverter });
 	}
 
 

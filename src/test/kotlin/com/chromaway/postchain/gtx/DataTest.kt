@@ -34,7 +34,7 @@ class GTXDataTest {
         val signerPriv = (0..3).map(::privKey)
         val crypto = SECP256K1CryptoSystem()
 
-        val b = GTXDataBuilder(signerPub.slice(0..2).toTypedArray(), crypto)
+        val b = GTXDataBuilder(EMPTY_SIGNATURE, signerPub.slice(0..2).toTypedArray(), crypto)
         // primitives
         b.addOperation("hello", arrayOf(GTXNull, gtx(42), gtx("Wow"), gtx(signerPub[0])))
         // array of primitives

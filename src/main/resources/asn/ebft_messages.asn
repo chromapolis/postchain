@@ -8,13 +8,14 @@ SignedMessage ::= SEQUENCE {
 
 Message ::= CHOICE {
 	getUnfinishedBlock [0] GetUnfinishedBlock,
-	blockData [1] BlockData,
+	unfinishedBlock [1] UnfinishedBlock,
 	getBlockAtHeight [2] GetBlockAtHeight,
 	completeBlock [3] CompleteBlock,
 	status [4] Status,
 	identification [5] Identification,
 	getBlockSignature [6] GetBlockSignature,
-	blockSignature [7] BlockSignature
+	blockSignature [7] BlockSignature,
+	transaction [8] Transaction
 }
 
 Signature ::= SEQUENCE {
@@ -66,5 +67,8 @@ Status ::= SEQUENCE {
 	revolting BOOLEAN
 }
 
+Transaction ::= SEQUENCE {
+	data OCTET STRING
+}
 
 END
