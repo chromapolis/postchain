@@ -3,12 +3,7 @@ package com.chromaway.postchain.api
 import com.chromaway.postchain.base.SECP256K1CryptoSystem
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.configurations.GTXTestModule
-import com.chromaway.postchain.gtx.GTXDataBuilder
-import com.chromaway.postchain.gtx.GTXTransactionFactory
-import com.chromaway.postchain.gtx.gtx
-import com.chromaway.postchain.gtx.myCS
-import com.chromaway.postchain.gtx.privKey
-import com.chromaway.postchain.gtx.pubKey
+import com.chromaway.postchain.gtx.*
 import org.junit.Test
 import org.junit.Assert.*
 import java.util.Random
@@ -19,7 +14,7 @@ class RestApiTestManual {
     val cryptoSystem = SECP256K1CryptoSystem()
 
     fun makeTestTx(id: Long, value: String): ByteArray {
-        val b = GTXDataBuilder(arrayOf(pubKey(0)), cryptoSystem)
+        val b = GTXDataBuilder(EMPTY_SIGNATURE, arrayOf(pubKey(0)), cryptoSystem)
         b.addOperation("gtx_test", arrayOf(gtx(id), gtx(value)))
         b.finish()
         b.sign(cryptoSystem.makeSigner(pubKey(0), privKey(0)))
@@ -39,7 +34,7 @@ class RestApiTestManual {
         val response2 = restTools.post(port, "/tx", """{"tx"="${txBytes.toHex()}"}""")
         assertEquals(200, response2!!.code)
 
-        val transaction = GTXTransactionFactory(GTXTestModule(), cryptoSystem).decodeTransaction(txBytes)
+        val transaction = GTXTransactionFactory(EMPTY_SIGNATURE, GTXTestModule(), cryptoSystem).decodeTransaction(txBytes)
         restTools.awaitConfirmed(port, transaction)
     }
 }

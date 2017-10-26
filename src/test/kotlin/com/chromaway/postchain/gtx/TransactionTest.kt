@@ -8,7 +8,7 @@ import org.junit.Assert.*
 val myCS = SECP256K1CryptoSystem()
 
 fun makeNOPGTX(): ByteArray {
-    val b = GTXDataBuilder(arrayOf(pubKey(0)), myCS)
+    val b = GTXDataBuilder(EMPTY_SIGNATURE, arrayOf(pubKey(0)), myCS)
     b.addOperation("nop", arrayOf(gtx(42)))
     b.finish()
     b.sign(myCS.makeSigner(pubKey(0), privKey(0)))
@@ -22,7 +22,7 @@ class GTXTransactionTest {
 
     @Test
     fun runtx() {
-        val factory = GTXTransactionFactory(module, myCS)
+        val factory = GTXTransactionFactory(EMPTY_SIGNATURE, module, myCS)
         val tx = factory.decodeTransaction(gtxData)
         assertTrue(tx.getRID().size > 1)
         assertTrue(tx.getRawData().size > 1)

@@ -70,16 +70,20 @@ class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: Crypto
 
 }
 
-class GTXTransactionFactory(val module: GTXModule, val cs: CryptoSystem): TransactionFactory {
+class GTXTransactionFactory(val blockchainID: ByteArray, val module: GTXModule, val cs: CryptoSystem): TransactionFactory {
     override fun decodeTransaction(data: ByteArray): Transaction {
-        return GTXTransaction(data, module, cs)
+        val tx = GTXTransaction(data, module, cs)
+        if (tx.data.blockchainID.contentEquals(blockchainID))
+            return tx
+        else
+            throw UserMistake("Transaction has wrong blockchainID")
     }
 }
 
 open class GTXBlockchainConfiguration(chainID: Long, config: Configuration, val module: GTXModule)
     :BaseBlockchainConfiguration(chainID, config)
 {
-    val txFactory = GTXTransactionFactory(module, cryptoSystem)
+    val txFactory = GTXTransactionFactory(EMPTY_SIGNATURE, module, cryptoSystem)
 
     override fun getTransactionFactory(): TransactionFactory {
         return txFactory
