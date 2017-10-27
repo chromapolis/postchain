@@ -49,21 +49,21 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
 
     var hashHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-//    fun testStatusGet
+    //    fun testStatusGet
     val gson = GsonBuilder().
-        registerTypeAdapter(Double::class.java, object : JsonSerializer<Double> {
-        // Avoid parsing integers as doubles
-        override fun serialize(src: Double?, typeOfSrc: Type,
-                               context: JsonSerializationContext): JsonElement {
-            val value = Math.round(src!!).toInt()
-            return JsonPrimitive(value)
-        }
-    }).create()
+            registerTypeAdapter(Double::class.java, object : JsonSerializer<Double> {
+                // Avoid parsing integers as doubles
+                override fun serialize(src: Double?, typeOfSrc: Type,
+                                       context: JsonSerializationContext): JsonElement {
+                    val value = Math.round(src!!).toInt()
+                    return JsonPrimitive(value)
+                }
+            }).create()
 
 
     val mapType = object : TypeToken<Map<String, Any>>() {}.type
 
-    val checkJson = {response: TestResponse, expectedJson: String ->
+    val checkJson = { response: TestResponse, expectedJson: String ->
         val actualMap: Map<String, Any> = gson.fromJson(response.body, mapType)
         val expectedMap: Map<String, Any> = gson.fromJson(expectedJson, mapType)
         assertEquals(expectedMap, actualMap)
@@ -74,15 +74,16 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
         createSystem(3)
         testStatusGet("/tx/$hashHex", 404)
         testStatusGet("/tx/${hashHex}/status", 200,
-                {checkJson(it, "{\"status\"=\"unknown\"}")})
+                { checkJson(it, "{\"status\"=\"unknown\"}") })
         val tx1 = TestTransaction(1)
-        testStatusPost(0,"/tx",
+        testStatusPost(0, "/tx",
                 "{\"tx\": \"${tx1.getRawData().toHex()}\"}",
                 200)
         awaitConfirmed(tx1)
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun testConfirmationProof() {
         val nodeCount = 3
         createSystem(nodeCount)
@@ -91,7 +92,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
         for (txCount in 1..16) {
             for (i in 1..txCount) {
                 val tx = TestTransaction(++currentId)
-                testStatusPost(blockHeight%nodeCount, "/tx",
+                testStatusPost(blockHeight % nodeCount, "/tx",
                         "{\"tx\": \"${tx.getRawData().toHex()}\"}",
                         200)
             }
@@ -121,7 +122,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
                 merklePath.forEach {
                     // The use of 0.0 and 1.0 is to work around that the json parser creates doubles
                     // instances from json integer values
-                    val s = if (it["side"] == 0.0) Side.LEFT else if (it["side"] == 1.0) Side.RIGHT else fail() as Side
+                    val s = if (it["side"] == 0.0) Side.LEFT else if (it["side"] == 1.0) Side.RIGHT else throw AssertionError("Invalid 'side' of merkle path: ${it["side"]}")
                     val pathItemHash = (it["hash"] as String).hexStringToByteArray()
                     path.add(MerklePathItem(s, pathItemHash))
                 }
@@ -151,10 +152,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
 
     private fun testStatusPost(toIndex: Int, path: String, body: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
         val response = restTools.post(apis[toIndex].actualPort(), path, body)
-        if (response == null) {
-            fail()
-        }
-        assertEquals(expectedStatus, response!!.code)
+        assertEquals(expectedStatus, response.code)
         extraChecks(response)
     }
 

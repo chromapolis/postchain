@@ -85,24 +85,6 @@ class BaseBlockStore : BlockStore {
                 byteArrayListRes, ctx.chainID, height)
     }
 
-//    override fun getBlockData(ctx: EContext, blockRID: ByteArray): BlockData {
-//
-//
-//
-//        val map = r.query(ctx.conn,
-//                "SELECT block_iid, block_rid, block_header FROM blocks WHERE chain_id = ? AND block_height = ? ",
-//                MapHandler(), ctx.chainID, height)
-//        if (map == null) {
-//            throw ProgrammerMistake("no block data at height ${height}")
-//        }
-//        val blockIid = map.get("block_iid") as Long
-//        val transactions = r.query(ctx.conn,
-//                "SELECT tx_data FROM transactions where block_iid=?",
-//                byteArrayListRes, blockIid)
-//        val result = BlockData(
-//        TODO("Implement")
-//    }
-
     override fun getBlockHeader(ctx: EContext, blockRID: ByteArray): ByteArray {
         return r.query(ctx.conn, "SELECT block_header_data FROM blocks where chain_id = ? and block_rid = ?",
                 byteArrayRes, ctx.chainID, blockRID)

@@ -1,8 +1,8 @@
 package com.chromaway.postchain.base
 
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
-import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.base.data.BaseTransactionQueue
+import com.chromaway.postchain.baseStorage
 import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.BlockWitness
@@ -24,8 +24,6 @@ import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.MapConfiguration
 import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
-import org.apache.commons.dbcp2.BasicDataSource
-import org.apache.commons.dbutils.QueryRunner
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertNotNull
@@ -33,7 +31,6 @@ import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
-import javax.sql.DataSource
 
 open class IntegrationTest {
     protected val nodes = mutableListOf<DataLayer>()
@@ -119,7 +116,7 @@ open class IntegrationTest {
 
     class UnexpectedExceptionTransaction(id: Int): TestTransaction(id) {
         override fun apply(ctx: TxEContext): Boolean {
-            return throw RuntimeException("Expected exception")
+            throw RuntimeException("Expected exception")
         }
     }
 
@@ -201,7 +198,7 @@ open class IntegrationTest {
 
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
-        val storage = baseStorage(config, nodeIndex)
+        val storage = baseStorage(config, nodeIndex, true)
 
         val txQueue = BaseTransactionQueue()
 
@@ -218,42 +215,6 @@ open class IntegrationTest {
         return node
     }
 
-    protected fun baseStorage(config: Configuration, nodeIndex: Int): BaseStorage {
-        val writeDataSource = createBasicDataSource(config)
-        writeDataSource.defaultAutoCommit = false
-        writeDataSource.maxTotal = 1
-        wipeDatabase(writeDataSource, config)
-
-        val readDataSource = createBasicDataSource(config)
-        readDataSource.defaultAutoCommit = true
-        readDataSource.maxTotal = 2
-        readDataSource.defaultReadOnly = true
-
-        val storage = BaseStorage(writeDataSource, readDataSource, nodeIndex)
-        return storage
-    }
-
-    protected fun createBasicDataSource(config: Configuration): BasicDataSource {
-        val dataSource = BasicDataSource()
-        val schema = config.getString("database.schema", "public")
-        dataSource.addConnectionProperty("currentSchema", schema)
-        dataSource.driverClassName = config.getString("database.driverclass")
-        dataSource.url = config.getString("database.url")
-        dataSource.username = config.getString("database.username")
-        dataSource.password = config.getString("database.password")
-        dataSource.defaultAutoCommit = false
-        return dataSource
-    }
-
-    private fun wipeDatabase(dataSource: DataSource, config: Configuration) {
-        val schema = config.getString("database.schema", "public")
-        val queryRunner = QueryRunner()
-        val conn = dataSource.connection
-        queryRunner.update(conn, "DROP SCHEMA IF EXISTS $schema CASCADE")
-        queryRunner.update(conn, "CREATE SCHEMA $schema")
-        conn.commit()
-        conn.close()
-    }
 
     protected fun createBasePeerCommConfiguration(nodeCount: Int, myIndex: Int): BasePeerCommConfiguration {
         val peerInfos = createPeerInfos(nodeCount)

@@ -1,14 +1,12 @@
 package com.chromaway.postchain.modules.ft
 
-import com.chromaway.postchain.base.SECP256K1CryptoSystem
-import org.junit.Test
-import org.junit.Assert
 import com.chromaway.postchain.base.IntegrationTest
-import com.chromaway.postchain.base.data.BaseStorage
+import com.chromaway.postchain.base.SECP256K1CryptoSystem
 import com.chromaway.postchain.base.withWriteConnection
+import com.chromaway.postchain.baseStorage
 import com.chromaway.postchain.gtx.GTXSchemaManager
 import org.apache.commons.configuration2.builder.fluent.Configurations
-import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
+import org.junit.Test
 import java.io.File
 
 class ModuleTest: IntegrationTest() {
@@ -28,7 +26,7 @@ class ModuleTest: IntegrationTest() {
         val module = FTModule(config)
         val configs = Configurations()
         val conf = configs.properties(File("config.properties"))
-        val storage = baseStorage(conf, 0)
+        val storage = baseStorage(conf, 0, true)
 
         withWriteConnection(storage, 0L) {
             GTXSchemaManager.initializeDB(it)

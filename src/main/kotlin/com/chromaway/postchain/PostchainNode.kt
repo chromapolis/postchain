@@ -5,13 +5,8 @@ import com.chromaway.postchain.api.rest.RestApi
 import com.chromaway.postchain.base.BasePeerCommConfiguration
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.SECP256K1CryptoSystem
-import com.chromaway.postchain.base.data.BaseBlockStore
-import com.chromaway.postchain.base.data.BaseStorage
 import com.chromaway.postchain.base.data.BaseTransactionQueue
 import com.chromaway.postchain.base.hexStringToByteArray
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.BlockchainConfigurationFactory
-import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.ebft.BaseBlockDatabase
 import com.chromaway.postchain.ebft.BaseBlockManager
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
@@ -23,10 +18,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
 import org.apache.commons.configuration2.builder.fluent.Parameters
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
-import org.apache.commons.dbcp2.BasicDataSource
-import org.apache.commons.dbutils.QueryRunner
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.sql.DataSource
 import kotlin.concurrent.thread
 
 
@@ -66,17 +58,7 @@ class PostchainNode {
 
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
-        val dbConfig = config.subset("database")
-        val writeDataSource = createBasicDataSource(dbConfig)
-        writeDataSource.maxTotal = 1
-        createSchemaIfNotExists(writeDataSource, config.getString("database.schema"))
-
-        val readDataSource = createBasicDataSource(dbConfig)
-        readDataSource.defaultAutoCommit = true
-        readDataSource.maxTotal = 2
-        readDataSource.defaultReadOnly = true
-
-        val storage = BaseStorage(writeDataSource, readDataSource, nodeIndex)
+        val storage = baseStorage(config, nodeIndex, false)
 
         val txQueue = BaseTransactionQueue()
 
@@ -124,30 +106,6 @@ class PostchainNode {
                     config.getString("node.$it.pubkey").hexStringToByteArray()
             )}
         )
-    }
-
-    private fun createBasicDataSource(config: Configuration): BasicDataSource {
-        val dataSource = BasicDataSource()
-        val schema = config.getString("schema", "public")
-        dataSource.addConnectionProperty("currentSchema", schema)
-        dataSource.driverClassName = config.getString("driverclass")
-        dataSource.url = config.getString("url")
-        dataSource.username = config.getString("username")
-        dataSource.password = config.getString("password")
-        dataSource.defaultAutoCommit = false
-
-        return dataSource
-    }
-
-    private fun createSchemaIfNotExists(dataSource: DataSource, schema: String) {
-        val queryRunner = QueryRunner()
-        val conn = dataSource.connection
-        try {
-            queryRunner.update(conn, "CREATE SCHEMA IF NOT EXISTS $schema")
-            conn.commit()
-        } finally {
-            conn.close()
-        }
     }
 }
 

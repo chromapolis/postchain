@@ -53,6 +53,7 @@ open class EbftIntegrationTest : IntegrationTest() {
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 class OnDemandBlockBuildingStrategy(config: Configuration, blockQueries: BlockQueries, txQueue: TransactionQueue) : BlockBuildingStrategy {
     val triggerBlock = AtomicBoolean(false)
     val blocks = LinkedBlockingQueue<BlockData>()

@@ -45,7 +45,6 @@ class GTXIntegrationTest: IntegrationTest() {
         Assert.assertEquals(1, riDsAtHeight0.size)
         Assert.assertArrayEquals(validTx.getRID(), riDsAtHeight0[0])
 
-        val myConf = node.blockchainConfiguration as GTXBlockchainConfiguration
         val value = node.blockQueries.query(
                 """{"type"="gtx_test_get_value", "txRID"="${validTx.getRID().toHex()}"}""")
         Assert.assertEquals("\"true\"", value.get())

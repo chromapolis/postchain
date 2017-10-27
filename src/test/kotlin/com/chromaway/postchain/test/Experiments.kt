@@ -1,6 +1,7 @@
 package com.chromaway.postchain.test
 
 import com.chromaway.postchain.base.IntegrationTest
+import com.chromaway.postchain.baseStorage
 import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.junit.Test
 import java.io.File
@@ -12,7 +13,7 @@ class Experiments: IntegrationTest() {
     fun testSavepoint() {
         val configs = Configurations()
         val conf = configs.properties(File("config.properties"))
-        val storage = baseStorage(conf, 0)
+        val storage = baseStorage(conf, 0, true)
         val ctx = storage.openWriteConnection(1);
 
         val savepoint = ctx.conn.setSavepoint("A")
