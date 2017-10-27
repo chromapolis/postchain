@@ -5,13 +5,13 @@ import com.chromaway.postchain.base.secp256k1_derivePubKey
 import com.chromaway.postchain.core.Signature
 import org.junit.Assert.*
 import org.junit.Test
-import java.lang.Error
 
 fun mustThrowError(msg: String, code: ()->Unit) {
     try {
         code()
         fail(msg)
-    } catch (e: Error) {}
+    } catch (e: Exception) {
+    }
 }
 
 fun privKey(index: Int): ByteArray {

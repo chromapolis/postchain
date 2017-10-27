@@ -4,7 +4,7 @@ import com.chromaway.postchain.core.TxEContext
 import com.chromaway.postchain.gtx.ExtOpData
 import com.chromaway.postchain.gtx.GTXOperation
 
-class FTIssueData(val issuerID: ByteArray, val assetID: String, val amount: Long, val recipientID: ByteArray, val extra: ExtraData)
+class FTIssueData(val opData: ExtOpData, val issuerID: ByteArray, val assetID: String, val amount: Long, val recipientID: ByteArray, val extra: ExtraData)
 typealias StaticIssueRule = (FTIssueData)->Boolean
 typealias DbIssueRule = (OpEContext, FTDBOps, FTIssueData)->Boolean
 
@@ -16,6 +16,7 @@ typealias FTIssueRules = FTRules<FTIssueData>
 
 class FT_issue_op (val config: FTConfig, data: ExtOpData): GTXOperation(data) {
     val issueData = FTIssueData(
+            data,
             data.args[0].asByteArray(),
             data.args[1].asString(),
             data.args[2].asInteger(),

@@ -6,7 +6,7 @@ import com.chromaway.postchain.gtx.GTXOperation
 import com.chromaway.postchain.gtx.GTXValue
 import com.chromaway.postchain.gtx.decodeGTXValue
 
-class FTRegisterData(val accountRawDesc: ByteArray, val accountDesc: GTXValue, val extra: ExtraData)
+class FTRegisterData(val opData: ExtOpData, val accountRawDesc: ByteArray, val accountDesc: GTXValue, val extra: ExtraData)
 typealias StaticRegisterRule = (FTRegisterData)->Boolean
 typealias DbRegisterRule = (OpEContext, FTDBOps, FTRegisterData)->Boolean
 
@@ -14,6 +14,7 @@ typealias FTRegisterRules = FTRules<FTRegisterData>
 
 class FT_register_op (val config: FTConfig, data: ExtOpData): GTXOperation(data) {
     val registerData = FTRegisterData(
+            data,
             data.args[0].asByteArray(),
             decodeGTXValue(data.args[0].asByteArray()),
             getExtraData(data, 1)

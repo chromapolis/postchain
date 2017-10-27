@@ -53,7 +53,7 @@ class BasicAccount(override val accountID: ByteArray, override val descriptor: G
     override val skipUpdate = false
 
     override fun verifyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean {
-        return data.signers.any { it.contentEquals(pubkey) }
+        return data.opData.signers.any { it.contentEquals(pubkey) }
     }
 
     override fun applyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean {

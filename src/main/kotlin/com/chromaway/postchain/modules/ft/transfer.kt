@@ -14,16 +14,17 @@ class TransferElement<AccountT>(val account: AccountT,
 
 class TransferData<InputAccountT, OutputAccountT>
 (
+        val opData: ExtOpData,
         val inputs: Array<TransferElement<InputAccountT>>,
         val outputs: Array<TransferElement<OutputAccountT>>,
-        val signers: Array<ByteArray>,
         val extra: ExtraData
 )
 
 typealias StaticTransferElement = TransferElement<ByteArray>
 typealias StaticTransferData = TransferData<ByteArray, ByteArray>
 
-fun parseTransferData(args: Array<GTXValue>, signers: Array<ByteArray>): StaticTransferData {
+fun parseTransferData(opData: ExtOpData): StaticTransferData {
+    val args = opData.args
     if (args.size < 2) throw UserMistake("Not enough arguments to transfer")
     fun parseElement(it: GTXValue): StaticTransferElement {
         val extra = if (it.getSize() >= 4) it[3].asDict() else NoExtraData
@@ -38,7 +39,7 @@ fun parseTransferData(args: Array<GTXValue>, signers: Array<ByteArray>): StaticT
     val inputs = args[0].asArray().map(::parseElement).toTypedArray()
     val outputs = args[1].asArray().map(::parseElement).toTypedArray()
     val extra = if (args.size >= 3) args[2].asDict() else NoExtraData
-    return TransferData(inputs, outputs, signers, extra)
+    return TransferData(opData, inputs, outputs, extra)
 }
 
 typealias StaticTransferRule = (StaticTransferData)->Boolean
@@ -109,7 +110,7 @@ open class FTTransferRules(staticRules: Array<StaticTransferRule>, val completeR
 }
 
 class FT_transfer_op (val config: FTConfig, data: ExtOpData): GTXOperation(data) {
-    val transferData = parseTransferData(data.args, data.signers)
+    val transferData = parseTransferData(data)
 
     override fun isCorrect(): Boolean {
         return config.transferRules.applyStaticRules(transferData)
@@ -135,7 +136,7 @@ class FT_transfer_op (val config: FTConfig, data: ExtOpData): GTXOperation(data)
                     it.amount,
                     it.extra)
         }).toTypedArray()
-        val competeTransferData = CompleteTransferData(inputs, outputs, data.signers, transferData.extra)
+        val competeTransferData = CompleteTransferData(data, inputs, outputs, transferData.extra)
 
         // 2. verify inputs and outputs (custom)
 

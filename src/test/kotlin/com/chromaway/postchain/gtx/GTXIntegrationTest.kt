@@ -1,18 +1,13 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.IntegrationTest
-import com.chromaway.postchain.base.cryptoSystem
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.configurations.GTXTestModule
-import com.chromaway.postchain.core.*
-import com.chromaway.postchain.ebft.BlockchainEngine
+import com.chromaway.postchain.core.BlockchainConfigurationFactory
+import com.chromaway.postchain.core.Transaction
 import org.apache.commons.configuration2.Configuration
-import org.apache.commons.dbutils.QueryRunner
-import org.apache.commons.dbutils.handlers.ScalarHandler
 import org.junit.Assert
 import org.junit.Test
-
-
 
 
 fun makeTestTx(id: Long, value: String): ByteArray {
@@ -34,7 +29,7 @@ class GTXIntegrationTest: IntegrationTest() {
                 val tx = node.blockchainConfiguration.getTransactionFactory().decodeTransaction(data)
                 node.txEnqueuer.enqueue(tx)
                 return tx
-            } catch (e: Error) {
+            } catch (e: Exception) {
                 println(e)
             }
             return null
