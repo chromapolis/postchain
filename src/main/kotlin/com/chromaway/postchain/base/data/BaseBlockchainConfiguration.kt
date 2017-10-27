@@ -66,27 +66,26 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
     }
 
     override fun initializeDB(ctx: EContext) {
-        blockStore.initialize(ctx)
+        blockStore.initialize(ctx, config.getString("blockchainrid")!!.hexStringToByteArray())
     }
 
-    override fun getBlockBuildingStrategy(blockQueries: BlockQueries, txQueue: TransactionQueue): BlockBuildingStrategy {
+    override fun getBlockBuildingStrategy(blockQueries: BlockQueries, transactionQueue: TransactionQueue): BlockBuildingStrategy {
         val strategyClassName = config.getString("blockstrategy", "")
         if (strategyClassName == "") {
-            return BaseBlockBuildingStrategy(config, blockQueries, txQueue)
+            return BaseBlockBuildingStrategy(config, blockQueries, transactionQueue)
         }
         val strategyClass = Class.forName(strategyClassName)
         val ctor = strategyClass.getConstructor(Configuration::class.java, BlockQueries::class.java, TransactionQueue::class.java)
-        val strategy = ctor.newInstance(config, blockQueries, txQueue) as BlockBuildingStrategy
-        return strategy
+        return ctor.newInstance(config, blockQueries, transactionQueue) as BlockBuildingStrategy
     }
 }
 
-class BaseBlockBuildingStrategy(val config: Configuration, private val blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
-    var lastBlockTime: Long
-    var lastTxTime = System.currentTimeMillis()
-    var lastTxSize = 0
-    val maxBlockTime = config.getLong("basestrategy.maxblocktime", 30000)
-    val blockDelay = config.getLong("basestrategy.blockdelay", 1000)
+class BaseBlockBuildingStrategy(val config: Configuration, blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
+    private var lastBlockTime: Long
+    private var lastTxTime = System.currentTimeMillis()
+    private var lastTxSize = 0
+    private val maxBlockTime = config.getLong("basestrategy.maxblocktime", 30000)
+    private val blockDelay = config.getLong("basestrategy.blockdelay", 1000)
     init {
         val height = blockQueries.getBestHeight().get()
         if (height == -1L) {

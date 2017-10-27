@@ -3,11 +3,9 @@ package com.chromaway.postchain.base
 import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.InitialBlockData
 import com.chromaway.postchain.core.MerklePath
-import com.chromaway.postchain.core.UserMistake
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.DataInputStream
-import java.util.*
+import java.util.Vector
 
 class BaseBlockHeader(override val rawData: ByteArray, private val cryptoSystem: CryptoSystem) : BlockHeader {
     override val prevBlockRID: ByteArray
@@ -29,18 +27,6 @@ class BaseBlockHeader(override val rawData: ByteArray, private val cryptoSystem:
             bh.prevBlockHash = iBlockData.prevBlockRID
             bh.rootHash = rootHash
             bh.height = iBlockData.height
-            if (bh.height == 0L) {
-                // The first block in a blockchain must encode the blockchainId in
-                // the prevBlockHash. BlockchainId is an 8 byte signed integer, of which
-                // we only use the non-negative numbers. It is encoded big-endian in the
-                // last 8 bytes of the prevBlockHash. To enable future changes, we don't say anything
-                // about the other 24 bytes of prevBlockHash of block 0.
-                val slice = bh.prevBlockHash.sliceArray(24 until 32)
-                val chainId = DataInputStream(slice.inputStream()).readLong()
-                if (chainId != iBlockData.chainID.toLong()) {
-                    throw UserMistake("Unexpected chainId in prevBlockRID at height 0. Expected ${iBlockData.chainID} got ${chainId}")
-                }
-            }
             bh.timestamp = timestamp
             bh.extra = Vector()
             val outs = ByteArrayOutputStream()
