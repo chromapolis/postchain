@@ -2,22 +2,21 @@ package com.chromaway.postchain.ebft
 
 import com.chromaway.postchain.base.DynamicPortPeerInfo
 import com.chromaway.postchain.base.PeerCommConfiguration
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.net.Socket
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
-
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.UserMistake
-import com.chromaway.postchain.ebft.message.Identification
 import com.chromaway.postchain.ebft.message.EbftMessage
+import com.chromaway.postchain.ebft.message.Identification
 import com.chromaway.postchain.ebft.message.SignedMessage
 import mu.KLogging
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.net.ServerSocket
+import java.net.Socket
 import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
 val MAX_PAYLOAD_SIZE = 10000000
 
@@ -186,7 +185,7 @@ class ActivePeerConnection(
                 // writer loop sets up a serverSocket then waits for read loop to sync
                 // if exception is thrown when connecting, read loop will just wait for the next cycle
                 connAvail.await()
-                val socket1 = socket ?: throw Error("No connection")
+                val socket1 = socket ?: throw Exception("No connection")
                 val stream = DataOutputStream(socket1.getOutputStream())
                 writeOnePacket(stream, packetConverter.makeInitPacket(id)) // write init packet
                 val err = writePacketsWhilePossible(stream)
@@ -205,7 +204,7 @@ class ActivePeerConnection(
         while (keepGoing) {
             try {
                 connAvail.await()
-                val socket1 = socket ?: throw Error("No connection")
+                val socket1 = socket ?: throw Exception("No connection")
                 val err = readPacketsWhilePossible(DataInputStream(socket1.getInputStream()))
                 if (err != null) {
                     log(err)

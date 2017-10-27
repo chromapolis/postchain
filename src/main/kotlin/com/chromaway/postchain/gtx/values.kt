@@ -1,6 +1,7 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.hexStringToByteArray
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.gtx.messages.DictPair
 import java.io.ByteArrayInputStream
@@ -36,7 +37,7 @@ fun wrapValue(r: RawGTXValue): GTXValue {
         RawGTXValue.dictChosen -> return DictGTXValue(r.dict.associateBy({ it.name }, { wrapValue(it.value) }))
         RawGTXValue.arrayChosen -> return ArrayGTXValue(r.array.map({ wrapValue(it) }).toTypedArray())
     }
-    throw Error("Unknown type identifier")
+    throw ProgrammerMistake("Unknown type identifier")
 }
 
 fun decodeGTXValue(bytes: ByteArray): GTXValue {
@@ -64,23 +65,23 @@ fun gtx(dict: Map<String, GTXValue>): GTXValue { return DictGTXValue(dict) }
 
 abstract class AbstractGTXValue: GTXValue {
     override operator fun get(i: Int): GTXValue {
-        throw Error("Type error: array expected")
+        throw UserMistake("Type error: array expected")
     }
 
     override operator fun get(s: String): GTXValue? {
-        throw Error("Type error: dict expected")
+        throw UserMistake("Type error: dict expected")
     }
 
     override fun asString(): String {
-        throw Error("Type error: string expected")
+        throw UserMistake("Type error: string expected")
     }
 
     override fun asArray(): Array<out GTXValue> {
-        throw Error("Type error: array expected")
+        throw UserMistake("Type error: array expected")
     }
 
     override fun getSize(): Int {
-        throw Error("Type error: array expected")
+        throw UserMistake("Type error: array expected")
     }
 
     override fun isNull(): Boolean {
@@ -88,15 +89,15 @@ abstract class AbstractGTXValue: GTXValue {
     }
 
     override fun asDict(): Map<String, GTXValue> {
-        throw Error("Type error: dict expected")
+        throw UserMistake("Type error: dict expected")
     }
 
     override fun asInteger(): Long {
-        throw Error("Type error: integer expected")
+        throw UserMistake("Type error: integer expected")
     }
 
     override fun asByteArray(convert: Boolean): ByteArray {
-        throw Error("Type error: byte array expected")
+        throw UserMistake("Type error: byte array expected")
     }
 }
 

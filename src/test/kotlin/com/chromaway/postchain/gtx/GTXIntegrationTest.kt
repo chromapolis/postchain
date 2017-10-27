@@ -29,7 +29,7 @@ class GTXIntegrationTest: IntegrationTest() {
                 val tx = node.blockchainConfiguration.getTransactionFactory().decodeTransaction(data)
                 node.txEnqueuer.enqueue(tx)
                 return tx
-            } catch (e: Error) {
+            } catch (e: Exception) {
                 println(e)
             }
             return null
