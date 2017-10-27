@@ -2,8 +2,9 @@ package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.CryptoSystem
 import com.chromaway.postchain.base.Signer
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.Signature
-import org.asnlab.asndt.runtime.type.ByteOutputStream
+import com.chromaway.postchain.core.UserMistake
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.*
@@ -117,7 +118,7 @@ class GTXDataBuilder (val blockchainID: ByteArray,
     }
 
     fun addOperation(opName: String, args: Array<GTXValue>) {
-        if (finished) throw Error("Already finished")
+        if (finished) throw ProgrammerMistake("Already finished")
         operations.add(OpData(opName, args))
     }
 
@@ -126,11 +127,11 @@ class GTXDataBuilder (val blockchainID: ByteArray,
     }
 
     fun addSignature(s: Signature, check: Boolean = true) {
-        if (!finished) throw Error("Must be finished before signing")
+        if (!finished) throw ProgrammerMistake("Must be finished before signing")
 
         if (check) {
             if (!verifySignature(s)) {
-                throw Error("Signature is not valid")
+                throw UserMistake("Signature is not valid")
             }
         }
 
@@ -138,18 +139,18 @@ class GTXDataBuilder (val blockchainID: ByteArray,
         if (idx != -1) {
             if (signatures[idx].contentEquals(EMPTY_SIGNATURE)) {
                 signatures[idx] = s.data
-            } else throw Error("Signature already exists")
-        } else throw Error("Singer not found")
+            } else throw UserMistake("Signature already exists")
+        } else throw UserMistake("Singer not found")
     }
 
     fun getDataForSigning(): ByteArray {
-        if (!finished) throw Error("Must be finished before signing")
+        if (!finished) throw ProgrammerMistake("Must be finished before signing")
 
         return getGTXData().serializeWithoutSignatures()
     }
 
     fun getDigestForSigning(): ByteArray {
-        if (!finished) throw Error("Must be finished before signing")
+        if (!finished) throw ProgrammerMistake("Must be finished before signing")
 
         return getGTXData().getDigestForSigning(crypto)
     }

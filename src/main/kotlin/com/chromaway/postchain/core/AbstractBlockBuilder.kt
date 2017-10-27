@@ -69,12 +69,12 @@ abstract class AbstractBlockBuilder (
     }
 
     override  fun getBlockData(): BlockData {
-        return _blockData ?: throw Error("Block is not finalized yet")
+        return _blockData ?: throw ProgrammerMistake("Block is not finalized yet")
     }
 
     override fun commit(w: BlockWitness?) {
         if (w != null && !validateWitness(w)) {
-            throw Error("Invalid witness")
+            throw ProgrammerMistake("Invalid witness")
         }
         store.commitBlock(bctx, w)
     }

@@ -3,7 +3,6 @@ package com.chromaway.postchain.gtx
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Transactor
 import com.chromaway.postchain.core.UserMistake
-import com.google.gson.JsonObject
 
 interface GTXModule {
     fun makeTransactor(opData: ExtOpData): Transactor
@@ -23,7 +22,7 @@ abstract class SimpleGTXModule<ConfT>(
         if (opData.opName in opmap) {
             return opmap[opData.opName]!!(conf, opData)
         } else {
-            throw Error("Unknown operation")
+            throw UserMistake("Unknown operation")
         }
     }
 
@@ -54,11 +53,11 @@ class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean
         val _qmap = mutableMapOf<String, GTXModule>()
         for (m in modules) {
             for (op in m.getOperations()) {
-                if (!allowOverrides && op in _opmap) throw Error("Duplicated operation")
+                if (!allowOverrides && op in _opmap) throw UserMistake("Duplicated operation")
                 _opmap[op] = m
             }
             for (q in m.getQueries()) {
-                if (!allowOverrides && q in _qmap) throw Error("Duplicated operation")
+                if (!allowOverrides && q in _qmap) throw UserMistake("Duplicated operation")
                 _qmap[q] = m
             }
         }
@@ -72,7 +71,7 @@ class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean
         if (opData.opName in opmap) {
             return opmap[opData.opName]!!.makeTransactor(opData)
         } else {
-            throw Error("Unknown operation")
+            throw UserMistake("Unknown operation")
         }
     }
 
@@ -88,7 +87,7 @@ class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean
         if (name in qmap) {
             return qmap[name]!!.query(ctxt, name, args)
         } else {
-            throw Error("Unknown query")
+            throw UserMistake("Unknown query")
         }
     }
 

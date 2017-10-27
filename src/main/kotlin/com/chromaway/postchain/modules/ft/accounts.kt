@@ -1,5 +1,6 @@
 package com.chromaway.postchain.modules.ft
 
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.gtx.GTXValue
 
 typealias InputAccountConstructor = (ByteArray, GTXValue)->FTInputAccount
@@ -33,7 +34,7 @@ class SimpleAccountResolver(
         val accType = descriptor[0].asInteger().toInt()
         if (accType in accountConstructors) {
             return accountConstructors[accType]!!.first(accountID, descriptor)
-        } else throw Error("Account type not found")
+        } else throw UserMistake("Account type not found")
     }
 
     override fun resolveOutputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTOutputAccount {
@@ -41,7 +42,7 @@ class SimpleAccountResolver(
         val accType = descriptor[0].asInteger().toInt()
         if (accType in accountConstructors) {
             return accountConstructors[accType]!!.second(accountID, descriptor)
-        } else throw Error("Account type not found")
+        } else throw UserMistake("Account type not found")
     }
 }
 

@@ -17,7 +17,7 @@ class BaseManagedBlockBuilder(
 
     fun <RT> runOp(fn: () -> RT): RT {
         if (closed)
-            throw Error("Already closed")
+            throw ProgrammerMistake("Already closed")
         try {
             return fn()
         } catch (e: Exception) {
@@ -74,7 +74,7 @@ class BaseManagedBlockBuilder(
     }
 
     override fun getBlockWitnessBuilder(): BlockWitnessBuilder? {
-        if (closed) throw Error("Already closed")
+        if (closed) throw ProgrammerMistake("Already closed")
         return bb.getBlockWitnessBuilder()
     }
 
@@ -86,7 +86,7 @@ class BaseManagedBlockBuilder(
 
     override fun rollback() {
         logger.debug("${ctxt.nodeID} BaseManagedBlockBuilder.rollback()")
-        if (closed) throw Error("Already closed")
+        if (closed) throw ProgrammerMistake("Already closed")
         closed = true
         s.closeWriteConnection(ctxt, false)
     }

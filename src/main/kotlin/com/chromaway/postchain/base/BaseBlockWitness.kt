@@ -1,11 +1,6 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.core.BlockHeader
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.MultiSigBlockWitness
-import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
-import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.UserMistake
+import com.chromaway.postchain.core.*
 import mu.KLogging
 import java.nio.ByteBuffer
 
@@ -62,7 +57,7 @@ class BaseBlockWitnessBuilder(val cryptoSystem: CryptoSystem, val blockHeader: B
     }
 
     override fun getWitness(): BlockWitness {
-        if (signatures.size < threshold) throw Error("Not complete yet")
+        if (signatures.size < threshold) throw ProgrammerMistake("Witness not complete yet")
         return BaseBlockWitness.fromSignatures(signatures.toTypedArray())
     }
 

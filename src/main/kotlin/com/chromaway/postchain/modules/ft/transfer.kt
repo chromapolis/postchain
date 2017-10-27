@@ -1,6 +1,8 @@
 package com.chromaway.postchain.modules.ft
 
+import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.TxEContext
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.gtx.ExtOpData
 import com.chromaway.postchain.gtx.GTXOperation
 import com.chromaway.postchain.gtx.GTXValue
@@ -22,7 +24,7 @@ typealias StaticTransferElement = TransferElement<ByteArray>
 typealias StaticTransferData = TransferData<ByteArray, ByteArray>
 
 fun parseTransferData(args: Array<GTXValue>, signers: Array<ByteArray>): StaticTransferData {
-    if (args.size < 2) throw Error("Not enough arguments to transfer")
+    if (args.size < 2) throw UserMistake("Not enough arguments to transfer")
     fun parseElement(it: GTXValue): StaticTransferElement {
         val extra = if (it.getSize() >= 4) it[3].asDict() else NoExtraData
         return TransferElement(
@@ -97,7 +99,7 @@ open class FTTransferRules(staticRules: Array<StaticTransferRule>, val completeR
     }
 
     override fun applyDbRules(ctx: OpEContext, dbops: FTDBOps, data: StaticTransferData): Boolean {
-        throw Error("Call applyCompleteRules instead")
+        throw ProgrammerMistake("Call applyCompleteRules instead")
     }
 
     open fun applyCompleteRules(ctx: OpEContext, dbops: FTDBOps, data: CompleteTransferData): Boolean {
