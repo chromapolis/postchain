@@ -44,26 +44,6 @@ fun parseTransferData(opData: ExtOpData): StaticTransferData {
 
 typealias StaticTransferRule = (StaticTransferData)->Boolean
 
-interface FTAccount {
-    val accountID: ByteArray
-}
-
-interface FTInputAccount : FTAccount {
-    val descriptor : GTXValue
-    val skipUpdate: Boolean
-    fun verifyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean
-    fun applyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean
-}
-
-interface FTOutputAccount : FTAccount {
-    val descriptor : GTXValue?
-    val skipUpdate: Boolean
-    fun verifyOutput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean
-    fun applyOutput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean
-}
-
-
-
 typealias CompleteTransferData = TransferData<FTInputAccount, FTOutputAccount>
 typealias CompleteTransferRule = (OpEContext, FTDBOps, CompleteTransferData)->Boolean
 

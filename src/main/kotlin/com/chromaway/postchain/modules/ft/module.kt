@@ -1,8 +1,8 @@
 package com.chromaway.postchain.modules.ft
 
 import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.gtx.GTXSchemaManager
-import com.chromaway.postchain.gtx.SimpleGTXModule
+import com.chromaway.postchain.gtx.*
+import org.apache.commons.configuration2.Configuration
 import org.apache.commons.dbutils.QueryRunner
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -27,5 +27,14 @@ class FTModule(config: FTConfig): SimpleGTXModule<FTConfig>(
             r.update(ctx.conn, schemaSQL)
             GTXSchemaManager.setModuleVersion(ctx, moduleName, 0)
         }
+    }
+}
+
+/**
+ * Convenience class which loads rules from configuration.
+ */
+class FTBlockchainConfigurationFactory : GTXBlockchainConfigurationFactory() {
+    override fun createGtxModule(config: Configuration): GTXModule {
+        return FTModule(makeFTConfig(EMPTY_SIGNATURE, config))
     }
 }

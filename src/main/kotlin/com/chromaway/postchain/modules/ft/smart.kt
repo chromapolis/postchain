@@ -17,6 +17,10 @@ class AssuranceContract(
     val thresholdAmount = descriptor[4].asInteger()
     val deadline = descriptor[5].asInteger()
 
+    override fun isCompatibleWithBlockchainID(blockchainID: ByteArray): Boolean {
+        return true
+    }
+
     fun getContributions(ctx: TxEContext): List<Pair<ByteArray, Long>> {
         val r = QueryRunner()
         return r.query(ctx.conn,

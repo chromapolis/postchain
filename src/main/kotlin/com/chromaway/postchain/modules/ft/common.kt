@@ -29,18 +29,25 @@ open class FTRules<DataT>(val staticRules: Array<(DataT)->Boolean>, val dbRules:
     }
 }
 
+interface AccountFactory {
+    fun makeInputAccount(accountID: ByteArray, descriptor: GTXValue): FTInputAccount
+    fun makeOutputAccount(accountID: ByteArray, descriptor: GTXValue): FTOutputAccount
+}
+
 interface AccountResolver {
     fun resolveInputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTInputAccount
     fun resolveOutputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTOutputAccount
 }
 
 open class FTConfig (
-    val issueRules : FTIssueRules,
-    val transferRules : FTTransferRules,
-    val registerRules: FTRegisterRules,
-    val accountResolver: AccountResolver,
-    val dbOps : FTDBOps,
-    val cryptoSystem: CryptoSystem
+        val issueRules : FTIssueRules,
+        val transferRules : FTTransferRules,
+        val registerRules: FTRegisterRules,
+        val accountFactory: AccountFactory,
+        val accountResolver: AccountResolver,
+        val dbOps : FTDBOps,
+        val cryptoSystem: CryptoSystem,
+        val blockchainID: ByteArray
 )
 
 class HistoryEntry(val delta: Long,

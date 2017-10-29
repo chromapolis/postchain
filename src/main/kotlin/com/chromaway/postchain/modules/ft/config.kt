@@ -1,20 +1,17 @@
 package com.chromaway.postchain.modules.ft
 
+import com.chromaway.postchain.base.SECP256K1CryptoSystem
 import com.chromaway.postchain.base.hexStringToByteArray
 import org.apache.commons.configuration2.Configuration
 
-fun issuerAccountID(issuerPubKey: ByteArray): ByteArray {
-    return issuerPubKey // TODO
-}
-
-fun makeFTIssueRules(config: Configuration): FTIssueRules {
+fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
     val assetIssuerMap: MutableMap<String, Map<ByteArray, ByteArray>> = mutableMapOf()
     val assets = config.getStringArray("assets")
     for (assetName in assets) {
         val issuerMap = mutableMapOf<ByteArray, ByteArray>()
         for (issuer in config.getStringArray("asset.${assetName}.issuers")) {
             val pubKey = issuer.hexStringToByteArray()
-            issuerMap[issuerAccountID(pubKey)] = pubKey
+            issuerMap[ac.issuerAccountID(pubKey)] = pubKey
         }
         assetIssuerMap[assetName] = issuerMap.toMap()
     }
@@ -31,16 +28,46 @@ fun makeFTIssueRules(config: Configuration): FTIssueRules {
     return FTIssueRules(arrayOf(::checkIssuer), arrayOf())
 }
 
-/*
-val issueRules : FTIssueRules,
-val transferRules : FTTransferRules,
-val registerRules: FTRegisterRules,
-val accountResolver: AccountResolver,
-val dbOps : FTDBOps,
-val cryptoSystem: CryptoSystem
+fun makeFTRegisterRules(config: Configuration): FTRegisterRules {
+    if (config.getBoolean("openRegistration")) {
+        return FTRegisterRules(arrayOf(), arrayOf())
+    } else {
+        val registrators = config.getStringArray("registrators").map { it.hexStringToByteArray() }
+        fun checkRegistration(data: FTRegisterData): Boolean {
+            return data.opData.signers.any { signer ->
+                registrators.any { it.contentEquals(signer) }
+            }
+        }
+        return FTRegisterRules(arrayOf(::checkRegistration), arrayOf())
+    }
+}
 
+fun makeFTTransferRules(config: Configuration): FTTransferRules {
+    return FTTransferRules(arrayOf(), arrayOf(), false)
+}
 
-class BaseFTConfig(config: Configuration):
-        FTConfig(
+fun makeFTAccountFactory(config: Configuration): AccountFactory {
 
-        )*/
+    return BaseAccountFactory(
+            mapOf(
+                    NullAccount.entry,
+                    BasicAccount.entry
+            )
+    )
+}
+
+fun makeFTConfig(blockchainID: ByteArray, config: Configuration): FTConfig {
+    val cs = SECP256K1CryptoSystem()
+    val ac = AccountUtil(blockchainID, cs)
+    val accFactory = makeFTAccountFactory(config)
+    return FTConfig(
+            makeFTIssueRules(ac, config),
+            makeFTTransferRules(config),
+            makeFTRegisterRules(config),
+            accFactory,
+            BaseAccountResolver(accFactory),
+            BaseDBOps(),
+            cs,
+            blockchainID
+    )
+}
