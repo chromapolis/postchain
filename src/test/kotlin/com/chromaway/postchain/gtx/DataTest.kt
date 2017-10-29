@@ -1,10 +1,15 @@
 package com.chromaway.postchain.gtx
 
 import com.chromaway.postchain.base.SECP256K1CryptoSystem
+import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.secp256k1_derivePubKey
 import com.chromaway.postchain.core.Signature
 import org.junit.Assert.*
 import org.junit.Test
+
+// TODO: figure out why we get different results
+// val testBlockchainRID = SECP256K1CryptoSystem().digest("Test blockchainRID".toByteArray())
+val testBlockchainRID = "78967baa4768cbcef11c508326ffb13a956689fcb6dc3ba17f4b895cbb1577a3".hexStringToByteArray()
 
 fun mustThrowError(msg: String, code: ()->Unit) {
     try {
@@ -34,7 +39,7 @@ class GTXDataTest {
         val signerPriv = (0..3).map(::privKey)
         val crypto = SECP256K1CryptoSystem()
 
-        val b = GTXDataBuilder(EMPTY_SIGNATURE, signerPub.slice(0..2).toTypedArray(), crypto)
+        val b = GTXDataBuilder(testBlockchainRID, signerPub.slice(0..2).toTypedArray(), crypto)
         // primitives
         b.addOperation("hello", arrayOf(GTXNull, gtx(42), gtx("Wow"), gtx(signerPub[0])))
         // array of primitives

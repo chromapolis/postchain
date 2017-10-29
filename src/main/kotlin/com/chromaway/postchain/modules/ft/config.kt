@@ -56,18 +56,21 @@ fun makeFTAccountFactory(config: Configuration): AccountFactory {
     )
 }
 
-fun makeFTConfig(blockchainID: ByteArray, config: Configuration): FTConfig {
+fun makeBaseFTConfig(config: Configuration): FTConfig {
+    val blockchainRID = config.getString("blockchainrid").hexStringToByteArray()
+    val ftConfig = config.subset("gtx.ft")
+
     val cs = SECP256K1CryptoSystem()
-    val ac = AccountUtil(blockchainID, cs)
+    val ac = AccountUtil(blockchainRID, cs)
     val accFactory = makeFTAccountFactory(config)
     return FTConfig(
-            makeFTIssueRules(ac, config),
-            makeFTTransferRules(config),
-            makeFTRegisterRules(config),
+            makeFTIssueRules(ac, ftConfig),
+            makeFTTransferRules(ftConfig),
+            makeFTRegisterRules(ftConfig),
             accFactory,
             BaseAccountResolver(accFactory),
             BaseDBOps(),
             cs,
-            blockchainID
+            blockchainRID
     )
 }

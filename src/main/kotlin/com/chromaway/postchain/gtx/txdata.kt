@@ -17,10 +17,10 @@ class ExtOpData(val opName: String, val opIndex: Int, val signers: Array<ByteArr
 
 val EMPTY_SIGNATURE: ByteArray = ByteArray(0)
 
-class GTXData (val blockchainID: ByteArray,
-               val signers: Array<ByteArray>,
-               val signatures: Array<ByteArray>,
-               val operations: Array<OpData>) {
+class GTXData(val blockchainRID: ByteArray,
+              val signers: Array<ByteArray>,
+              val signatures: Array<ByteArray>,
+              val operations: Array<OpData>) {
 
     fun getExtOpData(): Array<ExtOpData> {
         return operations.mapIndexed({
@@ -31,7 +31,7 @@ class GTXData (val blockchainID: ByteArray,
 
     fun serialize(): ByteArray {
         val rtx = RawGTXTransaction()
-        rtx.blockchainID = blockchainID
+        rtx.blockchainID = blockchainRID
         rtx.operations = Vector<RawGTXOperation>(operations.map({
             val rop = RawGTXOperation()
             rop.opName = it.opName
@@ -47,7 +47,7 @@ class GTXData (val blockchainID: ByteArray,
 
     fun serializeWithoutSignatures(): ByteArray {
         return GTXData(
-                blockchainID,
+                blockchainRID,
                 signers,
                 Array(signatures.size, { EMPTY_SIGNATURE }),
                 operations).serialize()
@@ -78,19 +78,19 @@ fun decodeGTXData(_rawData: ByteArray): GTXData {
 
 // TODO: cache data for signing and digest
 
-class GTXDataBuilder (val blockchainID: ByteArray,
-                      val signers: Array<ByteArray>,
-                      val crypto: CryptoSystem,
-                      val signatures: Array<ByteArray>,
-                      val operations: MutableList<OpData>,
-                      private var finished: Boolean) {
+class GTXDataBuilder(val blockchainRID: ByteArray,
+                     val signers: Array<ByteArray>,
+                     val crypto: CryptoSystem,
+                     val signatures: Array<ByteArray>,
+                     val operations: MutableList<OpData>,
+                     private var finished: Boolean) {
 
     // construct empty builder
-    constructor(blockchainID: ByteArray,
+    constructor(blockchainRID: ByteArray,
                 signers: Array<ByteArray>,
                 crypto: CryptoSystem) :
             this(
-                    blockchainID,
+                    blockchainRID,
                     signers,
                     crypto,
                     Array(signers.size, { EMPTY_SIGNATURE }),
@@ -103,7 +103,7 @@ class GTXDataBuilder (val blockchainID: ByteArray,
         fun decode(bytes: ByteArray, crypto: CryptoSystem, finished: Boolean = true): GTXDataBuilder {
             val data = decodeGTXData(bytes)
             return GTXDataBuilder(
-                    data.blockchainID,
+                    data.blockchainRID,
                     data.signers, crypto, data.signatures,
                     data.operations.toMutableList(), finished)
         }
@@ -161,7 +161,7 @@ class GTXDataBuilder (val blockchainID: ByteArray,
 
     fun getGTXData(): GTXData {
         return GTXData(
-                blockchainID,
+                blockchainRID,
                 signers,
                 signatures,
                 operations.toTypedArray()

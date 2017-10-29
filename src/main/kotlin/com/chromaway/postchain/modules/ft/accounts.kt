@@ -2,13 +2,14 @@ package com.chromaway.postchain.modules.ft
 
 import com.chromaway.postchain.base.CryptoSystem
 import com.chromaway.postchain.core.UserMistake
+import com.chromaway.postchain.gtx.GTXNull
 import com.chromaway.postchain.gtx.GTXValue
 import com.chromaway.postchain.gtx.encodeGTXValue
 import com.chromaway.postchain.gtx.gtx
 
 interface FTAccount {
     val accountID: ByteArray
-    fun isCompatibleWithBlockchainID(blockchainID: ByteArray): Boolean
+    fun isCompatibleWithblockchainRID(blockchainRID: ByteArray): Boolean
 }
 
 interface FTInputAccount : FTAccount {
@@ -35,7 +36,7 @@ class SimpleOutputAccount(override val accountID: ByteArray): FTOutputAccount {
     override val descriptor = null
     override val skipUpdate = false
 
-    override fun isCompatibleWithBlockchainID(blockchainID: ByteArray): Boolean {
+    override fun isCompatibleWithblockchainRID(blockchainRID: ByteArray): Boolean {
         return true
     }
 
@@ -81,14 +82,14 @@ class BaseAccountResolver(val factory: AccountFactory) : AccountResolver {
 }
 
 class BasicAccountInput(override val accountID: ByteArray, override val descriptor: GTXValue) : FTInputAccount {
-    val blockchainID = descriptor[1]
+    val blockchainRID = descriptor[1]
     val pubkey = descriptor[2].asByteArray()
 
     override val skipUpdate = false
 
-    override fun isCompatibleWithBlockchainID(blockchainID: ByteArray): Boolean {
-        if (this.blockchainID.isNull()) return false
-        else return this.blockchainID.asByteArray().contentEquals(blockchainID)
+    override fun isCompatibleWithblockchainRID(blockchainRID: ByteArray): Boolean {
+        if (this.blockchainRID.isNull()) return true
+        else return this.blockchainRID.asByteArray().contentEquals(blockchainRID)
     }
 
     override fun verifyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean {
@@ -107,20 +108,20 @@ open class AccountType(val code: Int,
 }
 
 object BasicAccount : AccountType(1, ::BasicAccountInput, simpleOutputAccount) {
-    fun makeDescriptor(blockchainID: ByteArray, pubKey: ByteArray): ByteArray {
+    fun makeDescriptor(blockchainRID: ByteArray, pubKey: ByteArray): ByteArray {
         return encodeGTXValue(
-                gtx(gtx(code.toLong()), gtx(blockchainID), gtx(pubKey))
+                gtx(gtx(code.toLong()), gtx(blockchainRID), gtx(pubKey))
         )
     }
 }
 
 class NullAccountInput(override val accountID: ByteArray, override val descriptor: GTXValue) : FTInputAccount {
     override val skipUpdate = false
-    val blockchainID = descriptor[1]
+    val blockchainRID = descriptor[1]
 
-    override fun isCompatibleWithBlockchainID(blockchainID: ByteArray): Boolean {
-        if (this.blockchainID.isNull()) return false
-        else return this.blockchainID.asByteArray().contentEquals(blockchainID)
+    override fun isCompatibleWithblockchainRID(blockchainRID: ByteArray): Boolean {
+        if (this.blockchainRID.isNull()) return true
+        else return this.blockchainRID.asByteArray().contentEquals(blockchainRID)
     }
 
     override fun verifyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean {
@@ -133,14 +134,15 @@ class NullAccountInput(override val accountID: ByteArray, override val descripto
 }
 
 object NullAccount : AccountType(0, ::NullAccountInput, simpleOutputAccount) {
-    fun makeDescriptor(blockchainID: ByteArray, pubKey: ByteArray): ByteArray {
+    fun makeDescriptor(blockchainRID: ByteArray?, pubKey: ByteArray): ByteArray {
+        val gtxBlockchainRID = if (blockchainRID == null) GTXNull else gtx(blockchainRID)
         return encodeGTXValue(
-                gtx(gtx(code.toLong()), gtx(blockchainID), gtx(pubKey))
+                gtx(gtx(code.toLong()), gtxBlockchainRID, gtx(pubKey))
         )
     }
 }
 
-class AccountUtil(val blockchainID: ByteArray, val cs: CryptoSystem) {
+class AccountUtil(val blockchainRID: ByteArray, val cs: CryptoSystem) {
 
     fun makeAccountID(descriptor: ByteArray): ByteArray {
         return cs.digest(descriptor)
@@ -148,7 +150,7 @@ class AccountUtil(val blockchainID: ByteArray, val cs: CryptoSystem) {
 
     fun issuerAccountID(issuerPubKey: ByteArray): ByteArray {
         return makeAccountID(
-                NullAccount.makeDescriptor(blockchainID, issuerPubKey)
+                NullAccount.makeDescriptor(blockchainRID, issuerPubKey)
         )
     }
 }

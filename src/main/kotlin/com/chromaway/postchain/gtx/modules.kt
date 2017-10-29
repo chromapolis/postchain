@@ -3,6 +3,7 @@ package com.chromaway.postchain.gtx
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Transactor
 import com.chromaway.postchain.core.UserMistake
+import org.apache.commons.configuration2.Configuration
 
 interface GTXModule {
     fun makeTransactor(opData: ExtOpData): Transactor
@@ -10,6 +11,10 @@ interface GTXModule {
     fun getQueries(): Set<String>
     fun query(ctxt: EContext, name: String, args: GTXValue): GTXValue
     fun initializeDB(ctx: EContext)
+}
+
+interface GTXModuleFactory {
+    fun makeModule(config: Configuration): GTXModule
 }
 
 abstract class SimpleGTXModule<ConfT>(

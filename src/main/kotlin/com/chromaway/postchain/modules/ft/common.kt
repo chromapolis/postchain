@@ -47,7 +47,7 @@ open class FTConfig (
         val accountResolver: AccountResolver,
         val dbOps : FTDBOps,
         val cryptoSystem: CryptoSystem,
-        val blockchainID: ByteArray
+        val blockchainRID: ByteArray
 )
 
 class HistoryEntry(val delta: Long,

@@ -9,7 +9,7 @@ import org.junit.Test
 
 
 fun makeTestTx(id: Long, value: String): ByteArray {
-    val b = GTXDataBuilder(EMPTY_SIGNATURE, arrayOf(pubKey(0)), myCS)
+    val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(0)), myCS)
     b.addOperation("gtx_test", arrayOf(gtx(id), gtx(value)))
     b.finish()
     b.sign(myCS.makeSigner(pubKey(0), privKey(0)))

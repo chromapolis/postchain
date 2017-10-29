@@ -28,9 +28,9 @@ class FT_register_op (val config: FTConfig, data: ExtOpData): GTXOperation(data)
 
     override fun isCorrect(): Boolean {
         val inputAcc = config.accountFactory.makeInputAccount(registerData.accountID, registerData.accountDesc)
-        if (!inputAcc.isCompatibleWithBlockchainID(config.blockchainID)) return false
+        if (!inputAcc.isCompatibleWithblockchainRID(config.blockchainRID)) return false
         val outputAcc = config.accountFactory.makeOutputAccount(registerData.accountID, registerData.accountDesc)
-        if (!outputAcc.isCompatibleWithBlockchainID(config.blockchainID)) return false
+        if (!outputAcc.isCompatibleWithblockchainRID(config.blockchainRID)) return false
 
         return config.registerRules.applyStaticRules(registerData)
     }

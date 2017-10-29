@@ -193,7 +193,7 @@ interface BlockStore {
     fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
     fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any>
 }
-
+/*
 open class BlockLifecycleListener {
     open fun beginBlockDone() {}
 
@@ -205,3 +205,4 @@ open class BlockLifecycleListener {
 
     open fun commitDone(witness: BlockWitness?) {}
 }
+*/

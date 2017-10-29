@@ -3,22 +3,8 @@ package com.chromaway.postchain.configurations
 import com.chromaway.postchain.base.CryptoSystem
 import com.chromaway.postchain.base.Signer
 import com.chromaway.postchain.base.data.BaseBlockBuilder
-import com.chromaway.postchain.core.BlockBuilder
-import com.chromaway.postchain.core.BlockStore
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.TransactionFactory
-import com.chromaway.postchain.core.TxEContext
-import com.chromaway.postchain.core.UserMistake
-import com.chromaway.postchain.gtx.ExtOpData
-import com.chromaway.postchain.gtx.GTXBlockchainConfiguration
-import com.chromaway.postchain.gtx.GTXBlockchainConfigurationFactory
-import com.chromaway.postchain.gtx.GTXModule
-import com.chromaway.postchain.gtx.GTXOperation
-import com.chromaway.postchain.gtx.GTXSchemaManager
-import com.chromaway.postchain.gtx.NullGTXValue
-import com.chromaway.postchain.gtx.SimpleGTXModule
-import com.chromaway.postchain.gtx.gtx
+import com.chromaway.postchain.core.*
+import com.chromaway.postchain.gtx.*
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.ScalarHandler
@@ -42,7 +28,7 @@ private class SingleNodeGtxBlockchainConfiguration(chainID: Long, config: Config
 
 class SingleNodeGtxBlockchainConfigurationFactory(): GTXBlockchainConfigurationFactory() {
     override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
-        return SingleNodeGtxBlockchainConfiguration(chainID, config, createGtxModule(config.subset("gtx")))
+        return SingleNodeGtxBlockchainConfiguration(chainID, config, createGtxModule(config))
     }
 }
 

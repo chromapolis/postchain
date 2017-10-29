@@ -1,33 +1,28 @@
 package com.chromaway.postchain.base.data
 
-import com.chromaway.postchain.base.BaseBlockHeader
-import com.chromaway.postchain.base.BaseBlockQueries
-import com.chromaway.postchain.base.BaseBlockWitness
-import com.chromaway.postchain.base.CryptoSystem
-import com.chromaway.postchain.base.SECP256K1CryptoSystem
-import com.chromaway.postchain.base.Signer
-import com.chromaway.postchain.base.Storage
-import com.chromaway.postchain.base.hexStringToByteArray
-import com.chromaway.postchain.base.secp256k1_derivePubKey
-import com.chromaway.postchain.core.BlockBuilder
-import com.chromaway.postchain.core.BlockBuildingStrategy
-import com.chromaway.postchain.core.BlockData
-import com.chromaway.postchain.core.BlockHeader
-import com.chromaway.postchain.core.BlockQueries
-import com.chromaway.postchain.core.BlockStore
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.TransactionFactory
-import com.chromaway.postchain.core.TransactionQueue
-import com.chromaway.postchain.core.UserMistake
+import com.chromaway.postchain.base.*
+import com.chromaway.postchain.core.*
 import org.apache.commons.configuration2.Configuration
 
-open class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
+open class BaseBlockchainConfiguration(final override val chainID: Long,
+                                       val config: Configuration) :
         BlockchainConfiguration {
     override val traits = setOf<String>()
     val cryptoSystem = SECP256K1CryptoSystem()
     val blockStore = BaseBlockStore()
+    val blockchainRID: ByteArray
+
+    init {
+        val blockchainRidHex = config.getString("blockchainrid")
+        if (blockchainRidHex == null) {
+            throw UserMistake("Missing property blockchain.$chainID.blochchainrid")
+        }
+        if (!blockchainRidHex.matches(Regex("[0-9a-f]{64}"))) {
+            throw UserMistake("Invalid property blockchain.$chainID.blochchainrid expected 64 " +
+                    "lower case hex digits. Got $blockchainRidHex")
+        }
+        blockchainRID = blockchainRidHex.hexStringToByteArray()
+    }
 
     override fun decodeBlockHeader(rawBlockHeader: ByteArray): BlockHeader {
         return BaseBlockHeader(rawBlockHeader, cryptoSystem)
@@ -67,15 +62,7 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
     }
 
     override fun initializeDB(ctx: EContext) {
-        val blockchainRidHex = config.getString("blockchainrid")
-        if (blockchainRidHex == null) {
-            throw UserMistake("Missing property blockchain.$chainID.blochchainrid")
-        }
-        if (!blockchainRidHex.matches(Regex("[0-9a-f]{64}"))) {
-            throw UserMistake("Invalid property blockchain.$chainID.blochchainrid expected 64 " +
-                    "lower case hex digits. Got $blockchainRidHex")
-        }
-        blockStore.initialize(ctx, blockchainRidHex!!.hexStringToByteArray())
+        blockStore.initialize(ctx, blockchainRID)
     }
 
     override fun getBlockBuildingStrategy(blockQueries: BlockQueries, transactionQueue: TransactionQueue): BlockBuildingStrategy {

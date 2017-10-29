@@ -17,7 +17,7 @@ class AssuranceContract(
     val thresholdAmount = descriptor[4].asInteger()
     val deadline = descriptor[5].asInteger()
 
-    override fun isCompatibleWithBlockchainID(blockchainID: ByteArray): Boolean {
+    override fun isCompatibleWithblockchainRID(blockchainRID: ByteArray): Boolean {
         return true
     }
 

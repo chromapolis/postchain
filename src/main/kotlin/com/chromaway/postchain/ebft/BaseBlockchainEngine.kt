@@ -6,7 +6,6 @@ import com.chromaway.postchain.base.data.BaseManagedBlockBuilder
 import com.chromaway.postchain.base.withWriteConnection
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockDataWithWitness
-import com.chromaway.postchain.core.BlockLifecycleListener
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.TransactionQueue
 
