@@ -218,7 +218,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
             }
 
             // Check that the blockchainRID is present for block_id
-            val dbRid = r.query("SELECT blockchain_rid from blockchains where chain_id=?",
+            val dbRid = r.query(ctx.conn, "SELECT blockchain_rid from blockchains where chain_id=?",
                     nullableByteArrayRes, ctx.chainID)
             if (dbRid == null) {
                 r.insert(ctx.conn, "INSERT INTO blockchains (chain_id, blockchain_rid) values (?, ?)",

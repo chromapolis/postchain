@@ -20,6 +20,7 @@ import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.TransactionFactory
 import com.chromaway.postchain.core.TransactionQueue
+import com.chromaway.postchain.core.UserMistake
 import org.apache.commons.configuration2.Configuration
 
 open class BaseBlockchainConfiguration(override val chainID: Long, val config: Configuration) :
@@ -66,7 +67,15 @@ open class BaseBlockchainConfiguration(override val chainID: Long, val config: C
     }
 
     override fun initializeDB(ctx: EContext) {
-        blockStore.initialize(ctx, config.getString("blockchainrid")!!.hexStringToByteArray())
+        val blockchainRidHex = config.getString("blockchainrid")
+        if (blockchainRidHex == null) {
+            throw UserMistake("Missing property blockchain.$chainID.blochchainrid")
+        }
+        if (!blockchainRidHex.matches(Regex("[0-9a-f]{64}"))) {
+            throw UserMistake("Invalid property blockchain.$chainID.blochchainrid expected 64 " +
+                    "lower case hex digits. Got $blockchainRidHex")
+        }
+        blockStore.initialize(ctx, blockchainRidHex!!.hexStringToByteArray())
     }
 
     override fun getBlockBuildingStrategy(blockQueries: BlockQueries, transactionQueue: TransactionQueue): BlockBuildingStrategy {
