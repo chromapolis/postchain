@@ -73,7 +73,7 @@ class BaseAccountFactory(val accountConstructors: Map<Int, AccountConstructors>)
 
 class BaseAccountResolver(val factory: AccountFactory) : AccountResolver {
     override fun resolveInputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTInputAccount {
-        val descriptor = dbops.getDescriptor(ctx, accountID)
+        val descriptor = dbops.getDescriptor(ctx.txCtx, accountID)
         if (descriptor == null)
             throw UserMistake("Account descriptor not found")
         else
@@ -81,7 +81,7 @@ class BaseAccountResolver(val factory: AccountFactory) : AccountResolver {
     }
 
     override fun resolveOutputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTOutputAccount {
-        val descriptor = dbops.getDescriptor(ctx, accountID)
+        val descriptor = dbops.getDescriptor(ctx.txCtx, accountID)
         if (descriptor == null)
             throw UserMistake("Account descriptor not found")
         else

@@ -122,9 +122,24 @@ class FTIntegrationTest : IntegrationTest() {
 
         makeSureBlockIsBuiltCorrectly()
 
-        /*val myConf = node.blockchainConfiguration as GTXBlockchainConfiguration
-        val value = node.blockQueries.query(
-                """{"type"="gtx_test_get_value", "txRID"="${validTx.getRID().toHex()}"}""")
-        Assert.assertEquals("\"true\"", value.get())*/
+        val balance = node.blockQueries.query(
+                """{"type"="ft_get_balance",
+                    "account_id"="${aliceAccountID.toHex()}",
+                    "asset_id"="USD"
+                   }""")
+        Assert.assertEquals("""{"balance":900}""", balance.get())
+        val existence = node.blockQueries.query(
+                """{"type"="ft_account_exists",
+                    "account_id"="${invalidAccountID.toHex()}"
+                   }""")
+        Assert.assertEquals("0", existence.get())
+        val history = node.blockQueries.query(
+                """{"type"="ft_get_history",
+                    "account_id"="${aliceAccountID.toHex()}",
+                    "asset_id"="USD"
+                   }""").get()
+        val gson = make_gtx_gson()
+        val historyGTX = gson.fromJson<GTXValue>(history, GTXValue::class.java)
+        Assert.assertEquals(2, historyGTX.asArray().size)
     }
 }

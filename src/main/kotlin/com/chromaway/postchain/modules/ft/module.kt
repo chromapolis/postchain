@@ -17,7 +17,11 @@ class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
                 "ft_transfer" to ::FT_transfer_op,
                 "ft_register" to ::FT_register_op
         ),
-        mapOf()
+        mapOf(
+                "ft_account_exists" to ::ftAccountExistsQ,
+                "ft_get_balance" to ::ftBalanceQ,
+                "ft_get_history" to ::ftHistoryQ
+        )
 ) {
 
     override fun initializeDB(ctx: EContext) {

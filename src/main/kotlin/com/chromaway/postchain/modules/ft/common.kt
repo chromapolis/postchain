@@ -1,6 +1,7 @@
 package com.chromaway.postchain.modules.ft
 
 import com.chromaway.postchain.base.CryptoSystem
+import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.TxEContext
 import com.chromaway.postchain.gtx.ExtOpData
 import com.chromaway.postchain.gtx.GTXValue
@@ -56,10 +57,11 @@ class HistoryEntry(val delta: Long,
 
 interface FTDBOps {
     fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, allowNeg: Boolean = false)
-    fun getDescriptor(ctx: OpEContext, accountID: ByteArray): GTXValue?
     fun registerAccount(ctx: OpEContext, accountID: ByteArray, accountType: Int, accountDesc: ByteArray)
-    fun getBalance(ctx: OpEContext, accountID: ByteArray, assetID: String): Long
-    fun getHistory(ctx: OpEContext, accountID: ByteArray, assetID: String): List<HistoryEntry>
     fun registerAsset(ctx: OpEContext, assetID: String)
+
+    fun getDescriptor(ctx: EContext, accountID: ByteArray): GTXValue?
+    fun getBalance(ctx: EContext, accountID: ByteArray, assetID: String): Long
+    fun getHistory(ctx: EContext, accountID: ByteArray, assetID: String): List<HistoryEntry>
 }
 

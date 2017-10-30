@@ -46,7 +46,7 @@ fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
     }
 
     fun prepare(ctx: OpEContext, dbOps: FTDBOps, data: FTIssueData): Boolean {
-        val maybeDesc = dbOps.getDescriptor(ctx, data.issuerID)
+        val maybeDesc = dbOps.getDescriptor(ctx.txCtx, data.issuerID)
         if (maybeDesc == null) {
             dbOps.registerAccount(ctx,
                     data.issuerID,

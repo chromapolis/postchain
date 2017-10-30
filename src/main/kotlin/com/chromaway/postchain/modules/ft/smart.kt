@@ -43,7 +43,7 @@ class AssuranceContract(
     }
 
     override fun verifyInput(ctx: OpEContext, dbops: FTDBOps, index: Int, data: CompleteTransferData): Boolean {
-        val myBalance = dbops.getBalance(ctx, accountID, assetID)
+        val myBalance = dbops.getBalance(ctx.txCtx, accountID, assetID)
         if (System.currentTimeMillis() < deadline) return false // TODO: get timestamp from database!
 
         if (myBalance >= thresholdAmount) {
