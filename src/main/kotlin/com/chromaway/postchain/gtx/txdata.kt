@@ -31,7 +31,7 @@ class GTXData(val blockchainRID: ByteArray,
 
     fun serialize(): ByteArray {
         val rtx = RawGTXTransaction()
-        rtx.blockchainID = blockchainRID
+        rtx.blockchainRID = blockchainRID
         rtx.operations = Vector<RawGTXOperation>(operations.map({
             val rop = RawGTXOperation()
             rop.opName = it.opName
@@ -70,7 +70,7 @@ fun decodeGTXData(_rawData: ByteArray): GTXData {
     }).toTypedArray()
 
     return GTXData(
-            rawGTX.blockchainID,
+            rawGTX.blockchainRID,
             signers,
             rawGTX.signatures.toArray(arrayOf()),
             ops)

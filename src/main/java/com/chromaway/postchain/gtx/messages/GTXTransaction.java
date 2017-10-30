@@ -4,17 +4,25 @@
  */
 package com.chromaway.postchain.gtx.messages;
 
-import java.io.*;
-import java.util.*;
 import org.asnlab.asndt.runtime.conv.*;
-import org.asnlab.asndt.runtime.conv.annotation.*;
+import org.asnlab.asndt.runtime.conv.annotation.Component;
 import org.asnlab.asndt.runtime.type.AsnType;
-import org.asnlab.asndt.runtime.value.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Vector;
 
 public class GTXTransaction {
 
-	@Component(0)
-	public byte[] blockchainID;
+    static {
+        CONV = new AnnotationCompositeConverter(GTXTransaction.class);
+        AsnConverter blockchainRIDConverter = OctetStringConverter.INSTANCE;
+        AsnConverter operationsConverter = new VectorConverter(GTXOperation.CONV);
+        AsnConverter signersConverter = new VectorConverter(OctetStringConverter.INSTANCE);
+        AsnConverter signaturesConverter = new VectorConverter(OctetStringConverter.INSTANCE);
+        CONV.setComponentConverters(new AsnConverter[]{blockchainRIDConverter, operationsConverter, signersConverter, signaturesConverter});
+    }
 
 	@Component(1)
 	public Vector<GTXOperation> operations;
@@ -46,14 +54,8 @@ public class GTXTransaction {
 
 	public final static CompositeConverter CONV;
 
-	static {
-		CONV = new AnnotationCompositeConverter(GTXTransaction.class);
-		AsnConverter blockchainIDConverter = OctetStringConverter.INSTANCE;
-		AsnConverter operationsConverter = new VectorConverter(GTXOperation.CONV);
-		AsnConverter signersConverter = new VectorConverter(OctetStringConverter.INSTANCE);
-		AsnConverter signaturesConverter = new VectorConverter(OctetStringConverter.INSTANCE);
-		CONV.setComponentConverters(new AsnConverter[] { blockchainIDConverter, operationsConverter, signersConverter, signaturesConverter });
-	}
+    @Component(0)
+    public byte[] blockchainRID;
 
 
 }
