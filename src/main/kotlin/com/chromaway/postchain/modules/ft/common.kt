@@ -60,5 +60,6 @@ interface FTDBOps {
     fun registerAccount(ctx: OpEContext, accountID: ByteArray, accountType: Int, accountDesc: ByteArray)
     fun getBalance(ctx: OpEContext, accountID: ByteArray, assetID: String): Long
     fun getHistory(ctx: OpEContext, accountID: ByteArray, assetID: String): List<HistoryEntry>
+    fun registerAsset(ctx: OpEContext, assetID: String)
 }
 

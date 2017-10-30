@@ -255,8 +255,8 @@ open class IntegrationTest {
         return witness
     }
 
-    protected fun getTxRidsAtHeight(node: DataLayer, height: Int): Array<ByteArray> {
-        val list = node.blockQueries.getBlockRids(height.toLong()).get()
+    protected fun getTxRidsAtHeight(node: DataLayer, height: Long): Array<ByteArray> {
+        val list = node.blockQueries.getBlockRids(height).get()
         return node.blockQueries.getBlockTransactionRids(list[0]).get().toTypedArray()
     }
 

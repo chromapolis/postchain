@@ -85,7 +85,7 @@ class BlockchainEngineTest : IntegrationTest() {
             loadUnfinishedAndCommit(node1, blockData)
 
             assertEquals(i.toLong(), getBestHeight(node1))
-            val riDsAtHeighti = getTxRidsAtHeight(node1, i)
+            val riDsAtHeighti = getTxRidsAtHeight(node1, i.toLong())
             assertTrue(riDsAtHeighti.contentDeepEquals(Array(2, { TestTransaction(i * 2 + it).getRID() })))
         }
     }

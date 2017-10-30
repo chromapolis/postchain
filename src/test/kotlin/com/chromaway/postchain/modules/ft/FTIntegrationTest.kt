@@ -65,27 +65,42 @@ class FTIntegrationTest : IntegrationTest() {
         }
 
         val validTxs = mutableListOf<Transaction>()
+        var currentBlockHeight = -1L
+
+        fun makeSureBlockIsBuiltCorrectly() {
+            currentBlockHeight += 1
+            buildBlockAndCommit(node.engine)
+            Assert.assertEquals(currentBlockHeight, getBestHeight(node))
+            val ridsAtHeight = getTxRidsAtHeight(node, currentBlockHeight)
+            for (vtx in validTxs) {
+                val vtxRID = vtx.getRID()
+                Assert.assertTrue(ridsAtHeight.any { it.contentEquals(vtxRID)})
+            }
+            Assert.assertEquals(validTxs.size, ridsAtHeight.size)
+            validTxs.clear()
+        }
 
         validTxs.add(enqueueTx(
                 makeRegisterTx(arrayOf(aliceAccountDesc, bobAccountDesc), 0)
         )!!)
-        /*validTxs.add(enqueueTx(
+
+        makeSureBlockIsBuiltCorrectly()
+
+        validTxs.add(enqueueTx(
                 makeIssueTx(0, issuerID, aliceAccountID, "USD", 1000)
         )!!)
 
         // invalid issuance:
-        enqueueTx(makeIssueTx(0, issuerID, aliceAccountID, "XDX", 1000))
+        /*enqueueTx(makeIssueTx(0, issuerID, aliceAccountID, "XDX", 1000))
         enqueueTx(makeIssueTx(0, issuerID, aliceAccountID, "USD", -1000))
         enqueueTx(makeIssueTx(0, aliceAccountID, aliceAccountID, "USD", 1000))
         enqueueTx(makeIssueTx(1, issuerID, aliceAccountID, "USD", 1000))
-        makeIssueTx(0, issuerID, invalidAccountID, "USD", 1000)
-        */
+        enqueueTx(makeIssueTx(0, issuerID, invalidAccountID, "USD", 1000))*/
 
-        buildBlockAndCommit(node.engine)
-        Assert.assertEquals(0, getBestHeight(node))
-        val riDsAtHeight0 = getTxRidsAtHeight(node, 0)
-        Assert.assertEquals(validTxs.size, riDsAtHeight0.size)
-        //Assert.assertArrayEquals(validTx.getRID(), riDsAtHeight0[0])
+        makeSureBlockIsBuiltCorrectly()
+
+
+
 
         /*val myConf = node.blockchainConfiguration as GTXBlockchainConfiguration
         val value = node.blockQueries.query(

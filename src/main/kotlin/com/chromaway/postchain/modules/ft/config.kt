@@ -4,25 +4,40 @@ import com.chromaway.postchain.base.SECP256K1CryptoSystem
 import com.chromaway.postchain.base.hexStringToByteArray
 import org.apache.commons.configuration2.Configuration
 
+class BAKey(val byteArray: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (super.equals(other)) return true
+        if (other is BAKey) {
+            return other.byteArray.contentEquals(byteArray)
+        } else return false
+    }
+
+    override fun hashCode(): Int {
+        return byteArray.contentHashCode()
+    }
+}
+
 fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
-    val assetIssuerMap: MutableMap<String, Map<ByteArray, ByteArray>> = mutableMapOf()
-    val issuerAccountDescriptors: MutableMap<ByteArray, ByteArray> = mutableMapOf()
+    val assetIssuerMap: MutableMap<String, Map<BAKey, ByteArray>> = mutableMapOf()
+    val issuerAccountDescriptors: MutableMap<BAKey, ByteArray> = mutableMapOf()
     val assets = config.getStringArray("assets")
     for (assetName in assets) {
-        val issuerMap = mutableMapOf<ByteArray, ByteArray>()
+        val issuerMap = mutableMapOf<BAKey, ByteArray>()
         for (issuer in config.getStringArray("asset.${assetName}.issuers")) {
             val pubKey = issuer.hexStringToByteArray()
             val descriptor = ac.issuerAccountDesc(pubKey)
             val issuerID = ac.makeAccountID(descriptor)
-            issuerMap[issuerID] = pubKey
-            issuerAccountDescriptors[issuerID] = descriptor
+            val key = BAKey(issuerID)
+            issuerMap[key] = pubKey
+            issuerAccountDescriptors[key] = descriptor
         }
         assetIssuerMap[assetName] = issuerMap.toMap()
     }
 
     fun checkIssuer(data: FTIssueData): Boolean {
         if (data.assetID !in assetIssuerMap) return false
-        val issuer = assetIssuerMap[data.assetID]!![data.issuerID]
+        val issuer = assetIssuerMap[data.assetID]!![BAKey(data.issuerID)]
         if (issuer == null) {
             return false
         } else {
@@ -30,19 +45,20 @@ fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
         }
     }
 
-    fun registerIssuerAccount(ctx: OpEContext, dbOps: FTDBOps, data: FTIssueData): Boolean {
+    fun prepare(ctx: OpEContext, dbOps: FTDBOps, data: FTIssueData): Boolean {
         val maybeDesc = dbOps.getDescriptor(ctx, data.issuerID)
         if (maybeDesc == null) {
             dbOps.registerAccount(ctx,
                     data.issuerID,
                     0,
-                    issuerAccountDescriptors[data.issuerID]!!
+                    issuerAccountDescriptors[BAKey(data.issuerID)]!!
             )
         }
+        dbOps.registerAsset(ctx, data.assetID)
         return true
     }
 
-    return FTIssueRules(arrayOf(::checkIssuer), arrayOf(::registerIssuerAccount))
+    return FTIssueRules(arrayOf(::checkIssuer), arrayOf(::prepare))
 }
 
 fun makeFTRegisterRules(config: Configuration): FTRegisterRules {

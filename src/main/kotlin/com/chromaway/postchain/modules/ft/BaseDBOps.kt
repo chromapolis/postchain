@@ -11,6 +11,7 @@ open class BaseDBOps: FTDBOps {
     private val r = QueryRunner()
     private val nullableByteArrayRes = ScalarHandler<ByteArray?>()
     private val longHandler = ScalarHandler<Long>()
+    private val nullableLongHandler = ScalarHandler<Long?>()
     private val unitHandler = ScalarHandler<Unit>()
     private val mapListHandler = MapListHandler()
 
@@ -56,6 +57,20 @@ open class BaseDBOps: FTDBOps {
                     it.get("txRID") as ByteArray,
                     it.get("op_index") as Int
             )
+        }
+    }
+
+    override fun registerAsset(ctx: OpEContext, assetID: String) {
+        if (r.query(ctx.txCtx.conn,
+                "SELECT ft_find_asset(?, ?)",
+                nullableLongHandler,
+                ctx.txCtx.chainID,
+                assetID) == null)
+        {
+            r.query(ctx.txCtx.conn,
+                    "SELECT ft_register_asset(?, ?)",
+                    unitHandler,
+                    ctx.txCtx.chainID, assetID)
         }
     }
 }
