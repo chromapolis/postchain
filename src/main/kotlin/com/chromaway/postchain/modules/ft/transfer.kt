@@ -54,10 +54,12 @@ open class FTTransferRules(staticRules: Array<StaticTransferRule>, val completeR
     open fun checkAssetConservation(td: StaticTransferData): Boolean {
         val assetAmounts = mutableMapOf<String, Long>()
         for (input in td.inputs) {
+            if (input.amount < 0) return false
             val sumSoFar = assetAmounts[input.assetID] ?: 0L
             assetAmounts[input.assetID] = sumSoFar + input.amount
         }
         for (output in td.outputs) {
+            if (output.amount < 0) return false
             val sumSoFar = assetAmounts[output.assetID] ?: return false
             val newSum = sumSoFar - output.amount
             if (newSum < 0)

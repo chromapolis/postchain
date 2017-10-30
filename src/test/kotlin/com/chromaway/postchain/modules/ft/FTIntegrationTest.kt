@@ -29,10 +29,21 @@ fun makeIssueTx(issuerIdx: Int, issuerID: ByteArray, recipientID: ByteArray, ass
     return b.serialize()
 }
 
+fun makeTransferTx(senderIdx: Int, senderID: ByteArray, assetID: String, amout: Long, recipientID: ByteArray): ByteArray {
+    val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(senderIdx)), myCS)
+    b.addOperation("ft_transfer", arrayOf(
+            gtx(gtx(gtx(senderID), gtx(assetID), gtx(amout))),
+            gtx(gtx(gtx(recipientID), gtx(assetID), gtx(amout)))
+    ))
+    b.finish()
+    b.sign(myCS.makeSigner(pubKey(senderIdx), privKey(senderIdx)))
+    return b.serialize()
+}
+
 class FTIntegrationTest : IntegrationTest() {
 
     @Test
-    fun testBuildBlock() {
+    fun testEverything() {
         val issuerPubKey = pubKey(0)
         val accUtil = AccountUtil(testBlockchainRID, SECP256K1CryptoSystem())
         val issuerID = accUtil.makeAccountID(accUtil.issuerAccountDesc(issuerPubKey))
@@ -91,16 +102,25 @@ class FTIntegrationTest : IntegrationTest() {
         )!!)
 
         // invalid issuance:
-        /*enqueueTx(makeIssueTx(0, issuerID, aliceAccountID, "XDX", 1000))
+        enqueueTx(makeIssueTx(0, issuerID, aliceAccountID, "XDX", 1000))
         enqueueTx(makeIssueTx(0, issuerID, aliceAccountID, "USD", -1000))
         enqueueTx(makeIssueTx(0, aliceAccountID, aliceAccountID, "USD", 1000))
         enqueueTx(makeIssueTx(1, issuerID, aliceAccountID, "USD", 1000))
-        enqueueTx(makeIssueTx(0, issuerID, invalidAccountID, "USD", 1000))*/
+        enqueueTx(makeIssueTx(0, issuerID, invalidAccountID, "USD", 1000))
 
         makeSureBlockIsBuiltCorrectly()
 
+        validTxs.add(enqueueTx(
+                makeTransferTx(1, aliceAccountID, "USD", 100, bobAccountID)
+        )!!)
 
 
+
+        enqueueTx(makeTransferTx(1, aliceAccountID, "USD", 10000, bobAccountID))
+        enqueueTx(makeTransferTx(1, aliceAccountID, "USD", -100, bobAccountID))
+        enqueueTx(makeTransferTx(2, aliceAccountID, "USD", 100, bobAccountID))
+
+        makeSureBlockIsBuiltCorrectly()
 
         /*val myConf = node.blockchainConfiguration as GTXBlockchainConfiguration
         val value = node.blockQueries.query(

@@ -25,6 +25,7 @@ class FT_issue_op (val config: FTConfig, data: ExtOpData): GTXOperation(data) {
     )
 
     override fun isCorrect(): Boolean {
+        if (issueData.amount < 0) return false
         return config.issueRules.applyStaticRules(issueData)
     }
 
