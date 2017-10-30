@@ -15,14 +15,8 @@ import java.util.Vector;
 
 public class GTXTransaction {
 
-    static {
-        CONV = new AnnotationCompositeConverter(GTXTransaction.class);
-        AsnConverter blockchainRIDConverter = OctetStringConverter.INSTANCE;
-        AsnConverter operationsConverter = new VectorConverter(GTXOperation.CONV);
-        AsnConverter signersConverter = new VectorConverter(OctetStringConverter.INSTANCE);
-        AsnConverter signaturesConverter = new VectorConverter(OctetStringConverter.INSTANCE);
-        CONV.setComponentConverters(new AsnConverter[]{blockchainRIDConverter, operationsConverter, signersConverter, signaturesConverter});
-    }
+	@Component(0)
+	public byte[] blockchainRID;
 
 	@Component(1)
 	public Vector<GTXOperation> operations;
@@ -54,8 +48,12 @@ public class GTXTransaction {
 
 	public final static CompositeConverter CONV;
 
-    @Component(0)
-    public byte[] blockchainRID;
-
-
+	static {
+		CONV = new AnnotationCompositeConverter(GTXTransaction.class);
+		AsnConverter blockchainRIDConverter = OctetStringConverter.INSTANCE;
+		AsnConverter operationsConverter = new VectorConverter(GTXOperation.CONV);
+		AsnConverter signersConverter = new VectorConverter(OctetStringConverter.INSTANCE);
+		AsnConverter signaturesConverter = new VectorConverter(OctetStringConverter.INSTANCE);
+		CONV.setComponentConverters(new AsnConverter[]{blockchainRIDConverter, operationsConverter, signersConverter, signaturesConverter});
+	}
 }
