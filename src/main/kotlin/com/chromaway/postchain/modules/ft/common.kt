@@ -56,7 +56,7 @@ class HistoryEntry(val delta: Long,
 
 interface FTDBOps {
     fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, allowNeg: Boolean = false)
-    fun getDescriptor(ctx: OpEContext, accountID: ByteArray): GTXValue
+    fun getDescriptor(ctx: OpEContext, accountID: ByteArray): GTXValue?
     fun registerAccount(ctx: OpEContext, accountID: ByteArray, accountType: Int, accountDesc: ByteArray)
     fun getBalance(ctx: OpEContext, accountID: ByteArray, assetID: String): Long
     fun getHistory(ctx: OpEContext, accountID: ByteArray, assetID: String): List<HistoryEntry>

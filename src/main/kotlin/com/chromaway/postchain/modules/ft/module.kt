@@ -10,7 +10,7 @@ import org.apache.commons.dbutils.QueryRunner
 import java.nio.file.Files
 import java.nio.file.Paths
 
-class FTModule(config: FTConfig): SimpleGTXModule<FTConfig>(
+class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
         config,
         mapOf(
                 "ft_issue" to ::FT_issue_op,

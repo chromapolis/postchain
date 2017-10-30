@@ -6,12 +6,16 @@ import org.apache.commons.configuration2.Configuration
 
 fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
     val assetIssuerMap: MutableMap<String, Map<ByteArray, ByteArray>> = mutableMapOf()
+    val issuerAccountDescriptors: MutableMap<ByteArray, ByteArray> = mutableMapOf()
     val assets = config.getStringArray("assets")
     for (assetName in assets) {
         val issuerMap = mutableMapOf<ByteArray, ByteArray>()
         for (issuer in config.getStringArray("asset.${assetName}.issuers")) {
             val pubKey = issuer.hexStringToByteArray()
-            issuerMap[ac.issuerAccountID(pubKey)] = pubKey
+            val descriptor = ac.issuerAccountDesc(pubKey)
+            val issuerID = ac.makeAccountID(descriptor)
+            issuerMap[issuerID] = pubKey
+            issuerAccountDescriptors[issuerID] = descriptor
         }
         assetIssuerMap[assetName] = issuerMap.toMap()
     }
@@ -25,7 +29,20 @@ fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
             return data.opData.signers.any { it.contentEquals(issuer) }
         }
     }
-    return FTIssueRules(arrayOf(::checkIssuer), arrayOf())
+
+    fun registerIssuerAccount(ctx: OpEContext, dbOps: FTDBOps, data: FTIssueData): Boolean {
+        val maybeDesc = dbOps.getDescriptor(ctx, data.issuerID)
+        if (maybeDesc == null) {
+            dbOps.registerAccount(ctx,
+                    data.issuerID,
+                    0,
+                    issuerAccountDescriptors[data.issuerID]!!
+            )
+        }
+        return true
+    }
+
+    return FTIssueRules(arrayOf(::checkIssuer), arrayOf(::registerIssuerAccount))
 }
 
 fun makeFTRegisterRules(config: Configuration): FTRegisterRules {

@@ -73,11 +73,19 @@ class BaseAccountFactory(val accountConstructors: Map<Int, AccountConstructors>)
 
 class BaseAccountResolver(val factory: AccountFactory) : AccountResolver {
     override fun resolveInputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTInputAccount {
-        return factory.makeInputAccount(accountID, dbops.getDescriptor(ctx, accountID))
+        val descriptor = dbops.getDescriptor(ctx, accountID)
+        if (descriptor == null)
+            throw UserMistake("Account descriptor not found")
+        else
+            return factory.makeInputAccount(accountID, descriptor)
     }
 
     override fun resolveOutputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTOutputAccount {
-        return factory.makeOutputAccount(accountID, dbops.getDescriptor(ctx, accountID))
+        val descriptor = dbops.getDescriptor(ctx, accountID)
+        if (descriptor == null)
+            throw UserMistake("Account descriptor not found")
+        else
+            return factory.makeOutputAccount(accountID, descriptor)
     }
 }
 
@@ -148,9 +156,7 @@ class AccountUtil(val blockchainRID: ByteArray, val cs: CryptoSystem) {
         return cs.digest(descriptor)
     }
 
-    fun issuerAccountID(issuerPubKey: ByteArray): ByteArray {
-        return makeAccountID(
-                NullAccount.makeDescriptor(blockchainRID, issuerPubKey)
-        )
+    fun issuerAccountDesc(issuerPubKey: ByteArray): ByteArray {
+        return NullAccount.makeDescriptor(blockchainRID, issuerPubKey)
     }
 }
