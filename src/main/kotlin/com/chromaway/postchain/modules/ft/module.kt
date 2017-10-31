@@ -7,8 +7,7 @@ import com.chromaway.postchain.gtx.GTXSchemaManager
 import com.chromaway.postchain.gtx.SimpleGTXModule
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.dbutils.QueryRunner
-import java.nio.file.Files
-import java.nio.file.Paths
+import spark.utils.IOUtils
 
 class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
         config,
@@ -29,8 +28,7 @@ class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
         val version = GTXSchemaManager.getModuleVersion(ctx, moduleName)
         if (version == null) {
             val r = QueryRunner()
-            val schemaURI = javaClass.getResource("schema.sql").toURI()
-            val schemaSQL = String(Files.readAllBytes(Paths.get(schemaURI)))
+            val schemaSQL = IOUtils.toString(javaClass.getResourceAsStream("schema.sql"))
             r.update(ctx.conn, schemaSQL)
             GTXSchemaManager.setModuleVersion(ctx, moduleName, 0)
         }
