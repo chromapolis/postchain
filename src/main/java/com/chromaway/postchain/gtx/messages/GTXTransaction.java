@@ -4,14 +4,12 @@
  */
 package com.chromaway.postchain.gtx.messages;
 
+import java.io.*;
+import java.util.*;
 import org.asnlab.asndt.runtime.conv.*;
-import org.asnlab.asndt.runtime.conv.annotation.Component;
+import org.asnlab.asndt.runtime.conv.annotation.*;
 import org.asnlab.asndt.runtime.type.AsnType;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Vector;
+import org.asnlab.asndt.runtime.value.*;
 
 public class GTXTransaction {
 
@@ -54,6 +52,8 @@ public class GTXTransaction {
 		AsnConverter operationsConverter = new VectorConverter(GTXOperation.CONV);
 		AsnConverter signersConverter = new VectorConverter(OctetStringConverter.INSTANCE);
 		AsnConverter signaturesConverter = new VectorConverter(OctetStringConverter.INSTANCE);
-		CONV.setComponentConverters(new AsnConverter[]{blockchainRIDConverter, operationsConverter, signersConverter, signaturesConverter});
+		CONV.setComponentConverters(new AsnConverter[] { blockchainRIDConverter, operationsConverter, signersConverter, signaturesConverter });
 	}
+
+
 }

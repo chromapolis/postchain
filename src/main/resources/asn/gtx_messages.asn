@@ -1,4 +1,4 @@
-Messages DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+Messages DEFINITIONS ::= BEGIN
 
 	DictPair ::= SEQUENCE {
 		name UTF8String,

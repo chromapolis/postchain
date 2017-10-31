@@ -1,4 +1,4 @@
-Messages DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+Messages DEFINITIONS ::= BEGIN
 
 	KeyValue ::=SEQUENCE {
 		key INTEGER,
