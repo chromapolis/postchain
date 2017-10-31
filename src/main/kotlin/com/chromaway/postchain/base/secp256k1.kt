@@ -1,11 +1,6 @@
 package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.Signature
-import org.spongycastle.asn1.ASN1InputStream
-import org.spongycastle.asn1.ASN1Integer
-import org.spongycastle.asn1.DERSequenceGenerator
-import org.spongycastle.asn1.DLSequence
-import org.spongycastle.asn1.sec.ECPrivateKey
 import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.ec.CustomNamedCurves
 import org.spongycastle.crypto.params.ECDomainParameters
@@ -13,8 +8,7 @@ import org.spongycastle.crypto.params.ECPrivateKeyParameters
 import org.spongycastle.crypto.params.ECPublicKeyParameters
 import org.spongycastle.crypto.signers.ECDSASigner
 import org.spongycastle.crypto.signers.HMacDSAKCalculator
-import java.io.ByteArrayOutputStream
-import java.io.IOException
+import org.spongycastle.util.Arrays
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -34,6 +28,7 @@ fun bigIntegerToBytes(b: BigInteger, numBytes: Int): ByteArray {
     return bytes
 }
 
+/*
 fun encodeSignature(r: BigInteger, s: BigInteger): ByteArray {
     val bos = ByteArrayOutputStream(72)
     val seq = DERSequenceGenerator(bos)
@@ -42,7 +37,22 @@ fun encodeSignature(r: BigInteger, s: BigInteger): ByteArray {
     seq.close()
     return bos.toByteArray()
 }
+*/
 
+fun encodeSignature(r: BigInteger, s: BigInteger): ByteArray {
+    return Arrays.concatenate(
+            bigIntegerToBytes(r, 32),
+            bigIntegerToBytes(s, 32)
+    )
+}
+
+fun secp256k1_decodeSignature(bytes: ByteArray): Array<BigInteger> {
+    val r = BigInteger(1, bytes.sliceArray(0..31))
+    val s = BigInteger(1, bytes.sliceArray(32..63))
+    return arrayOf(r, s)
+}
+
+/*
 fun secp256k1_decodeSignature(bytes: ByteArray): Array<BigInteger> {
     var decoder: ASN1InputStream? = null
     try {
@@ -67,7 +77,7 @@ fun secp256k1_decodeSignature(bytes: ByteArray): Array<BigInteger> {
                 decoder.close()
             } catch (x: IOException) { }
     }
-}
+}*/
 
 fun secp256k1_sign(digest: ByteArray, privateKeyBytes: ByteArray): ByteArray {
     val signer = ECDSASigner(HMacDSAKCalculator(SHA256Digest()))
