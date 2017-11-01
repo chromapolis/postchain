@@ -1,4 +1,4 @@
-# Postchain blockchain framework
+# Postchain (JVM edition)
 
 Postchain is a blockchain framework designed for _consortium databases_.
 
