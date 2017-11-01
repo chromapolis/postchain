@@ -13,7 +13,7 @@ open class EbftWithApiIntegrationTest: EbftIntegrationTest() {
             val model = PostchainModel(ebftNode.dataLayer.txEnqueuer,
                     ebftNode.dataLayer.blockchainConfiguration.getTransactionFactory(),
                     ebftNode.dataLayer.blockQueries)
-            RestApi(model, configOverrides.getInt("api.port"), "")
+            RestApi(model, configOverrides.getInt("api.port", 0), "")
         }
     }
 
