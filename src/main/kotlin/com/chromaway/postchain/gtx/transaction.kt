@@ -5,18 +5,17 @@ import com.chromaway.postchain.core.*
 
 class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: CryptoSystem): Transaction {
 
-    val myRID: ByteArray = cs.digest(_rawData)
+    val myRID: ByteArray
     val data: GTXData
     val signers: Array<ByteArray>
     val signatures: Array<ByteArray>
     val ops: Array<Transactor>
     var isChecked: Boolean = false
-    val digestForSigning: ByteArray
 
     init {
         data = decodeGTXData(_rawData)
 
-        digestForSigning = data.getDigestForSigning(cs)
+        myRID = data.getDigestForSigning(cs)
 
         signers = data.signers
         signatures = data.signatures
@@ -31,7 +30,7 @@ class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: Crypto
 
         for ((idx, signer) in signers.withIndex()) {
             val signature = signatures[idx]
-            if (!cs.verifyDigest(digestForSigning, Signature(signer, signature))) {
+            if (!cs.verifyDigest(myRID, Signature(signer, signature))) {
                 return false
             }
         }
