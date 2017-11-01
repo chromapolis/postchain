@@ -1,6 +1,7 @@
 package com.chromaway.postchain.modules.ft
 
 import com.chromaway.postchain.core.EContext
+import com.chromaway.postchain.gtx.GTXNull
 import com.chromaway.postchain.gtx.GTXValue
 import com.chromaway.postchain.gtx.gtx
 
@@ -27,7 +28,8 @@ fun ftHistoryQ(config: FTConfig, ctx: EContext, args: GTXValue): GTXValue {
         gtx(
                 "delta" to gtx(it.delta),
                 "tx_rid" to gtx(it.txRID),
-                "op_index" to gtx(it.opIndex.toLong())
+                "op_index" to gtx(it.opIndex.toLong()),
+                "memo" to (if (it.memo != null) gtx(it.memo) else GTXNull)
         )
     }).toTypedArray()
     return gtx(*entries)

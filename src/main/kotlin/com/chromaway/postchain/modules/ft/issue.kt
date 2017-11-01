@@ -32,8 +32,9 @@ class FT_issue_op (val config: FTConfig, data: ExtOpData): GTXOperation(data) {
     override fun apply(ctx: TxEContext): Boolean {
         val opCtx = OpEContext(ctx, data.opIndex)
         if (!config.issueRules.applyDbRules(opCtx, config.dbOps, issueData)) return false
-        config.dbOps.update(opCtx, issueData.issuerID, issueData.assetID, -issueData.amount, true)
-        config.dbOps.update(opCtx, issueData.recipientID, issueData.assetID, issueData.amount, false)
+        val memo = issueData.extra["memo"]?.asString()
+        config.dbOps.update(opCtx, issueData.issuerID, issueData.assetID, -issueData.amount, memo, true)
+        config.dbOps.update(opCtx, issueData.recipientID, issueData.assetID, issueData.amount, memo, false)
         return true
     }
 }

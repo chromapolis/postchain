@@ -53,10 +53,11 @@ open class FTConfig (
 
 class HistoryEntry(val delta: Long,
                    val txRID: ByteArray,
-                   val opIndex: Int)
+                   val opIndex: Int,
+                   val memo: String?)
 
 interface FTDBOps {
-    fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, allowNeg: Boolean = false)
+    fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, memo: String?, allowNeg: Boolean = false)
     fun registerAccount(ctx: OpEContext, accountID: ByteArray, accountType: Int, accountDesc: ByteArray)
     fun registerAsset(ctx: OpEContext, assetID: String)
 

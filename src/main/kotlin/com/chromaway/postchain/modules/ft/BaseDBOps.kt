@@ -16,12 +16,14 @@ open class BaseDBOps: FTDBOps {
     private val unitHandler = ScalarHandler<Unit>()
     private val mapListHandler = MapListHandler()
 
-    override fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, allowNeg: Boolean) {
-        r.query(ctx.txCtx.conn, "SELECT ft_update_raw(?, ?, ?, ?, ?, ?, ?)", unitHandler,
+    override fun update(ctx: OpEContext, accountID: ByteArray, assetID: String, amount: Long, memo: String?, allowNeg: Boolean) {
+        r.query(ctx.txCtx.conn, "SELECT ft_update(?, ?, ?, ?, ?, ?, ?, ?)", unitHandler,
                 ctx.txCtx.chainID,
                 ctx.txCtx.txIID,
                 ctx.opIndex,
-                accountID, assetID, amount, allowNeg)
+                accountID, assetID, amount,
+                memo,
+                allowNeg)
     }
 
     override fun getDescriptor(ctx: EContext, accountID: ByteArray): GTXValue? {
@@ -56,7 +58,8 @@ open class BaseDBOps: FTDBOps {
             HistoryEntry(
                     it.get("delta") as Long,
                     it.get("tx_rid") as ByteArray,
-                    it.get("op_index") as Int
+                    it.get("op_index") as Int,
+                    it.get("memo")?.toString()
             )
         }
     }
