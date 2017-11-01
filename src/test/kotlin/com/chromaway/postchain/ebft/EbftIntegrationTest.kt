@@ -20,7 +20,7 @@ open class EbftIntegrationTest : IntegrationTest() {
         ebftNodes = Array(count, { createEBFTNode(count, it) })
     }
 
-    private fun createEBFTNode(nodeCount: Int, myIndex: Int): EbftNode {
+    protected fun createEBFTNode(nodeCount: Int, myIndex: Int): EbftNode {
         val dataLayer = createDataLayer(myIndex, nodeCount)
         val statusManager = BaseStatusManager(nodeCount, myIndex, 0)
         val blockDatabase = BaseBlockDatabase(dataLayer.engine, dataLayer.blockQueries, myIndex)

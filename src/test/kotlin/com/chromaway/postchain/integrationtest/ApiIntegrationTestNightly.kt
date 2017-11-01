@@ -13,6 +13,7 @@ import com.chromaway.postchain.core.Side
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.ebft.EbftIntegrationTest
+import com.chromaway.postchain.ebft.EbftWithApiIntegrationTest
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
@@ -28,24 +29,8 @@ import org.junit.Test
 import java.lang.reflect.Type
 
 
-class ApiIntegrationTestNightly : EbftIntegrationTest() {
-    lateinit var apis: List<RestApi>
+class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
     val restTools = RestTools()
-
-    fun createSystem(count: Int) {
-        createEbftNodes(count)
-        apis = ebftNodes.map { ebftNode ->
-            val model = PostchainModel(ebftNode.dataLayer.txEnqueuer,
-                    ebftNode.dataLayer.blockchainConfiguration.getTransactionFactory(),
-                    ebftNode.dataLayer.blockQueries)
-            RestApi(model, 0, "")
-        }
-    }
-
-    @After
-    fun tearDownApi() {
-        apis.forEach { it.stop() }
-    }
 
     var hashHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
