@@ -1,5 +1,6 @@
 package com.chromaway.postchain.core
 
+import com.chromaway.postchain.base.BaseBlockHeader
 import com.chromaway.postchain.base.toHex
 
 abstract class AbstractBlockBuilder (
@@ -23,7 +24,7 @@ abstract class AbstractBlockBuilder (
 
     override fun begin() {
         iBlockData = store.beginBlock(ectx)
-        bctx = BlockEContext(ectx.conn, ectx.chainID, ectx.nodeID, iBlockData.blockIID)
+        bctx = BlockEContext(ectx.conn, ectx.chainID, ectx.nodeID, iBlockData.blockIID, iBlockData.timestamp)
     }
 
     override fun appendTransaction(tx: Transaction) {

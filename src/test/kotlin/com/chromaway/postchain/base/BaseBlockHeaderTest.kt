@@ -30,9 +30,9 @@ class BaseBlockHeaderTest {
     }
 
     private fun createHeader(blockIID: Long, chainId: Long, prevBlockRid: ByteArray, height: Long): BlockHeader {
-        val blockData = InitialBlockData(blockIID, chainId, prevBlockRid, height)
         val rootHash = ByteArray(32, {0})
         val timestamp = 10000L + height
+        val blockData = InitialBlockData(blockIID, chainId, prevBlockRid, height, timestamp)
         return BaseBlockHeader.make(SECP256K1CryptoSystem(), blockData, rootHash, timestamp)
     }
 }

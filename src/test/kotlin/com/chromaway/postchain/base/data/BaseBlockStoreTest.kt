@@ -30,6 +30,7 @@ class BaseBlockStoreTest {
         expect(db.getLastBlockHeight(ctx)).andReturn(-1)
         expect(db.getBlockchainRID(ctx)).andReturn(blockchainRID)
         expect(db.insertBlock(ctx, 0)).andReturn(17)
+        expect(db.getLastBlockTimestamp(ctx)).andReturn(1509606236)
         replay(db)
         val initialBlockData = sut.beginBlock(ctx)
         assertArrayEquals(blockchainRID, initialBlockData.prevBlockRID)
@@ -41,6 +42,7 @@ class BaseBlockStoreTest {
         expect(db.getLastBlockHeight(ctx)).andReturn(0)
         expect(db.getBlockRIDs(ctx, 0)).andReturn(listOf(anotherRID))
         expect(db.insertBlock(ctx, 1)).andReturn(17)
+        expect(db.getLastBlockTimestamp(ctx)).andReturn(1509606236)
         replay(db)
         val initialBlockData = sut.beginBlock(ctx)
         assertArrayEquals(anotherRID, initialBlockData.prevBlockRID)
@@ -50,6 +52,7 @@ class BaseBlockStoreTest {
     fun beginBlockMissingBlockchainRIDOnFirstBlock() {
         expect(db.getLastBlockHeight(ctx)).andReturn(-1)
         expect(db.getBlockchainRID(ctx)).andReturn(null)
+        expect(db.getLastBlockTimestamp(ctx)).andReturn(1509606236)
         replay(db)
         sut.beginBlock(ctx)
     }
