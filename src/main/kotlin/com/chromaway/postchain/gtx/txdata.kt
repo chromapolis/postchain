@@ -49,7 +49,7 @@ class GTXData(val blockchainRID: ByteArray,
         return GTXData(
                 blockchainRID,
                 signers,
-                Array(signatures.size, { EMPTY_SIGNATURE }),
+                arrayOf(),
                 operations).serialize()
     }
 

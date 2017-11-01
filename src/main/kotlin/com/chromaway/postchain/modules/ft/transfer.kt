@@ -10,7 +10,11 @@ import com.chromaway.postchain.gtx.GTXValue
 class TransferElement<AccountT>(val account: AccountT,
                                 val assetID: String,
                                 val amount: Long,
-                                val extra: ExtraData)
+                                val extra: ExtraData) {
+    fun getMemo(default: String?): String? {
+        return extra["memo"]?.asString() ?: default
+    }
+}
 
 class TransferData<InputAccountT, OutputAccountT>
 (
@@ -131,13 +135,15 @@ class FT_transfer_op (val config: FTConfig, data: ExtOpData): GTXOperation(data)
 
         // 3. apply deltas
 
+        val xferMemo = transferData.extra["memo"]?.asString()
+
         for (input in inputs) {
             if (!input.account.skipUpdate)
-                dbOps.update(opCtx, input.account.accountID, input.assetID, -input.amount)
+                dbOps.update(opCtx, input.account.accountID, input.assetID, -input.amount, input.getMemo(xferMemo))
         }
         for (output in outputs) {
             if (!output.account.skipUpdate)
-                dbOps.update(opCtx, output.account.accountID, output.assetID, output.amount)
+                dbOps.update(opCtx, output.account.accountID, output.assetID, output.amount, output.getMemo(xferMemo))
         }
 
         // 4. apply custom rules (global)

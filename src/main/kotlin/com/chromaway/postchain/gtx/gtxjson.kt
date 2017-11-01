@@ -63,6 +63,7 @@ class GTXValueAdapter : JsonDeserializer<GTXValue>, JsonSerializer<GTXValue> {
 fun make_gtx_gson(): Gson {
     return GsonBuilder().
             registerTypeAdapter(GTXValue::class.java, GTXValueAdapter()).
+            serializeNulls().
             create()!!
 }
 

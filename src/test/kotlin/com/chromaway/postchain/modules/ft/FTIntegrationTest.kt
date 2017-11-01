@@ -29,12 +29,26 @@ fun makeIssueTx(issuerIdx: Int, issuerID: ByteArray, recipientID: ByteArray, ass
     return b.serialize()
 }
 
-fun makeTransferTx(senderIdx: Int, senderID: ByteArray, assetID: String, amout: Long, recipientID: ByteArray): ByteArray {
+fun makeTransferTx(senderIdx: Int,
+                   senderID: ByteArray,
+                   assetID: String,
+                   amout: Long,
+                   recipientID: ByteArray,
+                   memo1: String? = null, memo2: String? = null): ByteArray {
     val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(senderIdx)), myCS)
-    b.addOperation("ft_transfer", arrayOf(
-            gtx(gtx(gtx(senderID), gtx(assetID), gtx(amout))),
-            gtx(gtx(gtx(recipientID), gtx(assetID), gtx(amout)))
-    ))
+
+    val args = mutableListOf<GTXValue>()
+    args.add(gtx(gtx(gtx(senderID), gtx(assetID), gtx(amout)))) // inputs
+
+    val output = mutableListOf<GTXValue>(gtx(recipientID), gtx(assetID), gtx(amout))
+    if (memo2 != null) {
+        output.add(gtx("memo" to gtx(memo2)))
+    }
+    args.add(gtx(gtx(*output.toTypedArray()))) // outputs
+    if (memo1 != null) {
+        args.add(gtx("memo" to gtx(memo1)))
+    }
+    b.addOperation("ft_transfer", args.toTypedArray())
     b.finish()
     b.sign(myCS.makeSigner(pubKey(senderIdx), privKey(senderIdx)))
     return b.serialize()
@@ -114,11 +128,21 @@ class FTIntegrationTest : IntegrationTest() {
                 makeTransferTx(1, aliceAccountID, "USD", 100, bobAccountID)
         )!!)
 
-
-
         enqueueTx(makeTransferTx(1, aliceAccountID, "USD", 10000, bobAccountID))
         enqueueTx(makeTransferTx(1, aliceAccountID, "USD", -100, bobAccountID))
         enqueueTx(makeTransferTx(2, aliceAccountID, "USD", 100, bobAccountID))
+
+        makeSureBlockIsBuiltCorrectly()
+
+        validTxs.add(enqueueTx(
+                makeTransferTx(1, aliceAccountID, "USD", 1, bobAccountID, "hi")
+        )!!)
+        validTxs.add(enqueueTx(
+                makeTransferTx(1, aliceAccountID, "USD", 1, bobAccountID, null, "there")
+        )!!)
+        validTxs.add(enqueueTx(
+                makeTransferTx(1, aliceAccountID, "USD", 1, bobAccountID, "hi", "there")
+        )!!)
 
         makeSureBlockIsBuiltCorrectly()
 
@@ -127,7 +151,7 @@ class FTIntegrationTest : IntegrationTest() {
                     "account_id"="${aliceAccountID.toHex()}",
                     "asset_id"="USD"
                    }""")
-        Assert.assertEquals("""{"balance":900}""", balance.get())
+        Assert.assertEquals("""{"balance":897}""", balance.get())
         val existence = node.blockQueries.query(
                 """{"type"="ft_account_exists",
                     "account_id"="${invalidAccountID.toHex()}"
@@ -138,8 +162,19 @@ class FTIntegrationTest : IntegrationTest() {
                     "account_id"="${aliceAccountID.toHex()}",
                     "asset_id"="USD"
                    }""").get()
+        println(history);
         val gson = make_gtx_gson()
         val historyGTX = gson.fromJson<GTXValue>(history, GTXValue::class.java)
-        Assert.assertEquals(2, historyGTX.asArray().size)
+        Assert.assertEquals(5, historyGTX.asArray().size)
+
+        val history2 = node.blockQueries.query(
+                """{"type"="ft_get_history",
+                    "account_id"="${bobAccountID.toHex()}",
+                    "asset_id"="USD"
+                   }""").get()
+        println(history2);
+        val history2GTX = gson.fromJson<GTXValue>(history2, GTXValue::class.java)
+        Assert.assertEquals(4, history2GTX.asArray().size)
+
     }
 }

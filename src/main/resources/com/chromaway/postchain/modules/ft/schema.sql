@@ -1,33 +1,34 @@
 CREATE TABLE ft_assets (
-  chain_id BIGINT,
+  chain_id BIGINT NOT NULL,
   asset_iid SERIAL PRIMARY KEY,
-  asset_id TEXT
+  asset_id TEXT NOT NULL
 );
 
 CREATE TABLE ft_accounts (
-    account_iid SERIAL PRIMARY KEY,
-    tx_iid BIGINT,
-    op_index INT,
-    chain_id BIGINT,
-    account_id BYTEA,
-    account_type INT,
-    account_desc BYTEA,
+    account_iid BIGSERIAL PRIMARY KEY,
+    tx_iid BIGINT NOT NULL REFERENCES transactions(tx_iid),
+    op_index INT NOT NULL,
+    chain_id BIGINT NOT NULL,
+    account_id BYTEA NOT NULL,
+    account_type INT NOT NULL,
+    account_desc BYTEA NOT NULL,
     UNIQUE (chain_id, account_id)
 );
 
 CREATE TABLE ft_balances (
-    account_iid BIGINT REFERENCES ft_accounts(account_iid),
-    asset_iid BIGINT REFERENCES  ft_assets(asset_iid),
-    balance BIGINT,
+    account_iid BIGINT NOT NULL REFERENCES ft_accounts(account_iid),
+    asset_iid BIGINT NOT NULL REFERENCES  ft_assets(asset_iid),
+    balance BIGINT NOT NULL,
     PRIMARY KEY (account_iid, asset_iid)
 );
 
 CREATE TABLE ft_history (
-    tx_iid BIGINT,
-    op_index INT,
-    account_iid BIGINT REFERENCES ft_accounts(account_iid),
-    asset_iid BIGINT REFERENCES ft_assets(asset_iid),
-    delta BIGINT
+    tx_iid BIGINT NOT NULL ,
+    op_index INT NOT NULL,
+    account_iid BIGINT NOT NULL REFERENCES ft_accounts(account_iid),
+    asset_iid BIGINT NOT NULL REFERENCES ft_assets(asset_iid),
+    delta BIGINT NOT NULL,
+    memo TEXT
 );
 
 
@@ -71,17 +72,9 @@ BEGIN
 END;
 $$ LANGUAGE  plpgsql;
 
-
 CREATE FUNCTION ft_update
-(chain_id BIGINT, tx_iid BIGINT, op_index INT, account_id BYTEA, asset_id TEXT, delta BIGINT)
-RETURNS VOID AS $$
-BEGIN
-    PERFORM ft_update_raw(chain_id, tx_iid, op_index, account_id, asset_id, delta, FALSE);
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE FUNCTION ft_update_raw
-(chain_id BIGINT, tx_iid BIGINT, op_index INT, account_id BYTEA, asset_id TEXT, delta BIGINT, allowNegative BOOLEAN)
+(chain_id BIGINT, tx_iid BIGINT, op_index INT, account_id BYTEA, asset_id TEXT, delta BIGINT,
+ memo TEXT, allowNegative BOOLEAN)
 RETURNS VOID AS $$
 DECLARE
   account_iid_ BIGINT;
@@ -106,8 +99,8 @@ BEGIN
     WHERE (ft_balances.account_iid = account_iid_) AND (ft_balances.asset_iid = asset_iid_);
   END IF;
 
-  INSERT INTO ft_history (tx_iid, op_index, account_iid, asset_iid, delta)
-    VALUES (tx_iid, op_index, account_iid_, asset_iid_, delta);
+  INSERT INTO ft_history (tx_iid, op_index, account_iid, asset_iid, delta, memo)
+    VALUES (tx_iid, op_index, account_iid_, asset_iid_, delta, memo);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -138,6 +131,7 @@ RETURNS TABLE (
     delta BIGINT,
     tx_rid BYTEA,
     op_index INT,
+    memo TEXT,
     block_header_data BYTEA
 ) AS $$
 DECLARE
@@ -147,10 +141,17 @@ BEGIN
   asset_iid_ = ft_find_asset(chain_id, asset_id);
   account_iid_ = ft_find_account(chain_id, account_id);
 
-  RETURN QUERY SELECT ft_history.delta, transactions.tx_rid, ft_history.op_index, blocks.block_header_data FROM ft_history
+  RETURN QUERY SELECT
+     ft_history.delta,
+     transactions.tx_rid,
+     ft_history.op_index,
+     ft_history.memo,
+     blocks.block_header_data
+  FROM ft_history
   INNER JOIN transactions ON ft_history.tx_iid = transactions.tx_iid
   INNER JOIN blocks ON transactions.block_iid = blocks.block_iid
-  WHERE account_iid = account_iid_ AND asset_iid = asset_iid_;
+  WHERE account_iid = account_iid_ AND asset_iid = asset_iid_
+  ORDER BY ft_history.tx_iid;
 
 END;
 $$ LANGUAGE plpgsql;
