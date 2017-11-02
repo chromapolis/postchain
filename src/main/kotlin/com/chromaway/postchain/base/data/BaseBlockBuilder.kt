@@ -28,7 +28,7 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
         if (!Arrays.equals(bbh.prevBlockRID, iBlockData.prevBlockRID)) return false
         if (bbh.blockHeaderRec.height != iBlockData.height) return false
         if (!Arrays.equals(bbh.blockHeaderRec.rootHash, computeRootHash())) return false
-        if (bctx.timestamp > bbh.timestamp) return false
+        if (bctx.timestamp >= bbh.timestamp) return false
 
         return true
     }

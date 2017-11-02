@@ -1,6 +1,17 @@
 package com.chromaway.postchain.base
 
+import com.chromaway.postchain.base.data.BaseBlockBuilder
+import com.chromaway.postchain.base.data.BaseBlockStore
+import com.chromaway.postchain.base.data.BaseTransactionFactory
+import com.chromaway.postchain.core.BlockEContext
+import com.chromaway.postchain.core.EContext
+import com.chromaway.postchain.core.InitialBlockData
+import com.chromaway.postchain.gtx.privKey
+import com.chromaway.postchain.gtx.pubKey
+import com.chromaway.postchain.test.MockCryptoSystem
+import org.easymock.EasyMock.mock
 import org.junit.Test
+import java.sql.Connection
 
 class BaseBlockBuilderTest {
     val cryptoSystem = MockCryptoSystem()
@@ -59,7 +70,7 @@ class BaseBlockBuilderTest {
 
 
 
-    fun testBegin() {
+    //fun testBegin() {
 //        val conn = mock<Connection> {}
 //        val chainID = 18
 //        val ctx = EContext(conn, chainID)
@@ -79,5 +90,5 @@ class BaseBlockBuilderTest {
 //
 //        SUT.commit()
 
-    }
-}
+    //}
+//}
