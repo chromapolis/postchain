@@ -1,18 +1,7 @@
 package com.chromaway.postchain.base.data
 
-import com.chromaway.postchain.core.BlockEContext
-import com.chromaway.postchain.core.BlockHeader
-import com.chromaway.postchain.core.BlockStore
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.InitialBlockData
-import com.chromaway.postchain.core.ProgrammerMistake
-import com.chromaway.postchain.core.Transaction
-import com.chromaway.postchain.core.TransactionStatus
-import com.chromaway.postchain.core.TxEContext
-import com.chromaway.postchain.core.UserMistake
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
+import com.chromaway.postchain.base.ConfirmationProofMaterial
+import com.chromaway.postchain.core.*
 import java.util.stream.Stream
 
 class BaseBlockStore : BlockStore {
@@ -97,13 +86,14 @@ class BaseBlockStore : BlockStore {
         return db.getTxRIDsAtHeight(ctx, height)
     }
 
-    override fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any> {
+    override fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Any {
         val block = db.getBlockInfo(ctx, txRID)
-
-        val txs = db.getBlockTransactions(ctx, block.blockIid)
-        return mapOf<String, Any>("header" to block.blockHeader,
-                "witness" to block.witness,
-                "txs" to txs)
+        return ConfirmationProofMaterial(
+                db.getTxHash(ctx, txRID),
+                db.getBlockTxHashes(ctx, block.blockIid).toTypedArray(),
+                block.blockHeader,
+                block.witness
+        )
     }
 
     override fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray? {

@@ -1,26 +1,18 @@
 package com.chromaway.postchain.api.rest
 
 import com.chromaway.postchain.base.ConfirmationProof
+import com.chromaway.postchain.base.Side
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.MultiSigBlockWitness
-import com.chromaway.postchain.core.Side
 import com.chromaway.postchain.core.TransactionStatus
 import com.chromaway.postchain.core.UserMistake
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonArray
-import com.google.gson.JsonDeserializationContext
-import com.google.gson.JsonDeserializer
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
-import com.google.gson.JsonSerializationContext
-import com.google.gson.JsonSerializer
+import com.google.gson.*
 import mu.KLogging
 import spark.Request
 import spark.Service
 import java.lang.reflect.Type
-import java.util.Arrays
+import java.util.*
 
 
 class RestApi(private val model: Model, private val listenPort: Int, private val basePath: String) {
@@ -45,11 +37,6 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
     private fun toTransaction(req: Request): ApiTx {
         try {
             return gson.fromJson<ApiTx>(req.body(), ApiTx::class.java)
-//            val parser = Parser()
-//            val jsonObject = parser.parse(StringBuilder(req.body())) as JsonObject
-//            val txString = jsonObject.string("tx")!!
-//            val tx = Transaction(txString)
-//            return tx
         } catch (e: Exception) {
             throw UserMistake("Could not parse json", e)
         }
@@ -57,24 +44,24 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
 
     private fun toTransactionFromHash(req: Request): ApiTx {
         val hashHex = req.params(":hashHex")
-        val txHash: TxHash = toTxHash(hashHex)
-        return model.getTransaction(txHash) ?: throw NotFoundError("Can't find tx with hash $hashHex")
+        val txRID: TxRID = toTxHash(hashHex)
+        return model.getTransaction(txRID) ?: throw NotFoundError("Can't find tx with hash $hashHex")
     }
 
-    private fun toTxHash(hashHex: String): TxHash {
+    private fun toTxHash(hashHex: String): TxRID {
         val bytes: ByteArray
         try {
             bytes = hashHex.hexStringToByteArray()
         } catch (e: Exception) {
             throw UserMistake("Can't parse hashHex $hashHex", e)
         }
-        val txHash: TxHash
+        val txRID: TxRID
         try {
-            txHash = TxHash(bytes)
+            txRID = TxRID(bytes)
         } catch (e: Exception) {
             throw UserMistake("Bytes $hashHex is not a proper hash", e)
         }
-        return txHash
+        return txRID
     }
 
     fun error(error: Exception): String {
@@ -127,7 +114,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
 
             http.get("/tx/:hashHex/confirmationProof", { req, _ ->
                 val hashHex = checkHashHex(req)
-                model.getConfirmationProof(TxHash(hashHex.hexStringToByteArray())) ?: throw NotFoundError("")
+                model.getConfirmationProof(TxRID(hashHex.hexStringToByteArray())) ?: throw NotFoundError("")
             }, gson::toJson)
 
             http.get("/tx/:hashHex/status", { req, res ->
@@ -181,7 +168,7 @@ private class ConfirmationProofSerializer: JsonSerializer<ConfirmationProof> {
         if (src == null) {
             return proof
         }
-        proof.add("hash", JsonPrimitive(src.txRID.toHex()))
+        proof.add("hash", JsonPrimitive(src.txHash.toHex()))
         proof.add("blockHeader", JsonPrimitive(src.header.toHex()))
 
         val sigs = JsonArray()
@@ -249,13 +236,13 @@ class ApiTx(val tx: String) {
     }
 }
 
-class TxHash(val bytes: ByteArray) {
+class TxRID(val bytes: ByteArray) {
     init {
         require(bytes.size == 32) {"Hash must be exactly 32 bytes"}
     }
     override fun equals(other: Any?): Boolean {
         if (super.equals(other)) return true
-        if (other !is TxHash) return false
+        if (other !is TxRID) return false
         return bytes.contentEquals(other.bytes)
     }
 
@@ -267,9 +254,9 @@ data class ErrorBody(val error: String = "")
 
 interface Model {
     fun postTransaction(tx: ApiTx)
-    fun getTransaction(txHash: TxHash): ApiTx?
-    fun getConfirmationProof(txHash: TxHash): ConfirmationProof?
-    fun getStatus(txHash: TxHash): ApiStatus
+    fun getTransaction(txRID: TxRID): ApiTx?
+    fun getConfirmationProof(txRID: TxRID): ConfirmationProof?
+    fun getStatus(txRID: TxRID): ApiStatus
     fun query(query: Query): QueryResult
 }
 

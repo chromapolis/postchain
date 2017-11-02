@@ -2,10 +2,9 @@ package com.chromaway.postchain.base
 
 import com.chromaway.postchain.core.BlockHeader
 import com.chromaway.postchain.core.InitialBlockData
-import com.chromaway.postchain.core.MerklePath
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.Vector
+import java.util.*
 
 class BaseBlockHeader(override val rawData: ByteArray, private val cryptoSystem: CryptoSystem) : BlockHeader {
     override val prevBlockRID: ByteArray
@@ -35,11 +34,11 @@ class BaseBlockHeader(override val rawData: ByteArray, private val cryptoSystem:
         }
     }
 
-    override fun merklePath(txRID: ByteArray, txRIDs: Array<ByteArray>): MerklePath {
-        return com.chromaway.postchain.base.merklePath(cryptoSystem, txRIDs, txRID)
+    fun merklePath(txHash: ByteArray, txHashes: Array<ByteArray>): MerklePath {
+        return merklePath(cryptoSystem, txHashes, txHash)
     }
 
-    override fun validateMerklePath(merklePath: MerklePath, targetTxRid: ByteArray): Boolean {
-        return validateMerklePath(cryptoSystem, merklePath, targetTxRid, blockHeaderRec.rootHash)
+    fun validateMerklePath(merklePath: MerklePath, targetTxHash: ByteArray): Boolean {
+        return validateMerklePath(cryptoSystem, merklePath, targetTxHash, blockHeaderRec.rootHash)
     }
 }

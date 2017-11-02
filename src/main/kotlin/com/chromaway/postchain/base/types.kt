@@ -4,6 +4,7 @@ import com.chromaway.postchain.core.BlockBuilder
 import com.chromaway.postchain.core.EContext
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
+import java.util.*
 import java.util.concurrent.CountDownLatch
 
 open class PeerInfo(val host: String, open val port: Int, val pubKey: ByteArray)
@@ -80,3 +81,14 @@ fun withWriteConnection(s: Storage, chainID: Long, fn: (EContext)->Boolean): Boo
     }
     return commit
 }
+
+enum class Side {LEFT, RIGHT }
+
+class MerklePathItem(val side: Side, val hash: ByteArray)
+
+typealias MerklePath = ArrayList<MerklePathItem>
+
+class ConfirmationProofMaterial(val txHash: ByteArray,
+                                val txHashes: Array<ByteArray>,
+                                val header: ByteArray,
+                                val witness: ByteArray)

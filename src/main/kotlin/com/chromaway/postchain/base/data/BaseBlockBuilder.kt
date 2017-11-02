@@ -1,10 +1,6 @@
 package com.chromaway.postchain.base.data
 
-import com.chromaway.postchain.base.BaseBlockHeader
-import com.chromaway.postchain.base.BaseBlockWitnessBuilder
-import com.chromaway.postchain.base.CryptoSystem
-import com.chromaway.postchain.base.Signer
-import com.chromaway.postchain.base.computeMerkleRootHash
+import com.chromaway.postchain.base.*
 import com.chromaway.postchain.core.*
 import java.util.*
 
@@ -15,7 +11,7 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
 
     fun computeRootHash(): ByteArray {
 
-        val digests = transactions.map { txFactory.decodeTransaction(it).getRID() }
+        val digests = transactions.map { txFactory.decodeTransaction(it).getHash() }
         return computeMerkleRootHash(cryptoSystem, digests.toTypedArray())
     }
 
@@ -56,7 +52,9 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
 
     protected open fun getRequiredSigCount(): Int {
         val requiredSigs: Int
-        if (subjects.size == 3) {
+        if (subjects.size == 1)
+            requiredSigs = 1
+        else if (subjects.size == 3) {
             requiredSigs = 3
         } else {
             val maxFailedNodes = Math.floor(((subjects.size - 1) / 3).toDouble())

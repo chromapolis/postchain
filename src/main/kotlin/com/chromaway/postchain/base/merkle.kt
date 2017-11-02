@@ -1,9 +1,6 @@
 package com.chromaway.postchain.base
 
-import com.chromaway.postchain.core.MerklePath
-import com.chromaway.postchain.core.MerklePathItem
 import com.chromaway.postchain.core.ProgrammerMistake
-import com.chromaway.postchain.core.Side
 
 val internalNodePrefix = byteArrayOf(0)
 val leafPrefix = byteArrayOf(1)
@@ -36,6 +33,7 @@ fun computeMerkleRootHash(cryptoSystem: CryptoSystem, hashes: Array<ByteArray>, 
     return cryptoSystem.digest(prefix + left + prefix + right)
 }
 
+
 fun internalMerklePath(cryptoSystem: CryptoSystem, hashes: Array<ByteArray>, targetIndex: Int, depth: Int, leafDepth: Int): MerklePath {
     val numTransactions = hashes.size
 
@@ -43,7 +41,7 @@ fun internalMerklePath(cryptoSystem: CryptoSystem, hashes: Array<ByteArray>, tar
         return MerklePath()
     }
 
-    val maxLeavesPerChild = Math.pow(2.toDouble(), leafDepth.toDouble() - depth - 1).toInt()
+    val maxLeavesPerChild = 1 shl (leafDepth - depth - 1) // 2^(leafDepth - depth - 1)
     if (numTransactions <= maxLeavesPerChild) {
         val path = internalMerklePath(cryptoSystem, hashes, targetIndex, depth + 1, leafDepth)
         path.add(MerklePathItem(Side.RIGHT, nonExistingNodeHash))

@@ -1,12 +1,6 @@
 package com.chromaway.postchain.api
 
-import com.chromaway.postchain.api.rest.ApiStatus
-import com.chromaway.postchain.api.rest.ApiTx
-import com.chromaway.postchain.api.rest.Model
-import com.chromaway.postchain.api.rest.Query
-import com.chromaway.postchain.api.rest.QueryResult
-import com.chromaway.postchain.api.rest.RestApi
-import com.chromaway.postchain.api.rest.TxHash
+import com.chromaway.postchain.api.rest.*
 import com.chromaway.postchain.base.ConfirmationProof
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
@@ -56,27 +50,27 @@ class RestApiMockForClientManual : RestTools() {
             }
         }
 
-        override fun getTransaction(txHash: TxHash): ApiTx? {
-            return when (txHash) {
-                TxHash(statusUnknown.hexStringToByteArray()) -> null
-                TxHash(statusConfirmed.hexStringToByteArray()) -> ApiTx("1234")
+        override fun getTransaction(txRID: TxRID): ApiTx? {
+            return when (txRID) {
+                TxRID(statusUnknown.hexStringToByteArray()) -> null
+                TxRID(statusConfirmed.hexStringToByteArray()) -> ApiTx("1234")
                 else -> throw ProgrammerMistake("unexpected error")
             }
         }
 
-        override fun getConfirmationProof(txHash: TxHash): ConfirmationProof? {
-            return when (txHash) {
-                TxHash(statusUnknown.hexStringToByteArray()) -> null
+        override fun getConfirmationProof(txRID: TxRID): ConfirmationProof? {
+            return when (txRID) {
+                TxRID(statusUnknown.hexStringToByteArray()) -> null
                 else -> throw ProgrammerMistake("unexpected error")
             }
         }
 
-        override fun getStatus(txHash: TxHash): ApiStatus {
-            return when (txHash) {
-                TxHash(statusUnknown.hexStringToByteArray()) -> ApiStatus(TransactionStatus.UNKNOWN)
-                TxHash(statusWaiting.hexStringToByteArray()) -> ApiStatus(TransactionStatus.WAITING)
-                TxHash(statusConfirmed.hexStringToByteArray()) -> ApiStatus(TransactionStatus.CONFIRMED)
-                TxHash(statusRejected.hexStringToByteArray()) -> ApiStatus(TransactionStatus.REJECTED)
+        override fun getStatus(txRID: TxRID): ApiStatus {
+            return when (txRID) {
+                TxRID(statusUnknown.hexStringToByteArray()) -> ApiStatus(TransactionStatus.UNKNOWN)
+                TxRID(statusWaiting.hexStringToByteArray()) -> ApiStatus(TransactionStatus.WAITING)
+                TxRID(statusConfirmed.hexStringToByteArray()) -> ApiStatus(TransactionStatus.CONFIRMED)
+                TxRID(statusRejected.hexStringToByteArray()) -> ApiStatus(TransactionStatus.REJECTED)
                 else -> throw ProgrammerMistake("unexpected error")
             }
         }

@@ -5,7 +5,7 @@ import mu.KLogging
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
-class ConfirmationProof(val txRID: ByteArray, val header: ByteArray, val witness: BlockWitness, val merklePath: MerklePath)
+class ConfirmationProof(val txHash: ByteArray, val header: ByteArray, val witness: BlockWitness, val merklePath: MerklePath)
 
 open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfiguration,
                        private val storage: Storage, private val blockStore: BlockStore,
@@ -80,17 +80,14 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
         return Promise.ofFail(UserMistake("Queries are not supported"))
     }
 
-    override fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception> {
+    fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception> {
         return runOp {
-            val material = blockStore.getConfirmationProofMaterial(it, txRID)
-            val txIds = material.get("txs") as List<ByteArray>
-            val header = material.get("header") as ByteArray
-            val witness: ByteArray = material.get("witness") as ByteArray
-            val decodedWitness = blockchainConfiguration.decodeWitness(witness)
-            val decodedBlockHeader = blockchainConfiguration.decodeBlockHeader(header)
+            val material = blockStore.getConfirmationProofMaterial(it, txRID) as ConfirmationProofMaterial
+            val decodedWitness = blockchainConfiguration.decodeWitness(material.witness)
+            val decodedBlockHeader = blockchainConfiguration.decodeBlockHeader(material.header) as BaseBlockHeader
 
-            val merklePath = decodedBlockHeader.merklePath(txRID, txIds.toTypedArray())
-            ConfirmationProof(txRID, header, decodedWitness, merklePath)
+            val merklePath = decodedBlockHeader.merklePath(material.txHash, material.txHashes)
+            ConfirmationProof(material.txHash, material.header, decodedWitness, merklePath)
         }
     }
 

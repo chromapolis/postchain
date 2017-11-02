@@ -5,6 +5,7 @@ import com.chromaway.postchain.core.*
 
 class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: CryptoSystem): Transaction {
 
+    val myHash = cs.digest(_rawData)
     val myRID: ByteArray
     val data: GTXData
     val signers: Array<ByteArray>
@@ -21,6 +22,10 @@ class GTXTransaction (val _rawData: ByteArray, module: GTXModule, val cs: Crypto
         signatures = data.signatures
 
         ops = data.getExtOpData().map({ module.makeTransactor(it) }).toTypedArray()
+    }
+
+    override fun getHash(): ByteArray {
+        return myHash
     }
 
     override fun isCorrect(): Boolean {

@@ -1,11 +1,6 @@
 package com.chromaway.postchain.api
 
-import com.chromaway.postchain.api.rest.Model
-import com.chromaway.postchain.api.rest.RestApi
-import com.chromaway.postchain.api.rest.ApiTx
-import com.chromaway.postchain.api.rest.Query
-import com.chromaway.postchain.api.rest.QueryResult
-import com.chromaway.postchain.api.rest.TxHash
+import com.chromaway.postchain.api.rest.*
 import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.ProgrammerMistake
@@ -13,14 +8,9 @@ import com.chromaway.postchain.core.UserMistake
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import mu.KLogging
-import org.easymock.EasyMock.createMock
-import org.easymock.EasyMock.expect
-import org.easymock.EasyMock.replay
-import org.easymock.EasyMock.verify
+import org.easymock.EasyMock.*
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
@@ -88,7 +78,7 @@ class RestApiTest : RestTools() {
 
     @Test
     fun testGetTx404whenNoneFound() {
-        expect(model.getTransaction(TxHash(hashHex.hexStringToByteArray()))).andReturn(null)
+        expect(model.getTransaction(TxRID(hashHex.hexStringToByteArray()))).andReturn(null)
         replay(model)
         testGetTx("/tx/${hashHex}", 404)
         verify(model)
@@ -96,7 +86,7 @@ class RestApiTest : RestTools() {
 
     @Test
     fun testGetTxOk() {
-        expect(model.getTransaction(TxHash(hashHex.hexStringToByteArray()))).andReturn(ApiTx("1234"))
+        expect(model.getTransaction(TxRID(hashHex.hexStringToByteArray()))).andReturn(ApiTx("1234"))
         replay(model)
         testGetTx("/tx/${hashHex}", 200, "{tx: \"1234\"}")
         verify(model)
@@ -157,7 +147,7 @@ class RestApiTest : RestTools() {
 
     @Test
     fun testGetConfirmationProof404whenTxDoesNotExist() {
-        expect(model.getConfirmationProof(TxHash(hashHex.hexStringToByteArray()))).andReturn(null)
+        expect(model.getConfirmationProof(TxRID(hashHex.hexStringToByteArray()))).andReturn(null)
         replay(model)
         val response = get("/tx/$hashHex/confirmationProof")
         assertEquals(404, response?.code)

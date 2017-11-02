@@ -1,6 +1,6 @@
 package com.chromaway.postchain.core
 
-import com.chromaway.postchain.base.ConfirmationProof
+// TODO: remove core's dependency on base
 import com.chromaway.postchain.base.Storage
 import nl.komponents.kovenant.Promise
 import org.apache.commons.configuration2.Configuration
@@ -25,19 +25,10 @@ open class BlockEContext(conn: Connection, chainID: Long, nodeID: Int, val block
 class TxEContext(conn: Connection, chainID: Long, nodeID: Int, blockIID: Long, timestamp: Long, val txIID: Long)
     : BlockEContext(conn, chainID, nodeID, blockIID, timestamp)
 
-enum class Side {LEFT, RIGHT}
-
-class MerklePathItem(val side: Side, val hash: ByteArray)
-
-typealias MerklePath = ArrayList<MerklePathItem>
-
 interface BlockHeader {
     val prevBlockRID: ByteArray
     val rawData: ByteArray
     val blockRID: ByteArray // it's not a part of header but derived from it
-
-    fun merklePath(txRID: ByteArray, txRIDs: Array<ByteArray>): MerklePath
-    fun validateMerklePath(merklePath: MerklePath, targetTxRid: ByteArray): Boolean
 }
 
 open class BlockData(val header: BlockHeader, val transactions: List<ByteArray>)
@@ -91,11 +82,12 @@ interface MultiSigBlockWitnessBuilder : BlockWitnessBuilder {
     fun applySignature(s: Signature)
 }
 
-// Transactor is an individual operation which can be applied to the database
-// Transaction might consist of one or more operations
-// Transaction should be serializable, but transactor doesn't need to have a serialized
-// representation as we only care about storing of the whole Transaction
-
+/**
+ * Transactor is an individual operation which can be applied to the database
+ * Transaction might consist of one or more operations
+ * Transaction should be serializable, but transactor doesn't need to have a serialized
+ * representation as we only care about storing of the whole Transaction
+ */
 interface Transactor {
     fun isCorrect(): Boolean
     fun apply(ctx: TxEContext): Boolean
@@ -103,7 +95,8 @@ interface Transactor {
 
 interface Transaction : Transactor {
     fun getRawData(): ByteArray
-    fun getRID(): ByteArray
+    fun getRID(): ByteArray  // transaction uniquie identifier which is used as a reference to it
+    fun getHash(): ByteArray // hash of transaction content
 }
 
 interface BlockBuildingStrategy {
@@ -157,7 +150,6 @@ interface BlockQueries {
     fun getTransaction(txRID: ByteArray): Promise<Transaction?, Exception>
     fun query(query: String): Promise<String, Exception>
     fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
-    fun getConfirmationProof(txRID: ByteArray): Promise<ConfirmationProof?, Exception>
 }
 
 interface BlockBuilder {
@@ -193,7 +185,7 @@ interface BlockStore {
     fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray>
 
     fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
-    fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Map<String, Any>
+    fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Any
 }
 /*
 open class BlockLifecycleListener {

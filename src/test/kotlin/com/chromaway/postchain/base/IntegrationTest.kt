@@ -3,18 +3,7 @@ package com.chromaway.postchain.base
 import com.chromaway.postchain.base.data.BaseBlockchainConfiguration
 import com.chromaway.postchain.base.data.BaseTransactionQueue
 import com.chromaway.postchain.baseStorage
-import com.chromaway.postchain.core.BlockBuilder
-import com.chromaway.postchain.core.BlockQueries
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.BlockchainConfiguration
-import com.chromaway.postchain.core.BlockchainConfigurationFactory
-import com.chromaway.postchain.core.MultiSigBlockWitnessBuilder
-import com.chromaway.postchain.core.Transaction
-import com.chromaway.postchain.core.TransactionEnqueuer
-import com.chromaway.postchain.core.TransactionFactory
-import com.chromaway.postchain.core.TransactionQueue
-import com.chromaway.postchain.core.TxEContext
-import com.chromaway.postchain.core.UserMistake
+import com.chromaway.postchain.core.*
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BlockchainEngine
 import com.chromaway.postchain.getBlockchainConfiguration
@@ -58,7 +47,7 @@ open class IntegrationTest {
     }
 
     class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val txQueue: TransactionQueue, val blockchainConfiguration: BlockchainConfiguration,
-                    val storage: Storage, val blockQueries: BlockQueries) {
+                    val storage: Storage, val blockQueries: BaseBlockQueries) {
         fun close() {
             storage.close()
         }
@@ -111,6 +100,10 @@ open class IntegrationTest {
 
         override fun getRID(): ByteArray {
             return bytes(32)
+        }
+
+        override fun getHash(): ByteArray {
+            return getRID().reversed().toByteArray()
         }
     }
 
@@ -215,7 +208,8 @@ open class IntegrationTest {
 
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val node = DataLayer(engine, txQueue, txQueue, blockchainConfiguration, storage, blockQueries)
+        val node = DataLayer(engine, txQueue, txQueue, blockchainConfiguration, storage,
+                blockQueries as BaseBlockQueries)
         // keep list of nodes to close after test
         nodes.add(node)
         return node

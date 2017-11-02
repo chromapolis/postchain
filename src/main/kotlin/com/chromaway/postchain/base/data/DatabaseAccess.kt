@@ -2,27 +2,14 @@ package com.chromaway.postchain.base.data
 
 import com.chromaway.postchain.base.BaseBlockHeader
 import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.BlockData
-import com.chromaway.postchain.core.BlockEContext
-import com.chromaway.postchain.core.BlockHeader
-import com.chromaway.postchain.core.BlockWitness
-import com.chromaway.postchain.core.EContext
-import com.chromaway.postchain.core.ProgrammerMistake
-import com.chromaway.postchain.core.Signature
-import com.chromaway.postchain.core.Transaction
-import com.chromaway.postchain.core.TransactionStatus
-import com.chromaway.postchain.core.UserMistake
+import com.chromaway.postchain.core.*
 import org.apache.commons.dbutils.QueryRunner
-import org.apache.commons.dbutils.handlers.ArrayListHandler
-import org.apache.commons.dbutils.handlers.BeanHandler
-import org.apache.commons.dbutils.handlers.BeanListHandler
-import org.apache.commons.dbutils.handlers.ColumnListHandler
-import org.apache.commons.dbutils.handlers.MapListHandler
-import org.apache.commons.dbutils.handlers.ScalarHandler
+import org.apache.commons.dbutils.handlers.*
 import java.sql.Connection
 import java.util.stream.Stream
 
 interface DatabaseAccess {
+    class BlockInfo(val blockIid: Long, val blockHeader: ByteArray, val witness: ByteArray)
     fun getBlockchainRID(ctx: EContext): ByteArray?
     fun insertBlock(ctx: EContext, height: Long): Long
     fun insertTransaction(ctx: BlockEContext, tx: Transaction): Long
@@ -37,10 +24,12 @@ interface DatabaseAccess {
     fun getLastBlockHeight(ctx: EContext): Long
     fun getLastBlockTimestamp(ctx: EContext): Long
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
-    fun getBlockInfo(ctx: EContext, txRID: ByteArray): SQLDatabaseAccess.BlockInfo
-    fun getBlockTransactions(ctx: EContext, blockIid: Long): List<ByteArray>
+    fun getBlockInfo(ctx: EContext, txRID: ByteArray): BlockInfo
+    fun getTxHash(ctx: EContext, txRID: ByteArray): ByteArray
+    fun getBlockTxRIDs(ctx: EContext, blockIid: Long): List<ByteArray>
+    fun getBlockTxHashes(ctx: EContext, blokcIid: Long): List<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
-    fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
+    fun getTxStatus(ctx: EContext, txRID: ByteArray): TransactionStatus?
     fun initialize(ctx: EContext, blockchainRID: ByteArray, expectedDbVersion: Int)
 }
 
@@ -65,10 +54,10 @@ class SQLDatabaseAccess(): DatabaseAccess {
 
     override fun insertTransaction(ctx: BlockEContext, tx: Transaction): Long {
         return r.insert(ctx.conn,
-                "INSERT INTO transactions (chain_id, tx_rid, tx_data, block_iid)" +
-                        "VALUES (?, ?, ?, ?) RETURNING tx_iid",
+                "INSERT INTO transactions (chain_id, tx_rid, tx_data, tx_hash, block_iid)" +
+                        "VALUES (?, ?, ?, ?, ?) RETURNING tx_iid",
                 longRes,
-                ctx.chainID, tx.getRID(), tx.getRawData(), ctx.blockIID)
+                ctx.chainID, tx.getRID(), tx.getRawData(), tx.getHash(), ctx.blockIID)
     }
 
     override fun finalizeBlock(ctx: BlockEContext, header: BlockHeader) {
@@ -143,8 +132,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 ColumnListHandler<ByteArray>(), height, ctx.chainID).toTypedArray()
     }
 
-    class BlockInfo(val blockIid: Long, val blockHeader: ByteArray, val witness: ByteArray)
-    override fun getBlockInfo(ctx: EContext, txRID: ByteArray): BlockInfo {
+    override fun getBlockInfo(ctx: EContext, txRID: ByteArray): DatabaseAccess.BlockInfo {
         val block = r.query(ctx.conn,
                 """
                     SELECT b.block_iid, b.block_header_data, b.block_witness
@@ -156,12 +144,26 @@ class SQLDatabaseAccess(): DatabaseAccess {
         val blockIid = block[0].get("block_iid") as Long
         val blockHeader = block[0].get("block_header_data") as ByteArray
         val witness = block[0].get("block_witness") as ByteArray
-        return BlockInfo(blockIid, blockHeader, witness)
+        return DatabaseAccess.BlockInfo(blockIid, blockHeader, witness)
     }
 
-    override fun getBlockTransactions(ctx: EContext, blockIid: Long): List<ByteArray> {
+    override fun getTxHash(ctx: EContext, txRID: ByteArray): ByteArray {
+        return r.query(ctx.conn,
+                "SELECT tx_hash FROM transactions WHERE tx_rid = ? and chain_id =?",
+                byteArrayRes, txRID, ctx.chainID)
+    }
+
+    override fun getBlockTxRIDs(ctx: EContext, blockIid: Long): List<ByteArray> {
         return r.query(ctx.conn,
                 "SELECT tx_rid FROM " +
+                        "transactions t " +
+                        "where t.block_iid=? order by tx_iid",
+                ColumnListHandler<ByteArray>(), blockIid)!!
+    }
+
+    override fun getBlockTxHashes(ctx: EContext, blockIid: Long): List<ByteArray> {
+        return r.query(ctx.conn,
+                "SELECT tx_hash FROM " +
                         "transactions t " +
                         "where t.block_iid=? order by tx_iid",
                 ColumnListHandler<ByteArray>(), blockIid)!!
@@ -174,7 +176,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 nullableByteArrayRes, ctx.chainID, rid)
     }
 
-    override fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus? {
+    override fun getTxStatus(ctx: EContext, txRID: ByteArray): TransactionStatus? {
         try {
             // Note that PostgreSQL does not support READ UNCOMMITTED, so setting
             // it is useless. It will be run as READ COMMITTED.
@@ -187,9 +189,9 @@ class SQLDatabaseAccess(): DatabaseAccess {
                         SELECT tx_iid, block_witness
                         FROM transactions t JOIN blocks b ON t.block_iid=b.block_iid
                         WHERE b.chain_id=? AND t.tx_rid=?
-                        """, mapListHandler, ctx.chainID, txHash)
+                        """, mapListHandler, ctx.chainID, txRID)
             if (list.isEmpty()) return null
-            if (list.size != 1) throw ProgrammerMistake("Expected at most one result for ${txHash.toHex()}")
+            if (list.size != 1) throw ProgrammerMistake("Expected at most one result for ${txRID.toHex()}")
             if (list[0].get("block_witness") == null) return TransactionStatus.WAITING
             return TransactionStatus.CONFIRMED
         } finally {
@@ -270,6 +272,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 "    chain_id bigint NOT NULL," +
                 "    tx_rid bytea NOT NULL," +
                 "    tx_data bytea NOT NULL," +
+                "    tx_hash bytea NOT NULL," +
                 "    block_iid bigint NOT NULL REFERENCES blocks(block_iid)," +
                 "    UNIQUE (chain_id, tx_rid))"
         r.update(ctx.conn, createTxTable)
