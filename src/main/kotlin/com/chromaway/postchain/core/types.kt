@@ -19,11 +19,11 @@ import java.util.stream.Stream
 // TODO: can we generalize conn? We can make it an Object, but then we have to do typecast everywhere...
 open class EContext(val conn: Connection, val chainID: Long, val nodeID: Int)
 
-open class BlockEContext(conn: Connection, chainID: Long, nodeID: Int, val blockIID: Long)
+open class BlockEContext(conn: Connection, chainID: Long, nodeID: Int, val blockIID: Long, val timestamp: Long)
     : EContext(conn, chainID, nodeID)
 
-class TxEContext(conn: Connection, chainID: Long, nodeID: Int, blockIID: Long, val txIID: Long)
-    : BlockEContext(conn, chainID, nodeID, blockIID)
+class TxEContext(conn: Connection, chainID: Long, nodeID: Int, blockIID: Long, timestamp: Long, val txIID: Long)
+    : BlockEContext(conn, chainID, nodeID, blockIID, timestamp)
 
 enum class Side {LEFT, RIGHT}
 
@@ -170,7 +170,7 @@ interface BlockBuilder {
     fun commit(w: BlockWitness?)
 }
 
-class InitialBlockData(val blockIID: Long, val chainID: Long, val prevBlockRID: ByteArray, val height: Long)
+class InitialBlockData(val blockIID: Long, val chainID: Long, val prevBlockRID: ByteArray, val height: Long, val timestamp: Long)
 
 enum class TransactionStatus {UNKNOWN, REJECTED, WAITING, CONFIRMED}
 
@@ -182,6 +182,7 @@ interface BlockStore {
     fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long? // returns null if not found
     fun getBlockRIDs(ctx: EContext, height: Long): List<ByteArray> // returns null if height is out of range
     fun getLastBlockHeight(ctx: EContext): Long // height of the last block, first block has height 0
+    fun getLastBlockTimestamp(ctx: EContext): Long
 //    fun getBlockData(ctx: EContext, blockRID: ByteArray): BlockData
     fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray
     fun getBlockHeader(ctx: EContext, blockRID: ByteArray): ByteArray

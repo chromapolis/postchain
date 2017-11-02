@@ -1,5 +1,6 @@
 package com.chromaway.postchain.base.data
 
+import com.chromaway.postchain.base.BaseBlockHeader
 import com.chromaway.postchain.base.toHex
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockEContext
@@ -34,6 +35,7 @@ interface DatabaseAccess {
     fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray>
     fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray
     fun getLastBlockHeight(ctx: EContext): Long
+    fun getLastBlockTimestamp(ctx: EContext): Long
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getBlockInfo(ctx: EContext, txRID: ByteArray): SQLDatabaseAccess.BlockInfo
     fun getBlockTransactions(ctx: EContext, blockIid: Long): List<ByteArray>
@@ -71,8 +73,8 @@ class SQLDatabaseAccess(): DatabaseAccess {
 
     override fun finalizeBlock(ctx: BlockEContext, header: BlockHeader) {
         r.update(ctx.conn,
-                "UPDATE blocks SET block_rid = ?, block_header_data = ? WHERE chain_id = ? AND block_iid = ?",
-                header.blockRID, header.rawData, ctx.chainID, ctx.blockIID
+                "UPDATE blocks SET block_rid = ?, block_header_data = ?, timestamp = ? WHERE chain_id = ? AND block_iid = ?",
+                header.blockRID, header.rawData, (header as BaseBlockHeader).timestamp, ctx.chainID, ctx.blockIID
         )
     }
 
@@ -123,6 +125,12 @@ class SQLDatabaseAccess(): DatabaseAccess {
     override fun getLastBlockHeight(ctx: EContext): Long {
         return r.query(ctx.conn,
                 "SELECT block_height FROM blocks WHERE chain_id = ? ORDER BY block_height DESC LIMIT 1",
+                longRes, ctx.chainID) ?: -1L
+    }
+
+    override fun getLastBlockTimestamp(ctx: EContext): Long {
+        return r.query(ctx.conn,
+                "SELECT timestamp FROM blocks WHERE chain_id = ? ORDER BY timestamp DESC LIMIT 1",
                 longRes, ctx.chainID) ?: -1L
     }
 
@@ -253,6 +261,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
                         "  chain_id BIGINT NOT NULL," +
                         "  block_header_data BYTEA," +
                         "  block_witness BYTEA," +
+                        "  timestamp BIGINT," +
                         "  UNIQUE (chain_id, block_rid)," +
                         "  UNIQUE (chain_id, block_height))")
 
