@@ -16,7 +16,7 @@ fun makeNOPGTX(): ByteArray {
 
 class GTXTransactionTest {
 
-    val module = GTX_NOP_Module()
+    val module = StandardOpsGTXModule()
     val gtxData = makeNOPGTX()
 
     @Test
@@ -27,6 +27,5 @@ class GTXTransactionTest {
         assertTrue(tx.getRawData().size > 1)
         assertTrue((tx as GTXTransaction).ops.size == 1)
         assertTrue(tx.isCorrect())
-        // we should test apply() here but it's a bit problematic to get conn, so...
     }
 }
