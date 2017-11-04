@@ -54,13 +54,6 @@ class BaseManagedBlockBuilder(
         return true
     }
 
-    override fun maybeAppendTransaction(txData: ByteArray): Boolean {
-        s.withSavepoint(ctxt) {
-            bb.appendTransaction(txData)
-        }
-        return true
-    }
-
     override fun finalizeBlock() {
         runOp { bb.finalizeBlock() }
     }

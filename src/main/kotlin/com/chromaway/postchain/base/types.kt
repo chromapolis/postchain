@@ -45,7 +45,6 @@ interface CryptoSystem {
 interface ManagedBlockBuilder : BlockBuilder {
 
     fun maybeAppendTransaction(tx: Transaction): Boolean
-    fun maybeAppendTransaction(txData: ByteArray): Boolean
 
     fun rollback()
 }
