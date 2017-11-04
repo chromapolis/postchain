@@ -12,6 +12,7 @@ import com.chromaway.postchain.ebft.messages.Identification
 import com.chromaway.postchain.ebft.messages.Signature
 import com.chromaway.postchain.ebft.messages.SignedMessage
 import com.chromaway.postchain.ebft.messages.Status
+import com.chromaway.postchain.ebft.messages.Transaction
 import java.io.ByteArrayOutputStream
 import java.util.Vector
 
@@ -51,6 +52,7 @@ sealed class EbftMessage {
                 Message.getBlockSignatureChosen -> com.chromaway.postchain.ebft.message.GetBlockSignature(message.getBlockSignature.blockRID)
                 Message.blockSignatureChosen -> com.chromaway.postchain.ebft.message.BlockSignature(message.blockSignature.blockRID, com.chromaway.postchain.core.Signature(message.blockSignature.signature.subjectID, message.blockSignature.signature.data))
                 Message.completeBlockChosen -> com.chromaway.postchain.ebft.message.CompleteBlock(message.completeBlock.blockData.header, message.completeBlock.blockData.transactions, message.completeBlock.height, message.completeBlock.witness)
+                Message.transactionChosen -> com.chromaway.postchain.ebft.message.Transaction(message.transaction.data)
                 else -> throw ProgrammerMistake("Message type ${message.choiceID} is not handeled")
             }
 
@@ -148,6 +150,14 @@ class UnfinishedBlock(val header: ByteArray, val transactions: List<ByteArray>) 
         result.header = header
         result.transactions = Vector(transactions)
         return Message.unfinishedBlock(result)
+    }
+}
+
+class Transaction(val data: ByteArray): EbftMessage() {
+    override fun getBackingInstance(): Message {
+        val result = com.chromaway.postchain.ebft.messages.Transaction()
+        result.data = data;
+        return Message.transaction(result)
     }
 }
 

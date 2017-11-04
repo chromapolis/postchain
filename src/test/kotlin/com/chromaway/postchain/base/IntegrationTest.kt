@@ -148,6 +148,10 @@ open class IntegrationTest {
         fun add(tx: Transaction) {
             q.add(tx)
         }
+
+        override fun removeAll(transactionsToRemove: Collection<Transaction>) {
+            q.removeAll(transactionsToRemove)
+        }
     }
 
     // PeerInfos must be shared between all nodes because
@@ -176,6 +180,7 @@ open class IntegrationTest {
         baseConfig.setProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
         // append nodeIndex to schema name
         baseConfig.setProperty("database.schema", baseConfig.getString("database.schema") + nodeIndex)
+        baseConfig.setProperty("database.wipe", true)
         baseConfig.setProperty("blockchain.$chainId.blocksigningprivkey", privKeyHex(nodeIndex))
         for (i in 0 until nodeCount) {
             baseConfig.setProperty("node.$i.id", "node$i")
@@ -183,6 +188,7 @@ open class IntegrationTest {
             baseConfig.setProperty("node.$i.port", "0")
             baseConfig.setProperty("node.$i.pubkey", pubKeyHex(i))
         }
+        baseConfig.setProperty("blockchain.$chainId.testmyindex", nodeIndex)
         val composite = CompositeConfiguration()
         composite.addConfiguration(configOverrides)
         composite.addConfiguration(baseConfig)
@@ -198,7 +204,7 @@ open class IntegrationTest {
 
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
 
-        val storage = baseStorage(config, nodeIndex, true)
+        val storage = baseStorage(config, nodeIndex)
 
         val txQueue = BaseTransactionQueue()
 
@@ -222,7 +228,7 @@ open class IntegrationTest {
         return BasePeerCommConfiguration(peerInfos, myIndex, SECP256K1CryptoSystem(), privKey)
     }
 
-    private fun createPeerInfos(nodeCount: Int): Array<PeerInfo> {
+    fun createPeerInfos(nodeCount: Int): Array<PeerInfo> {
         if (peerInfos == null) {
             val pubKeysToUse = Array<ByteArray>(nodeCount, { pubKey(it) })
             peerInfos = Array<PeerInfo>(nodeCount, { DynamicPortPeerInfo("localhost", pubKeysToUse[it]) })

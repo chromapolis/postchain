@@ -29,7 +29,7 @@ import org.junit.Test
 import java.lang.reflect.Type
 
 
-class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
+class ApiIntegrationTestNightly : EbftIntegrationTest() {
     val restTools = RestTools()
 
     var hashHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -56,7 +56,7 @@ class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
 
     @Test
     fun testMixedAPICalls() {
-        createSystem(3)
+        createEbftNodes(3)
         testStatusGet("/tx/$hashHex", 404)
         testStatusGet("/tx/${hashHex}/status", 200,
                 { checkJson(it, "{\"status\"=\"unknown\"}") })
@@ -71,7 +71,7 @@ class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
     @Suppress("UNCHECKED_CAST")
     fun testConfirmationProof() {
         val nodeCount = 3
-        createSystem(nodeCount)
+        createEbftNodes(nodeCount)
         var blockHeight = 0;
         var currentId = 0;
         for (txCount in 1..16) {
@@ -112,7 +112,7 @@ class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
                     path.add(MerklePathItem(s, pathItemHash))
                 }
 
-                val header = ebftNodes[0].dataLayer.blockchainConfiguration.decodeBlockHeader(blockHeader)
+                val header = ebftNodes[0].blockchainConfiguration.decodeBlockHeader(blockHeader)
                 val rid = TestTransaction(txId).getRID()
                 assertArrayEquals(rid, hash)
                 assertTrue(header.validateMerklePath(path, rid))
@@ -123,7 +123,7 @@ class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
     }
 
     private fun awaitConfirmed(tx: Transaction) {
-        restTools.awaitConfirmed(apis[0].actualPort(), tx)
+        restTools.awaitConfirmed(ebftNodes[0].restApi!!.actualPort(), tx)
     }
 
     private fun testStatusGet(path: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
@@ -136,13 +136,13 @@ class ApiIntegrationTestNightly : EbftWithApiIntegrationTest() {
     }
 
     private fun testStatusPost(toIndex: Int, path: String, body: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
-        val response = restTools.post(apis[toIndex].actualPort(), path, body)
+        val response = restTools.post(ebftNodes[toIndex].restApi!!.actualPort(), path, body)
         assertEquals(expectedStatus, response.code)
         extraChecks(response)
     }
 
     private fun get(path: String): TestResponse? {
-        return restTools.get(apis[0].actualPort(), path)
+        return restTools.get(ebftNodes[0].restApi!!.actualPort(), path)
     }
 
 }

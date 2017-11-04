@@ -138,6 +138,7 @@ interface TransactionFactory {
 interface TransactionQueue {
     fun dequeueTransactions(): Array<Transaction>
     fun peekTransactions(): List<Transaction>
+    fun removeAll(transactionsToRemove: Collection<Transaction>)
 }
 
 interface TransactionEnqueuer {

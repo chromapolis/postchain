@@ -68,20 +68,25 @@ open class BaseBlockchainConfiguration(final override val chainID: Long,
     override fun getBlockBuildingStrategy(blockQueries: BlockQueries, transactionQueue: TransactionQueue): BlockBuildingStrategy {
         val strategyClassName = config.getString("blockstrategy", "")
         if (strategyClassName == "") {
-            return BaseBlockBuildingStrategy(config, blockQueries, transactionQueue)
+            return BaseBlockBuildingStrategy(config, this, blockQueries, transactionQueue)
         }
         val strategyClass = Class.forName(strategyClassName)
-        val ctor = strategyClass.getConstructor(Configuration::class.java, BlockQueries::class.java, TransactionQueue::class.java)
-        return ctor.newInstance(config, blockQueries, transactionQueue) as BlockBuildingStrategy
+        val ctor = strategyClass.getConstructor(Configuration::class.java,
+                BlockchainConfiguration::class.java, BlockQueries::class.java, TransactionQueue::class.java)
+        return ctor.newInstance(config, this, blockQueries, transactionQueue) as BlockBuildingStrategy
     }
 }
 
-class BaseBlockBuildingStrategy(val config: Configuration, blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
+class BaseBlockBuildingStrategy(val config: Configuration,
+                                val blockchainConfiguration: BlockchainConfiguration,
+                                blockQueries: BlockQueries,
+                                private val txQueue: TransactionQueue): BlockBuildingStrategy {
     private var lastBlockTime: Long
     private var lastTxTime = System.currentTimeMillis()
     private var lastTxSize = 0
     private val maxBlockTime = config.getLong("basestrategy.maxblocktime", 30000)
     private val blockDelay = config.getLong("basestrategy.blockdelay", 1000)
+    private val enqueueLocally = false
     init {
         val height = blockQueries.getBestHeight().get()
         if (height == -1L) {
@@ -94,6 +99,8 @@ class BaseBlockBuildingStrategy(val config: Configuration, blockQueries: BlockQu
 
     override fun blockCommitted(blockData: BlockData) {
         lastBlockTime = (blockData.header as BaseBlockHeader).timestamp
+        val txFactory = blockchainConfiguration.getTransactionFactory()
+        txQueue.removeAll(blockData.transactions.map {txFactory.decodeTransaction(it)})
     }
 
     override fun shouldBuildBlock(): Boolean {

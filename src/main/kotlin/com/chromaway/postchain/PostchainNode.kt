@@ -1,18 +1,31 @@
 package com.chromaway.postchain
 
+import com.chromaway.postchain.api.rest.Model
 import com.chromaway.postchain.api.rest.PostchainModel
 import com.chromaway.postchain.api.rest.RestApi
 import com.chromaway.postchain.base.BasePeerCommConfiguration
+import com.chromaway.postchain.base.DynamicPortPeerInfo
+import com.chromaway.postchain.base.NetworkAwareTxEnqueuer
 import com.chromaway.postchain.base.PeerInfo
 import com.chromaway.postchain.base.SECP256K1CryptoSystem
+import com.chromaway.postchain.base.Storage
 import com.chromaway.postchain.base.data.BaseTransactionQueue
 import com.chromaway.postchain.base.hexStringToByteArray
+import com.chromaway.postchain.core.BlockBuildingStrategy
+import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.BlockchainConfiguration
+import com.chromaway.postchain.core.Network
+import com.chromaway.postchain.core.TransactionEnqueuer
 import com.chromaway.postchain.ebft.BaseBlockDatabase
 import com.chromaway.postchain.ebft.BaseBlockManager
 import com.chromaway.postchain.ebft.BaseBlockchainEngine
 import com.chromaway.postchain.ebft.BaseStatusManager
+import com.chromaway.postchain.ebft.BlockManager
+import com.chromaway.postchain.ebft.BlockchainEngine
+import com.chromaway.postchain.ebft.CommManager
 import com.chromaway.postchain.ebft.SyncManager
 import com.chromaway.postchain.ebft.makeCommManager
+import com.chromaway.postchain.ebft.message.EbftMessage
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
@@ -26,6 +39,21 @@ class PostchainNode {
     lateinit var updateLoop: Thread
     val stopMe = AtomicBoolean(false)
     var restApi: RestApi? = null
+    lateinit var blockchainConfiguration: BlockchainConfiguration
+    lateinit var storage: Storage
+    lateinit var blockQueries: BlockQueries
+    lateinit var peerInfos: Array<PeerInfo>
+    lateinit var statusManager: BaseStatusManager
+    lateinit var commManager: CommManager<EbftMessage>
+    lateinit var network: Network
+    lateinit var txQueue: BaseTransactionQueue
+    lateinit var txEnqueuer: TransactionEnqueuer
+    lateinit var blockStrategy: BlockBuildingStrategy
+    lateinit var engine: BlockchainEngine
+    lateinit var blockDatabase: BaseBlockDatabase
+    lateinit var blockManager: BlockManager
+    lateinit var model: Model
+    lateinit var syncManager: SyncManager
 
     protected fun startUpdateLoop(syncManager: SyncManager) {
         updateLoop = thread(name = "updateLoop") {
@@ -40,8 +68,60 @@ class PostchainNode {
     }
 
     fun stop() {
+        // Ordering is important.
+        // 1. Stop acceptin API calls
         stopMe.set(true)
         restApi?.stop()
+        // 2. Close the data sources so that new blocks cant be started
+        storage.close()
+        // 3. Close the listening port and all TCP connections
+        commManager.stop()
+        // 4. Stop any in-progress blocks
+        blockDatabase.stop()
+    }
+
+    fun start(config: Configuration, nodeIndex: Int) {
+        // This will eventually become a list of chain ids.
+        // But for now it's just a single integer.
+        val chainId = config.getInt("activechainids").toLong()
+
+        blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
+        storage = baseStorage(config, nodeIndex)
+        blockQueries = blockchainConfiguration.makeBlockQueries(storage)
+        peerInfos = createPeerInfos(config)
+        txQueue = BaseTransactionQueue()
+        engine = BaseBlockchainEngine(blockchainConfiguration, storage,
+                chainId, txQueue)
+
+        engine.initializeDB()
+
+        val bestHeight = blockQueries.getBestHeight().get()
+        statusManager = BaseStatusManager(peerInfos.size, nodeIndex, bestHeight+1)
+
+        val privKey = config.getString("messaging.privkey").hexStringToByteArray()
+
+        val commConfiguration = BasePeerCommConfiguration(peerInfos, nodeIndex, SECP256K1CryptoSystem(), privKey)
+        commManager = makeCommManager(commConfiguration)
+
+        txEnqueuer = NetworkAwareTxEnqueuer(txQueue, commManager, nodeIndex)
+
+        blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
+
+        blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
+        blockManager = BaseBlockManager(blockDatabase, statusManager, blockStrategy)
+
+        val port = config.getInt("api.port", 7740)
+        if (port != -1) {
+            model = PostchainModel(txEnqueuer, blockchainConfiguration.getTransactionFactory(), blockQueries)
+            val basePath = config.getString("api.basepath", "")
+            restApi = RestApi(model, port, basePath)
+        }
+
+        // Give the SyncManager the BaseTransactionQueue and not the network-aware one,
+        // because we don't want tx forwarding/broadcasting when received through p2p network
+        syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager, txQueue, blockchainConfiguration)
+        statusManager.recomputeStatus()
+        startUpdateLoop(syncManager)
     }
 
     fun start(configFile: String, nodeIndex: Int) {
@@ -51,60 +131,31 @@ class PostchainNode {
                         setFileName(configFile).
                         setListDelimiterHandler(DefaultListDelimiterHandler(',')))
         val config = builder.getConfiguration()
-
-        // This will eventually become a list of chain ids.
-        // But for now it's just a single integer.
-        val chainId = config.getInt("activechainids").toLong()
-
-        val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
-
-        val storage = baseStorage(config, nodeIndex, false)
-
-        val txQueue = BaseTransactionQueue()
-
-        val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
-                chainId, txQueue)
-
-        engine.initializeDB()
-
-        val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
-
-        val blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
-
-        val peerInfos = createPeerInfos(config)
-
-        val bestHeight = blockQueries.getBestHeight().get()
-        val statusManager = BaseStatusManager(peerInfos.size, nodeIndex, bestHeight+1)
-        val blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
-        val blockManager = BaseBlockManager(blockDatabase, statusManager, blockStrategy)
-
-        val privKey = config.getString("messaging.privkey").hexStringToByteArray()
-
-        val commConfiguration = BasePeerCommConfiguration(peerInfos, nodeIndex, SECP256K1CryptoSystem(), privKey)
-        val commManager = makeCommManager(commConfiguration)
-
-        val port = config.getInt("api.port", 7740)
-        if (port != -1) {
-            val model = PostchainModel(txQueue, blockchainConfiguration.getTransactionFactory(), blockQueries)
-            val basePath = config.getString("api.basepath", "")
-            restApi = RestApi(model, port, basePath)
-        }
-
-        val syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager, blockchainConfiguration)
-        statusManager.recomputeStatus()
-        startUpdateLoop(syncManager)
+        start(config, nodeIndex)
     }
 
     fun createPeerInfos(config: Configuration): Array<PeerInfo> {
+        // this is for testing only. We can prepare the configuration with a
+        // special Array<PeerInfo> for dynamic ports
+        val peerInfos = config.getProperty("testpeerinfos")
+        if (peerInfos != null) {
+            return (peerInfos as List<PeerInfo>).toTypedArray()
+        }
+
         var peerCount = 0;
         config.getKeys("node").forEach { peerCount++ }
         peerCount = peerCount/4
         return Array(peerCount, {
-            PeerInfo(
-                    config.getString("node.$it.host"),
-                    config.getInt("node.$it.port"),
-                    config.getString("node.$it.pubkey").hexStringToByteArray()
-            )}
+            val port = config.getInt("node.$it.port")
+            val host = config.getString("node.$it.host")
+            val pubKey = config.getString("node.$it.pubkey").hexStringToByteArray()
+            if (port == 0) {
+                DynamicPortPeerInfo(host, pubKey)
+            } else {
+                PeerInfo(host, port, pubKey)
+            }
+        }
+
         )
     }
 }

@@ -5,6 +5,8 @@ import com.chromaway.postchain.core.BlockDataWithWitness
 import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.ProgrammerMistake
 import com.chromaway.postchain.core.Signature
+import com.chromaway.postchain.core.TransactionEnqueuer
+import com.chromaway.postchain.core.UserMistake
 import com.chromaway.postchain.ebft.message.BlockSignature
 import com.chromaway.postchain.ebft.message.CompleteBlock
 import com.chromaway.postchain.ebft.message.GetBlockAtHeight
@@ -12,6 +14,7 @@ import com.chromaway.postchain.ebft.message.GetBlockSignature
 import com.chromaway.postchain.ebft.message.GetUnfinishedBlock
 import com.chromaway.postchain.ebft.message.EbftMessage
 import com.chromaway.postchain.ebft.message.Status
+import com.chromaway.postchain.ebft.message.Transaction
 import com.chromaway.postchain.ebft.message.UnfinishedBlock
 import mu.KLogging
 import java.util.Date
@@ -78,6 +81,7 @@ class SyncManager(
         val blockManager: BlockManager,
         val blockDatabase: BlockDatabase,
         val commManager: CommManager<EbftMessage>,
+        private val txEnqueuer: TransactionEnqueuer,
         val blockchainConfiguration: BlockchainConfiguration
 ) {
     private val revoltTracker = RevoltTracker(60000, statusManager)
@@ -121,12 +125,21 @@ class SyncManager(
                     is GetUnfinishedBlock -> sendUnfinishedBlock(nodeIndex)
                     is GetBlockAtHeight -> sendBlockAtHeight(nodeIndex, message.height)
                     is GetBlockSignature -> sendBlockSignature(nodeIndex, message.blockRID)
+                    is Transaction -> handleTransaction(nodeIndex, message)
                     else -> throw ProgrammerMistake("Unhandled type ${message::class}")
                 }
             } catch (e: Exception) {
                 logger.error("Couldn't handle message ${message}. Ignoring and continuing", e)
             }
         }
+    }
+
+    private fun handleTransaction(index: Int, message: Transaction) {
+        val tx = blockchainConfiguration.getTransactionFactory().decodeTransaction(message.data)
+        if (!tx.isCorrect()) {
+            throw UserMistake("Transaction ${tx.getRID()} is not correct")
+        }
+        txEnqueuer.enqueue(tx)
     }
 
     private fun sendBlockSignature(nodeIndex: Int, blockRID: ByteArray) {

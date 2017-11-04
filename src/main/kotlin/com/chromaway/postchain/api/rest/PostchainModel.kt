@@ -7,6 +7,7 @@ import com.chromaway.postchain.core.TransactionEnqueuer
 import com.chromaway.postchain.core.TransactionFactory
 import com.chromaway.postchain.core.TransactionStatus.UNKNOWN
 import com.chromaway.postchain.core.TransactionStatus.WAITING
+import com.chromaway.postchain.core.UserMistake
 
 open class PostchainModel(
         val txEnqueuer: TransactionEnqueuer,
@@ -14,7 +15,11 @@ open class PostchainModel(
         val blockQueries: BlockQueries
 ) : Model {
     override fun postTransaction(tx: ApiTx) {
-        txEnqueuer.enqueue(transactionFactory.decodeTransaction(tx.bytes))
+        val decodedTransaction = transactionFactory.decodeTransaction(tx.bytes)
+        if (!decodedTransaction.isCorrect()) {
+            throw UserMistake("Transaction ${decodedTransaction.getRID()} is not correct")
+        }
+        txEnqueuer.enqueue(decodedTransaction)
     }
 
     override fun getTransaction(txHash: TxHash): ApiTx? {

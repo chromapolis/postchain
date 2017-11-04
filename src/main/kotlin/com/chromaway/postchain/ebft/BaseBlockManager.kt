@@ -77,8 +77,8 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
                 runDBOp({
                     blockDB.commitBlock(statusManager.commitSignatures)
                 }, {
-                    blockStrategy.blockCommitted(currentBlock!!)
                     statusManager.onCommittedBlock(currentBlock!!.header.blockRID)
+                    blockStrategy.blockCommitted(currentBlock!!)
                     currentBlock = null
                 })
             }

@@ -1,5 +1,6 @@
 package com.chromaway.postchain.integrationtest
 
+import com.chromaway.postchain.PostchainNode
 import com.chromaway.postchain.ebft.EbftIntegrationTest
 import com.chromaway.postchain.ebft.EbftNode
 import com.chromaway.postchain.ebft.OnDemandBlockBuildingStrategy
@@ -15,7 +16,7 @@ import org.junit.runner.RunWith
 class FullEbftTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
 
-    fun strat(node: EbftNode): OnDemandBlockBuildingStrategy {
+    fun strat(node: PostchainNode): OnDemandBlockBuildingStrategy {
         return node.blockStrategy as OnDemandBlockBuildingStrategy
     }
 
@@ -32,18 +33,19 @@ class FullEbftTestNightly : EbftIntegrationTest() {
         createEbftNodes(nodeCount)
 
         var txId = 0
+        var statusManager = ebftNodes[0].statusManager
         for (i in 0 until blockCount) {
             for (tx in 0 until txPerBlock) {
-                ebftNodes[i % nodeCount].dataLayer.txEnqueuer.enqueue(TestTransaction(txId++))
+                ebftNodes[statusManager.primaryIndex()].txEnqueuer.enqueue(TestTransaction(txId++))
             }
-            strat(ebftNodes[i % nodeCount]).triggerBlock()
+            strat(ebftNodes[statusManager.primaryIndex()]).triggerBlock()
             ebftNodes.forEach { strat(it).awaitCommitted(i) }
         }
 
-        val queries0 = ebftNodes[0].dataLayer.blockQueries
+        val queries0 = ebftNodes[0].blockQueries
         val referenceHeight = queries0.getBestHeight().get()
         ebftNodes.forEach { node ->
-            val queries = node.dataLayer.blockQueries
+            val queries = node.blockQueries
             assertEquals(referenceHeight, queries.getBestHeight().get())
             for (height in 0..referenceHeight) {
                 val rids = queries.getBlockRids(height).get()

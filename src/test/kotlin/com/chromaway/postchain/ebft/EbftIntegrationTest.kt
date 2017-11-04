@@ -1,9 +1,11 @@
 package com.chromaway.postchain.ebft
 
+import com.chromaway.postchain.PostchainNode
 import com.chromaway.postchain.base.IntegrationTest
 import com.chromaway.postchain.core.BlockBuildingStrategy
 import com.chromaway.postchain.core.BlockData
 import com.chromaway.postchain.core.BlockQueries
+import com.chromaway.postchain.core.BlockchainConfiguration
 import com.chromaway.postchain.core.TransactionQueue
 import mu.KLogging
 import org.apache.commons.configuration2.Configuration
@@ -14,47 +16,34 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 open class EbftIntegrationTest : IntegrationTest() {
-    protected var ebftNodes: Array<EbftNode> = arrayOf()
+    protected var ebftNodes: Array<PostchainNode> = arrayOf()
 
     open fun createEbftNodes(count: Int) {
         ebftNodes = Array(count, { createEBFTNode(count, it) })
     }
 
-    protected fun createEBFTNode(nodeCount: Int, myIndex: Int): EbftNode {
-        val dataLayer = createDataLayer(myIndex, nodeCount)
-        val statusManager = BaseStatusManager(nodeCount, myIndex, 0)
-        val blockDatabase = BaseBlockDatabase(dataLayer.engine, dataLayer.blockQueries, myIndex)
-
-        val blockStrategy =
-                dataLayer.blockchainConfiguration.getBlockBuildingStrategy(
-                        dataLayer.blockQueries, dataLayer.txQueue)
-        val blockManager = BaseBlockManager(blockDatabase, statusManager, blockStrategy)
-
-        val commConfiguration = createBasePeerCommConfiguration(nodeCount, myIndex)
-        val commManager = makeCommManager(commConfiguration)
-
-        val syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager,
-                dataLayer.blockchainConfiguration)
-        statusManager.recomputeStatus()
-        return EbftNode(syncManager, blockDatabase, dataLayer, statusManager, blockManager,
-                blockStrategy)
-    }
-
-    @Before
-    fun setupEbftNodes() {
+    protected fun createEBFTNode(nodeCount: Int, myIndex: Int): PostchainNode {
+        configOverrides.setProperty("messaging.privkey", privKeyHex(myIndex))
+        configOverrides.setProperty("testpeerinfos", createPeerInfos(nodeCount))
+        val pn = PostchainNode()
+        pn.start(createConfig(myIndex, nodeCount), myIndex)
+        return pn;
     }
 
     @After
     fun tearDownEbftNodes() {
         ebftNodes.forEach {
-            it.close()
+            it.stop()
         }
         ebftNodes = arrayOf()
     }
 }
 
 @Suppress("UNUSED_PARAMETER")
-class OnDemandBlockBuildingStrategy(config: Configuration, blockQueries: BlockQueries, txQueue: TransactionQueue) : BlockBuildingStrategy {
+class OnDemandBlockBuildingStrategy(config: Configuration,
+                                    val blockchainConfiguration: BlockchainConfiguration,
+                                    blockQueries: BlockQueries, val txQueue: TransactionQueue)
+    : BlockBuildingStrategy {
     val triggerBlock = AtomicBoolean(false)
     val blocks = LinkedBlockingQueue<BlockData>()
     var committedHeight = -1
@@ -68,6 +57,8 @@ class OnDemandBlockBuildingStrategy(config: Configuration, blockQueries: BlockQu
 
     override fun blockCommitted(blockData: BlockData) {
         blocks.add(blockData)
+        val txFactory = blockchainConfiguration.getTransactionFactory()
+        txQueue.removeAll(blockData.transactions.map {txFactory.decodeTransaction(it)})
     }
 
     fun awaitCommitted(blockHeight: Int) {

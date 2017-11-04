@@ -17,11 +17,11 @@ fun getBlockchainConfiguration(config: Configuration, chainId: Long): Blockchain
 }
 
 
-fun baseStorage(config: Configuration, nodeIndex: Int, wipe: Boolean): BaseStorage {
+fun baseStorage(config: Configuration, nodeIndex: Int): BaseStorage {
     val writeDataSource = createBasicDataSource(config)
     writeDataSource.defaultAutoCommit = false
     writeDataSource.maxTotal = 1
-    if (wipe) {
+    if (config.getBoolean("database.wipe", false)) {
         wipeDatabase(writeDataSource, config)
     }
     createSchemaIfNotExists(writeDataSource, config.getString("database.schema"))
