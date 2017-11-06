@@ -4,6 +4,9 @@ Postchain is a blockchain framework designed for _consortium databases_.
 
 More information [here](https://chromaway.com/products/postchain/).
 
+This is a **pre-release** "alpha" version, which means that interfaces 
+are subject to change and production use is NOT recommended.
+
 ## Copyright & License information
 
 Copyright (c) 2017, ChromaWay Inc.
