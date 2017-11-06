@@ -8,8 +8,6 @@ import net.postchain.gtx.GTXModuleFactory
 import net.postchain.gtx.GTXSchemaManager
 import net.postchain.gtx.SimpleGTXModule
 import org.apache.commons.configuration2.Configuration
-import org.apache.commons.dbutils.QueryRunner
-import spark.utils.IOUtils
 
 class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
         config,
@@ -26,14 +24,9 @@ class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
 ) {
 
     override fun initializeDB(ctx: EContext) {
-        val moduleName = "chromaway.ft"
-        val version = GTXSchemaManager.getModuleVersion(ctx, moduleName)
-        if (version == null) {
-            val r = QueryRunner()
-            val schemaSQL = IOUtils.toString(javaClass.getResourceAsStream("schema.sql"))
-            r.update(ctx.conn, schemaSQL)
-            GTXSchemaManager.setModuleVersion(ctx, moduleName, 0)
-        }
+        GTXSchemaManager.autoUpdateSQLSchema(
+                ctx, 0, javaClass, "schema.sql", "chromaway.ft"
+        )
     }
 }
 

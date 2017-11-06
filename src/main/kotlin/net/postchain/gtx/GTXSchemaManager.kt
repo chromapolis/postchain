@@ -5,6 +5,7 @@ package net.postchain.gtx
 import net.postchain.core.EContext
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.ScalarHandler
+import spark.utils.IOUtils
 
 object GTXSchemaManager {
     private val r = QueryRunner()
@@ -40,5 +41,26 @@ object GTXSchemaManager {
         }
     }
 
+    fun loadModuleSQLSchema(ctx: EContext, jclass: Class<*>, name: String) {
+        val r = QueryRunner()
+        val stream = jclass.getResourceAsStream(name)
+        val schemaSQL = IOUtils.toString(stream)
+        stream.close()
+        r.update(ctx.conn, schemaSQL)
+    }
+
+    fun autoUpdateSQLSchema(ctx: EContext,
+                            schemaVersion: Int,
+                            jclass: Class<*>,
+                            schemaName: String,
+                            moduleName: String? = null)
+    {
+        val actualModuleName = moduleName ?: jclass.name
+        val version = getModuleVersion(ctx, actualModuleName)
+        if (version == null || version < schemaVersion) {
+            loadModuleSQLSchema(ctx, jclass, schemaName)
+            setModuleVersion(ctx, actualModuleName, schemaVersion.toLong())
+        }
+    }
 
 }
