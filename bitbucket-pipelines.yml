@@ -4,3 +4,13 @@ pipelines:
     - step:
         script:
           - mvn -P clean install
+        services: 
+          - postgres
+definitions: 
+  services: 
+    postgres: 
+      image: postgres 
+      environment: 
+        POSTGRES_DB: 'postchain' 
+        POSTGRES_USER: 'postchain'
+        POSTGRES_PASSWORD: 'postchain'
