@@ -4,12 +4,7 @@ import com.chromaway.postchain.api.RestTools
 import com.chromaway.postchain.api.TestResponse
 import com.chromaway.postchain.api.rest.PostchainModel
 import com.chromaway.postchain.api.rest.RestApi
-import com.chromaway.postchain.base.cryptoSystem
-import com.chromaway.postchain.base.hexStringToByteArray
-import com.chromaway.postchain.base.toHex
-import com.chromaway.postchain.core.MerklePath
-import com.chromaway.postchain.core.MerklePathItem
-import com.chromaway.postchain.core.Side
+import com.chromaway.postchain.base.*
 import com.chromaway.postchain.core.Signature
 import com.chromaway.postchain.core.Transaction
 import com.chromaway.postchain.ebft.EbftIntegrationTest
@@ -112,10 +107,10 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
                     path.add(MerklePathItem(s, pathItemHash))
                 }
 
-                val header = ebftNodes[0].blockchainConfiguration.decodeBlockHeader(blockHeader)
-                val rid = TestTransaction(txId).getRID()
-                assertArrayEquals(rid, hash)
-                assertTrue(header.validateMerklePath(path, rid))
+                val header = ebftNodes[0].blockchainConfiguration.decodeBlockHeader(blockHeader) as BaseBlockHeader
+                val txHash = TestTransaction(txId).getHash()
+                assertArrayEquals(txHash, hash)
+                assertTrue(header.validateMerklePath(path, txHash))
             }
 
         }

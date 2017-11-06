@@ -3,14 +3,8 @@ package com.chromaway.postchain
 import com.chromaway.postchain.api.rest.Model
 import com.chromaway.postchain.api.rest.PostchainModel
 import com.chromaway.postchain.api.rest.RestApi
-import com.chromaway.postchain.base.BasePeerCommConfiguration
-import com.chromaway.postchain.base.DynamicPortPeerInfo
-import com.chromaway.postchain.base.NetworkAwareTxEnqueuer
-import com.chromaway.postchain.base.PeerInfo
-import com.chromaway.postchain.base.SECP256K1CryptoSystem
-import com.chromaway.postchain.base.Storage
+import com.chromaway.postchain.base.*
 import com.chromaway.postchain.base.data.BaseTransactionQueue
-import com.chromaway.postchain.base.hexStringToByteArray
 import com.chromaway.postchain.core.BlockBuildingStrategy
 import com.chromaway.postchain.core.BlockQueries
 import com.chromaway.postchain.core.BlockchainConfiguration
@@ -112,7 +106,8 @@ class PostchainNode {
 
         val port = config.getInt("api.port", 7740)
         if (port != -1) {
-            model = PostchainModel(txEnqueuer, blockchainConfiguration.getTransactionFactory(), blockQueries)
+            model = PostchainModel(txEnqueuer, blockchainConfiguration.getTransactionFactory(),
+                    blockQueries as BaseBlockQueries)
             val basePath = config.getString("api.basepath", "")
             restApi = RestApi(model, port, basePath)
         }
