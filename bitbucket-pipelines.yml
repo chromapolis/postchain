@@ -3,7 +3,7 @@ pipelines:
   default:
     - step:
         script:
-          - mvn -P clean install
+          - mvn -B -P ci verify
         services: 
           - postgres
 definitions: 
