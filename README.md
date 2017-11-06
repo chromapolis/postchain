@@ -1,16 +1,16 @@
 # Postchain (JVM edition)
 
-Postchain is a blockchain framework designed for _consortium databases_.
-
-More information [here](https://chromaway.com/products/postchain/).
+Postchain is a blockchain framework designed primarily for [consortium databases](https://chromaway.com/products/postchain/).
 
 This is a **pre-release** "alpha" version, which means that interfaces 
 are subject to change and production use is NOT recommended.
 
+Technical information & user guide is
+ [here](https://bitbucket.org/chromawallet/postchain2/src/d3e67949710dbf4f89082eee8c29fdd200143270/docs/quick-guide.md?at=master&fileviewer=file-view-default).
+
 ## Copyright & License information
 
-Copyright (c) 2017, ChromaWay Inc.
-All rights reserved.
+Copyright (c) 2017 ChromaWay Inc. All rights reserved.
 
 This software can used either under terms of commercial license
 obtained from ChromaWay Inc., or, alternatively, under the terms
