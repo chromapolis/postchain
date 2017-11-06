@@ -1,0 +1,17 @@
+Postchain software can be used either under terms of a commercial
+license obtained from ChromaWay Inc., or under terms of the GNU
+General Public License (with a special exception described below).
+
+A copy of GNU General Public License (GPL) is included in this
+distribution, in the file COPYING.
+
+Linking this software statically or dynamically with other modules is
+making a combined work based on this library.  Thus, the terms and
+conditions of the GNU General Public License cover the whole
+combination (unless you hold a commercial license which exempts you
+from all GPL terms).
+
+As a special exception, the copyright holders of this software give you
+permission to link this software with independent modules, regardless
+of the license terms of these independent modules.
+Exact conditions of distribution in this case are to be defined later.

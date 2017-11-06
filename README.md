@@ -4,13 +4,15 @@ Postchain is a blockchain framework designed for _consortium databases_.
 
 More information [here](https://chromaway.com/products/postchain/).
 
-Copyright (c) 2017, ChromaWay AB
+## Copyright & License information
+
+Copyright (c) 2017, ChromaWay Inc.
 All rights reserved.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+This software can used either under terms of commercial license
+obtained from ChromaWay Inc., or, alternatively, under the terms
+of the GNU General Public License with additional linking exceptions.
+See file LICENSE for details.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
