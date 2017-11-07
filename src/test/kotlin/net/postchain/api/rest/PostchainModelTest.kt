@@ -2,14 +2,7 @@
 
 package net.postchain.api.rest
 
-import net.postchain.base.IntegrationTest
-import net.postchain.core.BlockQueries
-import net.postchain.core.TransactionEnqueuer
-import net.postchain.core.TransactionFactory
-import org.easymock.EasyMock
 import org.junit.Test
-
-import org.junit.Assert.*
 
 class PostchainModelTest {
     @Test

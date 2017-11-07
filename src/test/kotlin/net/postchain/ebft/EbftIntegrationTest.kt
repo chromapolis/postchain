@@ -2,17 +2,12 @@
 
 package net.postchain.ebft
 
-import net.postchain.PostchainNode
-import net.postchain.base.IntegrationTest
-import net.postchain.core.BlockBuildingStrategy
-import net.postchain.core.BlockData
-import net.postchain.core.BlockQueries
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.TransactionQueue
 import mu.KLogging
+import net.postchain.PostchainNode
+import net.postchain.base.test.IntegrationTest
+import net.postchain.core.*
 import org.apache.commons.configuration2.Configuration
 import org.junit.After
-import org.junit.Before
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread

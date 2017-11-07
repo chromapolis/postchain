@@ -1,7 +1,9 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.base
+package net.postchain.base.test
 
+import mu.KLogging
+import net.postchain.base.*
 import net.postchain.base.data.BaseBlockchainConfiguration
 import net.postchain.base.data.BaseTransactionQueue
 import net.postchain.baseStorage
@@ -9,7 +11,6 @@ import net.postchain.core.*
 import net.postchain.ebft.BaseBlockchainEngine
 import net.postchain.ebft.BlockchainEngine
 import net.postchain.getBlockchainConfiguration
-import mu.KLogging
 import org.apache.commons.configuration2.CompositeConfiguration
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.MapConfiguration
@@ -26,6 +27,7 @@ import java.io.File
 open class IntegrationTest {
     protected val nodes = mutableListOf<DataLayer>()
     val configOverrides = MapConfiguration(mutableMapOf<String, String>())
+    val cryptoSystem = SECP256K1CryptoSystem()
 
     companion object : KLogging()
 

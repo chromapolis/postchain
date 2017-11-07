@@ -2,14 +2,9 @@
 
 package net.postchain.gtx
 
-import net.postchain.api.rest.RestApi
-import net.postchain.base.IntegrationTest
 import net.postchain.configurations.GTXTestModule
 import net.postchain.configurations.SingleNodeGtxBlockchainConfigurationFactory
-import net.postchain.core.Transaction
-import net.postchain.ebft.EbftIntegrationTest
 import net.postchain.ebft.EbftWithApiIntegrationTest
-import org.junit.Assert
 import org.junit.Test
 
 class GTXClientTestBackendManual: EbftWithApiIntegrationTest() {

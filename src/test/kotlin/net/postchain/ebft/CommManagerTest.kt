@@ -2,14 +2,14 @@
 
 package net.postchain.ebft
 
-import net.postchain.base.IntegrationTest
+import mu.KLogging
 import net.postchain.base.PeerCommConfiguration
+import net.postchain.base.test.IntegrationTest
 import net.postchain.core.UserMistake
 import net.postchain.parseInt
-import mu.KLogging
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.junit.Assert.*
 
 
 class CommManagerTest : IntegrationTest() {

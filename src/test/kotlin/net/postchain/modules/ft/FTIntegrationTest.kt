@@ -2,8 +2,8 @@
 
 package net.postchain.modules.ft
 
-import net.postchain.base.IntegrationTest
 import net.postchain.base.SECP256K1CryptoSystem
+import net.postchain.base.test.IntegrationTest
 import net.postchain.base.toHex
 import net.postchain.core.Transaction
 import net.postchain.gtx.*

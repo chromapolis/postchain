@@ -2,7 +2,7 @@
 
 package net.postchain.gtx
 
-import net.postchain.base.IntegrationTest
+import net.postchain.base.test.IntegrationTest
 import net.postchain.base.toHex
 import net.postchain.configurations.GTXTestModule
 import net.postchain.core.Transaction

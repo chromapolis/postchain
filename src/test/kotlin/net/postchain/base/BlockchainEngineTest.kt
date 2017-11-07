@@ -2,18 +2,9 @@
 
 package net.postchain.base
 
-import net.postchain.core.BlockBuilder
-import net.postchain.core.BlockData
-import net.postchain.core.BlockDataWithWitness
-import net.postchain.core.BlockWitness
-import net.postchain.core.MultiSigBlockWitnessBuilder
-import net.postchain.core.UserMistake
-import net.postchain.ebft.BlockchainEngine
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
+import net.postchain.base.test.IntegrationTest
+import net.postchain.core.*
+import org.junit.Assert.*
 import org.junit.Test
 
 class BlockchainEngineTest : IntegrationTest() {
