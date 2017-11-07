@@ -151,7 +151,7 @@ is an example of a simple GTX operation which simply runs `INSERT` query with us
 It is included into [GTXTestModule](https://bitbucket.org/chromawallet/postchain2/src/fcd30c7e6f3820f98235a474ce5fd1f89f564311/src/main/kotlin/net/postchain/configurations/singlegtxnode.kt?at=master&fileviewer=file-view-default#singlegtxnode.kt-55)
 which includes schema in an inline string and also includes an example of a query implementation.
 
-More complex example can be found in [the turorial](http://???). TODO
+More complex example can be found in [the turorial](https://bitbucket.org/chromawallet/postchain2-examples/src/276b363658b88937b621659185aecf58709537cc/tutorial-etk.md?at=master&fileviewer=file-view-default).
 
 If it is necessary to use custom transaction format, it can be done in following way:
 
@@ -162,7 +162,7 @@ If it is necessary to use custom transaction format, it can be done in following
    and override `getTransactionFactory` method.
 4. Implement `BlockchainConfigurationFactory`.
 
-Steps 2-4 are usually trivial. (TODO: example here.)
+Steps 2-4 are usually trivial.
 
 ## Running Postchain nodes
 
@@ -198,4 +198,9 @@ Postchain node can be launched like this:
     
 Parameter `-i` specifies node index starting from 0, parameter `-c` specifies node's configuration file.
 
-TODO: FT example  
+Here's an example of module parameters used for FT module:
+    
+    blockchain.1.gtx.modules=net.postchain.modules.ft.BaseFTModuleFactory
+    blockchain.1.gtx.ft.assets=USD
+    blockchain.1.gtx.ft.asset.USD.issuers=03f811d3e806e6d093a4bcce49c145ba78f9a4b2fbd167753ecab2a13530b081f8
+    blockchain.1.gtx.ft.openRegistration=true
