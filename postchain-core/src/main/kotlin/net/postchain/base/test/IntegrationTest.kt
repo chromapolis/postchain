@@ -3,11 +3,28 @@
 package net.postchain.base.test
 
 import mu.KLogging
-import net.postchain.base.*
+import net.postchain.base.BaseBlockQueries
+import net.postchain.base.BasePeerCommConfiguration
+import net.postchain.base.DynamicPortPeerInfo
+import net.postchain.base.PeerInfo
+import net.postchain.base.SECP256K1CryptoSystem
+import net.postchain.base.Storage
 import net.postchain.base.data.BaseBlockchainConfiguration
 import net.postchain.base.data.BaseTransactionQueue
+import net.postchain.base.secp256k1_derivePubKey
+import net.postchain.base.toHex
 import net.postchain.baseStorage
-import net.postchain.core.*
+import net.postchain.core.BlockBuilder
+import net.postchain.core.BlockWitness
+import net.postchain.core.BlockchainConfiguration
+import net.postchain.core.BlockchainConfigurationFactory
+import net.postchain.core.MultiSigBlockWitnessBuilder
+import net.postchain.core.Transaction
+import net.postchain.core.TransactionEnqueuer
+import net.postchain.core.TransactionFactory
+import net.postchain.core.TransactionQueue
+import net.postchain.core.TxEContext
+import net.postchain.core.UserMistake
 import net.postchain.ebft.BaseBlockchainEngine
 import net.postchain.ebft.BlockchainEngine
 import net.postchain.getBlockchainConfiguration
@@ -171,7 +188,7 @@ open class IntegrationTest {
 
     protected fun createConfig(nodeIndex: Int, nodeCount: Int = 1): Configuration {
         val configs = Configurations()
-        val baseConfig = configs.properties(File("config.properties"))
+        val baseConfig = configs.properties(File("src/test/resources/config.properties"))
         baseConfig.listDelimiterHandler = DefaultListDelimiterHandler(',')
         val chainId = baseConfig.getLong("activechainids")
         baseConfig.setProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))

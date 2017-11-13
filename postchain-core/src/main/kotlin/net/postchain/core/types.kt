@@ -189,16 +189,3 @@ interface BlockStore {
     fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
     fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Any
 }
-/*
-open class BlockLifecycleListener {
-    open fun beginBlockDone() {}
-
-    open fun appendTxDone(tx: Transaction) {}
-
-    open fun appendTxDone(txData: ByteArray) {}
-
-    open fun finalizeBlockDone(header: BlockHeader) {}
-
-    open fun commitDone(witness: BlockWitness?) {}
-}
-*/
