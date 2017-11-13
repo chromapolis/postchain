@@ -2,16 +2,16 @@
 
 package net.postchain.base
 
-import net.postchain.core.Transaction
-import net.postchain.core.TransactionEnqueuer
+import mu.KLogging
+import net.postchain.core.TransactionQueue
 import net.postchain.ebft.CommManager
 import net.postchain.ebft.message.EbftMessage
-import mu.KLogging
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 
-class NetworkAwareTxEnqueuer(private val te: TransactionEnqueuer, private val network: CommManager<EbftMessage>, private val nodeIndex: Int) : TransactionEnqueuer by te {
+class NetworkAwareTxQueue(
+        private val queue: TransactionQueue,
+        private val network: CommManager<EbftMessage>, private val nodeIndex: Int)
+    : TransactionQueue by queue {
+
     companion object : KLogging()
 
     override fun enqueue(tx: net.postchain.core.Transaction) {
@@ -52,7 +52,7 @@ where we are guaranteed not to drop transactions.
          */
         val rid = tx.getRID().toHex()
         logger.debug("Node ${nodeIndex} enqueueing tx ${rid}")
-        te.enqueue(tx)
+        queue.enqueue(tx)
         logger.debug("Node ${nodeIndex} broadcasting tx ${rid}")
         network.broadcastPacket(net.postchain.ebft.message.Transaction(tx.getRawData()))
         logger.debug("Node ${nodeIndex} Enqueueing tx ${rid} Done")

@@ -12,15 +12,15 @@ class BlockchainEngineTest : IntegrationTest() {
     @Test
     fun testBuildBlock() {
         val node = createDataLayer(0)
-        node.txEnqueuer.enqueue(TestTransaction(0))
+        node.txQueue.enqueue(TestTransaction(0))
         buildBlockAndCommit(node.engine)
         assertEquals(0, getBestHeight(node))
         val riDsAtHeight0 = getTxRidsAtHeight(node, 0)
         assertEquals(1, riDsAtHeight0.size)
         assertArrayEquals(TestTransaction(id = 0).getRID(), riDsAtHeight0[0])
 
-        node.txEnqueuer.enqueue(TestTransaction(1))
-        node.txEnqueuer.enqueue(TestTransaction(2))
+        node.txQueue.enqueue(TestTransaction(1))
+        node.txQueue.enqueue(TestTransaction(2))
         buildBlockAndCommit(node.engine)
         assertEquals(1, getBestHeight(node))
         assertTrue(riDsAtHeight0.contentDeepEquals(getTxRidsAtHeight(node, 0)))
@@ -28,14 +28,14 @@ class BlockchainEngineTest : IntegrationTest() {
         assertTrue(riDsAtHeight1.contentDeepEquals(Array(2, { TestTransaction(it + 1).getRID() })))
 
         // Empty block. All tx but last (10) will be failing
-        node.txEnqueuer.enqueue(TestTransaction(3, good = true, correct = false))
-        node.txEnqueuer.enqueue(TestTransaction(4, good = false, correct = true))
-        node.txEnqueuer.enqueue(TestTransaction(5, good = false, correct = false))
-        node.txEnqueuer.enqueue(ErrorTransaction(6, true, true))
-        node.txEnqueuer.enqueue(ErrorTransaction(7, false, true))
-        node.txEnqueuer.enqueue(ErrorTransaction(8, true, false))
-        node.txEnqueuer.enqueue(UnexpectedExceptionTransaction(9))
-        node.txEnqueuer.enqueue(TestTransaction(10))
+        node.txQueue.enqueue(TestTransaction(3, good = true, correct = false))
+        node.txQueue.enqueue(TestTransaction(4, good = false, correct = true))
+        node.txQueue.enqueue(TestTransaction(5, good = false, correct = false))
+        node.txQueue.enqueue(ErrorTransaction(6, true, true))
+        node.txQueue.enqueue(ErrorTransaction(7, false, true))
+        node.txQueue.enqueue(ErrorTransaction(8, true, false))
+        node.txQueue.enqueue(UnexpectedExceptionTransaction(9))
+        node.txQueue.enqueue(TestTransaction(10))
 
         buildBlockAndCommit(node.engine)
         assertEquals(2, getBestHeight(node))
@@ -149,7 +149,7 @@ class BlockchainEngineTest : IntegrationTest() {
 
     private fun createBlockWithTx(dataLayer: DataLayer, txCount: Int, startId: Int = 0): BlockBuilder {
         for (i in startId until startId + txCount) {
-            dataLayer.txEnqueuer.enqueue(TestTransaction(i))
+            dataLayer.txQueue.enqueue(TestTransaction(i))
         }
         return dataLayer.engine.buildBlock()
     }

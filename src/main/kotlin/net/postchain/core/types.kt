@@ -131,14 +131,12 @@ interface TransactionFactory {
 }
 
 interface TransactionQueue {
-    fun dequeueTransactions(): Array<Transaction>
-    fun peekTransactions(): List<Transaction>
-    fun removeAll(transactionsToRemove: Collection<Transaction>)
-}
-
-interface TransactionEnqueuer {
+    fun takeTransaction(): Transaction?
     fun enqueue(tx: Transaction)
-    fun hasTx(txHash: ByteArray): Boolean
+    fun getTransactionStatus(txHash: ByteArray): TransactionStatus
+    fun getTransactionQueueSize(): Int
+    fun removeAll(transactionsToRemove: Collection<Transaction>)
+    fun rejectTransaction(tx: Transaction, reason: Exception?)
 }
 
 interface BlockQueries {
@@ -157,7 +155,6 @@ interface BlockQueries {
 interface BlockBuilder {
     fun begin()
     fun appendTransaction(tx: Transaction)
-    fun appendTransaction(txData: ByteArray)
     fun finalizeBlock()
     fun finalizeAndValidate(bh: BlockHeader)
     fun getBlockData(): BlockData

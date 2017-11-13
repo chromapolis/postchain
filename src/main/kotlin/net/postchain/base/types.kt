@@ -2,10 +2,7 @@
 
 package net.postchain.base
 
-import net.postchain.core.BlockBuilder
-import net.postchain.core.EContext
-import net.postchain.core.Signature
-import net.postchain.core.Transaction
+import net.postchain.core.*
 import java.util.*
 import java.util.concurrent.CountDownLatch
 
@@ -46,9 +43,7 @@ interface CryptoSystem {
 
 // block builder which automatically manages the connection
 interface ManagedBlockBuilder : BlockBuilder {
-
-    fun maybeAppendTransaction(tx: Transaction): Boolean
-
+    fun maybeAppendTransaction(tx: Transaction): UserMistake?
     fun rollback()
 }
 

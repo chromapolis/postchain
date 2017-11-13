@@ -4,33 +4,20 @@ package net.postchain.modules.ft
 
 import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.base.hexStringToByteArray
+import net.postchain.core.ByteArrayKey
 import org.apache.commons.configuration2.Configuration
 
-class BAKey(val byteArray: ByteArray) {
-    override fun equals(other: Any?): Boolean {
-        if (other == null) return false
-        if (super.equals(other)) return true
-        if (other is BAKey) {
-            return other.byteArray.contentEquals(byteArray)
-        } else return false
-    }
-
-    override fun hashCode(): Int {
-        return byteArray.contentHashCode()
-    }
-}
-
 fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
-    val assetIssuerMap: MutableMap<String, Map<BAKey, ByteArray>> = mutableMapOf()
-    val issuerAccountDescriptors: MutableMap<BAKey, ByteArray> = mutableMapOf()
+    val assetIssuerMap: MutableMap<String, Map<ByteArrayKey, ByteArray>> = mutableMapOf()
+    val issuerAccountDescriptors: MutableMap<ByteArrayKey, ByteArray> = mutableMapOf()
     val assets = config.getStringArray("assets")
     for (assetName in assets) {
-        val issuerMap = mutableMapOf<BAKey, ByteArray>()
+        val issuerMap = mutableMapOf<ByteArrayKey, ByteArray>()
         for (issuer in config.getStringArray("asset.${assetName}.issuers")) {
             val pubKey = issuer.hexStringToByteArray()
             val descriptor = ac.issuerAccountDesc(pubKey)
             val issuerID = ac.makeAccountID(descriptor)
-            val key = BAKey(issuerID)
+            val key = ByteArrayKey(issuerID)
             issuerMap[key] = pubKey
             issuerAccountDescriptors[key] = descriptor
         }
@@ -39,7 +26,7 @@ fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
 
     fun checkIssuer(data: FTIssueData): Boolean {
         if (data.assetID !in assetIssuerMap) return false
-        val issuer = assetIssuerMap[data.assetID]!![BAKey(data.issuerID)]
+        val issuer = assetIssuerMap[data.assetID]!![ByteArrayKey(data.issuerID)]
         if (issuer == null) {
             return false
         } else {
@@ -53,7 +40,7 @@ fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
             dbOps.registerAccount(ctx,
                     data.issuerID,
                     0,
-                    issuerAccountDescriptors[BAKey(data.issuerID)]!!
+                    issuerAccountDescriptors[ByteArrayKey(data.issuerID)]!!
             )
         }
         dbOps.registerAsset(ctx, data.assetID)

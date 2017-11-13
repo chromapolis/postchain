@@ -13,7 +13,7 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
 
     fun computeRootHash(): ByteArray {
 
-        val digests = transactions.map { txFactory.decodeTransaction(it).getHash() }
+        val digests = rawTransactions.map { txFactory.decodeTransaction(it).getHash() }
         return computeMerkleRootHash(cryptoSystem, digests.toTypedArray())
     }
 

@@ -5,14 +5,13 @@ package net.postchain.api.rest
 import net.postchain.base.BaseBlockQueries
 import net.postchain.base.ConfirmationProof
 import net.postchain.base.toHex
-import net.postchain.core.TransactionEnqueuer
 import net.postchain.core.TransactionFactory
+import net.postchain.core.TransactionQueue
 import net.postchain.core.TransactionStatus.UNKNOWN
-import net.postchain.core.TransactionStatus.WAITING
 import net.postchain.core.UserMistake
 
 open class PostchainModel(
-        val txEnqueuer: TransactionEnqueuer,
+        val txQueue: TransactionQueue,
         val transactionFactory: TransactionFactory,
         val blockQueries: BaseBlockQueries
 ) : Model {
@@ -21,7 +20,7 @@ open class PostchainModel(
         if (!decodedTransaction.isCorrect()) {
             throw UserMistake("Transaction ${decodedTransaction.getRID()} is not correct")
         }
-        txEnqueuer.enqueue(decodedTransaction)
+        txQueue.enqueue(decodedTransaction)
     }
 
     override fun getTransaction(txRID: TxRID): ApiTx? {
@@ -35,10 +34,14 @@ open class PostchainModel(
     }
 
     override fun getStatus(txRID: TxRID): ApiStatus {
-        if (txEnqueuer.hasTx(txRID.bytes)) return ApiStatus(WAITING)
-        val dbStatus = blockQueries.getTxStatus(txRID.bytes).get()
-        if (dbStatus == null) return ApiStatus(UNKNOWN)
-        return ApiStatus(dbStatus)
+        val status = txQueue.getTransactionStatus(txRID.bytes)
+        if (status != UNKNOWN)
+            return ApiStatus(status)
+        else {
+            val dbStatus = blockQueries.getTxStatus(txRID.bytes).get()
+            if (dbStatus == null) return ApiStatus(UNKNOWN)
+            return ApiStatus(dbStatus)
+        }
     }
 
     override fun query(query: Query): QueryResult {

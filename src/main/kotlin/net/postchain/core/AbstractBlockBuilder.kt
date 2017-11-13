@@ -2,7 +2,6 @@
 
 package net.postchain.core
 
-import net.postchain.base.BaseBlockHeader
 import net.postchain.base.toHex
 
 abstract class AbstractBlockBuilder (
@@ -17,9 +16,9 @@ abstract class AbstractBlockBuilder (
     abstract fun validateWitness(w: BlockWitness): Boolean
     // fun getBlockWitnessBuilder(): BlockWitnessBuilder?;
 
-
     var finalized: Boolean = false
-    val transactions = mutableListOf<ByteArray>()
+    val rawTransactions = mutableListOf<ByteArray>()
+    val transactions = mutableListOf<Transaction>()
     lateinit var bctx: BlockEContext
     lateinit var iBlockData: InitialBlockData
     var _blockData: BlockData? = null
@@ -44,27 +43,24 @@ abstract class AbstractBlockBuilder (
         }
         // In case of errors, tx.apply may either return false or throw UserMistake
         if (tx.apply(txctx)) {
-            transactions.add(tx.getRawData())
+            transactions.add(tx)
+            rawTransactions.add(tx.getRawData())
         } else {
             throw UserMistake("Transaction ${tx.getRID().toHex()} failed")
         }
     }
 
-    override fun appendTransaction(txData: ByteArray) {
-        appendTransaction(txFactory.decodeTransaction(txData))
-    }
-
     override fun finalizeBlock() {
         val bh = makeBlockHeader()
         store.finalizeBlock(bctx, bh)
-        _blockData = BlockData(bh, transactions)
+        _blockData = BlockData(bh, rawTransactions)
         finalized = true
     }
 
     override fun finalizeAndValidate(bh: BlockHeader) {
         if (validateBlockHeader(bh)) {
             store.finalizeBlock(bctx, bh)
-            _blockData = BlockData(bh, transactions)
+            _blockData = BlockData(bh, rawTransactions)
             finalized = true
         } else {
             throw UserMistake("Invalid block header")

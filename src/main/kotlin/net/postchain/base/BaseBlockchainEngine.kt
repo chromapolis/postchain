@@ -1,15 +1,10 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.ebft
+package net.postchain.base
 
-import net.postchain.base.ManagedBlockBuilder
-import net.postchain.base.Storage
 import net.postchain.base.data.BaseManagedBlockBuilder
-import net.postchain.base.withWriteConnection
-import net.postchain.core.BlockData
-import net.postchain.core.BlockDataWithWitness
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.TransactionQueue
+import net.postchain.core.*
+import net.postchain.ebft.BlockchainEngine
 
 open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                                 val s: Storage,
@@ -27,7 +22,10 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
     private fun makeBlockBuilder(): ManagedBlockBuilder {
         val ctxt = s.openWriteConnection(chainID)
         val bb = bc.makeBlockBuilder(ctxt)
-        return BaseManagedBlockBuilder(ctxt, s, bb)
+        return BaseManagedBlockBuilder(ctxt, s, bb, { _bb ->
+            val aBB = _bb as AbstractBlockBuilder
+            tq.removeAll(aBB.transactions)
+        })
     }
 
     override fun addBlock(block: BlockDataWithWitness) {
@@ -37,29 +35,34 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
 
     override  fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
         val blockBuilder = makeBlockBuilder()
+        val factory = bc.getTransactionFactory()
         blockBuilder.begin()
         for (txData in block.transactions) {
-            blockBuilder.appendTransaction(txData)
+            blockBuilder.appendTransaction(factory.decodeTransaction(txData))
         }
         blockBuilder.finalizeAndValidate(block.header)
         return blockBuilder
     }
 
     override fun buildBlock(): ManagedBlockBuilder {
-//        if (transactions.isEmpty()) throw Error("No transactions to build a block")
         val blockBuilder = makeBlockBuilder()
         blockBuilder.begin()
 
         // TODO Potential problem: if the block fails for some reason,
         // the transaction queue is gone. This could potentially happen
         // during a revolt. We might need a "transactional" tx queue...
-        val transactions = tq.dequeueTransactions()
-        for (tx in transactions) {
-            blockBuilder.maybeAppendTransaction(tx)
+
+        while (true) {
+            val tx = tq.takeTransaction()
+            if (tx != null) {
+                val exception = blockBuilder.maybeAppendTransaction(tx)
+                if (exception != null) {
+                    tq.rejectTransaction(tx, exception)
+                }
+            } else {
+                break
+            }
         }
-        // TODO handle a case with 0 transactions - Done
-        // TODO what if more transactions arrive? - They will wait until next block
-        // TODO block size policy goes here - Uhm, ok.
         blockBuilder.finalizeBlock()
         return blockBuilder
     }

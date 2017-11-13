@@ -8,7 +8,6 @@ import net.postchain.base.data.BaseBlockchainConfiguration
 import net.postchain.base.data.BaseTransactionQueue
 import net.postchain.baseStorage
 import net.postchain.core.*
-import net.postchain.ebft.BaseBlockchainEngine
 import net.postchain.ebft.BlockchainEngine
 import net.postchain.getBlockchainConfiguration
 import org.apache.commons.configuration2.CompositeConfiguration
@@ -50,7 +49,9 @@ open class IntegrationTest {
         return pubKey(index).toHex()
     }
 
-    class DataLayer(val engine: BlockchainEngine, val txEnqueuer: TransactionEnqueuer, val txQueue: TransactionQueue, val blockchainConfiguration: BlockchainConfiguration,
+    class DataLayer(val engine: BlockchainEngine,
+                    val txQueue: TransactionQueue,
+                    val blockchainConfiguration: BlockchainConfiguration,
                     val storage: Storage, val blockQueries: BaseBlockQueries) {
         fun close() {
             storage.close()
@@ -128,7 +129,7 @@ open class IntegrationTest {
             return true
         }
     }
-
+/*
     class TestTxQueue : TransactionQueue {
         private val q = ArrayList<Transaction>()
 
@@ -150,6 +151,7 @@ open class IntegrationTest {
             q.removeAll(transactionsToRemove)
         }
     }
+    */
 
     // PeerInfos must be shared between all nodes because
     // a listening node will update the PeerInfo port after
@@ -212,7 +214,9 @@ open class IntegrationTest {
 
         val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-        val node = DataLayer(engine, txQueue, txQueue, blockchainConfiguration, storage,
+        val node = DataLayer(engine,
+                txQueue,
+                blockchainConfiguration, storage,
                 blockQueries as BaseBlockQueries)
         // keep list of nodes to close after test
         nodes.add(node)

@@ -7,20 +7,8 @@ import net.postchain.api.rest.PostchainModel
 import net.postchain.api.rest.RestApi
 import net.postchain.base.*
 import net.postchain.base.data.BaseTransactionQueue
-import net.postchain.core.BlockBuildingStrategy
-import net.postchain.core.BlockQueries
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.Network
-import net.postchain.core.TransactionEnqueuer
-import net.postchain.ebft.BaseBlockDatabase
-import net.postchain.ebft.BaseBlockManager
-import net.postchain.ebft.BaseBlockchainEngine
-import net.postchain.ebft.BaseStatusManager
-import net.postchain.ebft.BlockManager
-import net.postchain.ebft.BlockchainEngine
-import net.postchain.ebft.CommManager
-import net.postchain.ebft.SyncManager
-import net.postchain.ebft.makeCommManager
+import net.postchain.core.*
+import net.postchain.ebft.*
 import net.postchain.ebft.message.EbftMessage
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.PropertiesConfiguration
@@ -42,8 +30,8 @@ class PostchainNode {
     lateinit var statusManager: BaseStatusManager
     lateinit var commManager: CommManager<EbftMessage>
     lateinit var network: Network
-    lateinit var txQueue: BaseTransactionQueue
-    lateinit var txEnqueuer: TransactionEnqueuer
+    lateinit var txQueue: TransactionQueue
+    lateinit var txForwardingQueue: TransactionQueue
     lateinit var blockStrategy: BlockBuildingStrategy
     lateinit var engine: BlockchainEngine
     lateinit var blockDatabase: BaseBlockDatabase
@@ -99,8 +87,11 @@ class PostchainNode {
         val commConfiguration = BasePeerCommConfiguration(peerInfos, nodeIndex, SECP256K1CryptoSystem(), privKey)
         commManager = makeCommManager(commConfiguration)
 
-        txEnqueuer = NetworkAwareTxEnqueuer(txQueue, commManager, nodeIndex)
-
+        txForwardingQueue = NetworkAwareTxQueue(
+                txQueue,
+                commManager,
+                nodeIndex
+        )
         blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
 
         blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
@@ -108,7 +99,7 @@ class PostchainNode {
 
         val port = config.getInt("api.port", 7740)
         if (port != -1) {
-            model = PostchainModel(txEnqueuer, blockchainConfiguration.getTransactionFactory(),
+            model = PostchainModel(txForwardingQueue, blockchainConfiguration.getTransactionFactory(),
                     blockQueries as BaseBlockQueries)
             val basePath = config.getString("api.basepath", "")
             restApi = RestApi(model, port, basePath)

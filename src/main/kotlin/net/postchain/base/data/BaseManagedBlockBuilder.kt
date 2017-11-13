@@ -2,16 +2,17 @@
 
 package net.postchain.base.data
 
+import mu.KLogging
 import net.postchain.base.ManagedBlockBuilder
 import net.postchain.base.Storage
 import net.postchain.base.toHex
 import net.postchain.core.*
-import mu.KLogging
 
 class BaseManagedBlockBuilder(
         val ctxt: EContext,
         val s: Storage,
-        val bb: BlockBuilder
+        val bb: BlockBuilder,
+        val onCommit: (BlockBuilder)->Unit
 ) : ManagedBlockBuilder {
     companion object : KLogging()
 
@@ -33,14 +34,10 @@ class BaseManagedBlockBuilder(
     }
 
     override fun appendTransaction(tx: Transaction) {
-        throw ProgrammerMistake("appendTransaction is not allowed on a ManagedBlockBuilder")
+        runOp { bb.appendTransaction(tx) }
     }
 
-    override fun appendTransaction(txData: ByteArray) {
-        runOp({bb.appendTransaction(txData)})
-    }
-
-    override fun maybeAppendTransaction(tx: Transaction): Boolean {
+    override fun maybeAppendTransaction(tx: Transaction): UserMistake? {
         try {
             s.withSavepoint(ctxt) {
                 try {
@@ -51,9 +48,9 @@ class BaseManagedBlockBuilder(
                 }
             }
         } catch (userMistake: UserMistake) {
-            return false
+            return userMistake
         }
-        return true
+        return null
     }
 
     override fun finalizeBlock() {
@@ -77,6 +74,7 @@ class BaseManagedBlockBuilder(
         runOp { bb.commit(w) }
         closed = true
         s.closeWriteConnection(ctxt, true)
+        onCommit(bb)
     }
 
     override fun rollback() {

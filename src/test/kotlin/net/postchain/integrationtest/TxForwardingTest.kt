@@ -5,14 +5,8 @@ package net.postchain.integrationtest
 import net.postchain.PostchainNode
 import net.postchain.api.rest.ApiTx
 import net.postchain.base.toHex
-import net.postchain.core.BlockBuildingStrategy
-import net.postchain.core.BlockData
-import net.postchain.core.BlockQueries
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.TransactionQueue
-import net.postchain.ebft.EbftNode
+import net.postchain.core.*
 import net.postchain.ebft.EbftWithApiIntegrationTest
-import net.postchain.ebft.OnDemandBlockBuildingStrategy
 import org.apache.commons.configuration2.Configuration
 import org.junit.Assert
 import org.junit.Test
@@ -36,14 +30,12 @@ class TxForwardingTest: EbftWithApiIntegrationTest() {
         var committedHeight = -1
         val index = config.getInteger("testmyindex", -1)
         override fun shouldBuildBlock(): Boolean {
-            logger.debug { "Node $index shouldBuildBlock? ${txQueue.peekTransactions().size}" }
-            return txQueue.peekTransactions().size >= 3
+            logger.debug { "Node $index shouldBuildBlock? ${txQueue.getTransactionQueueSize()}" }
+            return txQueue.getTransactionQueueSize() >= 3
         }
 
         override fun blockCommitted(blockData: BlockData) {
             blocks.add(blockData)
-            val txFactory = blockchainConfiguration.getTransactionFactory()
-            txQueue.removeAll(blockData.transactions.map {txFactory.decodeTransaction(it)})
             logger.debug { "Node $index committed height ${blocks.size}" }
         }
 

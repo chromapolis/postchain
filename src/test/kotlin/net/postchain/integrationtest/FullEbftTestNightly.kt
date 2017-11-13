@@ -2,13 +2,12 @@
 
 package net.postchain.integrationtest
 
-import net.postchain.PostchainNode
-import net.postchain.ebft.EbftIntegrationTest
-import net.postchain.ebft.EbftNode
-import net.postchain.ebft.OnDemandBlockBuildingStrategy
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import mu.KLogging
+import net.postchain.PostchainNode
+import net.postchain.ebft.EbftIntegrationTest
+import net.postchain.ebft.OnDemandBlockBuildingStrategy
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -38,7 +37,7 @@ class FullEbftTestNightly : EbftIntegrationTest() {
         var statusManager = ebftNodes[0].statusManager
         for (i in 0 until blockCount) {
             for (tx in 0 until txPerBlock) {
-                ebftNodes[statusManager.primaryIndex()].txEnqueuer.enqueue(TestTransaction(txId++))
+                ebftNodes[statusManager.primaryIndex()].txQueue.enqueue(TestTransaction(txId++))
             }
             strat(ebftNodes[statusManager.primaryIndex()]).triggerBlock()
             ebftNodes.forEach { strat(it).awaitCommitted(i) }
