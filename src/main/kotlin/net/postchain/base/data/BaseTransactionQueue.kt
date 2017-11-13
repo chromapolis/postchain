@@ -18,11 +18,11 @@ class ComparableTransaction(val tx: Transaction) {
     }
 }
 
-val MAX_REJECTED = 10000
+val MAX_REJECTED = 1000
 
-class BaseTransactionQueue(): TransactionQueue {
+class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
 
-    val queue = LinkedBlockingQueue<ComparableTransaction>()
+    val queue = LinkedBlockingQueue<ComparableTransaction>(queueCapacity)
     val taken = mutableListOf<ComparableTransaction>()
     val rejects = object: LinkedHashMap<ByteArrayKey, Exception?>() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<ByteArrayKey, java.lang.Exception?>?): Boolean {
@@ -45,12 +45,16 @@ class BaseTransactionQueue(): TransactionQueue {
     }
 
     @Synchronized
-    override fun enqueue(tx: Transaction) {
+    override fun enqueue(tx: Transaction, wait: Boolean): Boolean {
         val comparableTx = ComparableTransaction(tx)
         if (!queue.contains(comparableTx)) {
             try {
                 if (tx.isCorrect()) {
-                    queue.offer(comparableTx)
+                    if (wait)
+                        queue.put(comparableTx)
+                    else
+                        queue.offer(comparableTx)
+                    return true
                 } else {
                     rejectTransaction(tx, null)
                 }
@@ -58,6 +62,7 @@ class BaseTransactionQueue(): TransactionQueue {
                 rejectTransaction(tx, e)
             }
         }
+        return false
     }
 
     @Synchronized

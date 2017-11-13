@@ -132,7 +132,7 @@ interface TransactionFactory {
 
 interface TransactionQueue {
     fun takeTransaction(): Transaction?
-    fun enqueue(tx: Transaction)
+    fun enqueue(tx: Transaction, wait: Boolean = true): Boolean
     fun getTransactionStatus(txHash: ByteArray): TransactionStatus
     fun getTransactionQueueSize(): Int
     fun removeAll(transactionsToRemove: Collection<Transaction>)
