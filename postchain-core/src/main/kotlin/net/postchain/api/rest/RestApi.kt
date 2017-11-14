@@ -2,6 +2,8 @@
 
 package net.postchain.api.rest
 
+import com.google.gson.*
+import mu.KLogging
 import net.postchain.base.ConfirmationProof
 import net.postchain.base.Side
 import net.postchain.base.hexStringToByteArray
@@ -9,13 +11,12 @@ import net.postchain.base.toHex
 import net.postchain.core.MultiSigBlockWitness
 import net.postchain.core.TransactionStatus
 import net.postchain.core.UserMistake
-import com.google.gson.*
-import mu.KLogging
 import spark.Request
 import spark.Service
 import java.lang.reflect.Type
 import java.util.*
 
+class OverloadedException(message: String): Exception(message)
 
 class RestApi(private val model: Model, private val listenPort: Int, private val basePath: String) {
     val http = Service.ignite()!!
@@ -81,6 +82,10 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
         http.exception(UserMistake::class.java) { e, _, res ->
             logger.error("UserMistake:", e)
             res.status(400)
+            res.body(error(e))
+        }
+        http.exception(OverloadedException::class.java) { e, _, res ->
+            res.status(503) // Service unavailable
             res.body(error(e))
         }
         http.exception(Exception::class.java) { e, _, res ->

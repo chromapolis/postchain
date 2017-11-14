@@ -46,7 +46,7 @@ class PostchainNode {
                     break
                 }
                 syncManager.update()
-                Thread.sleep(100)
+                Thread.sleep(50)
             }
         }
     }
@@ -74,8 +74,9 @@ class PostchainNode {
         blockQueries = blockchainConfiguration.makeBlockQueries(storage)
         peerInfos = createPeerInfos(config)
         txQueue = BaseTransactionQueue()
+        blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
         engine = BaseBlockchainEngine(blockchainConfiguration, storage,
-                chainId, txQueue)
+                chainId, txQueue, blockStrategy)
 
         engine.initializeDB()
 
@@ -92,7 +93,7 @@ class PostchainNode {
                 commManager,
                 nodeIndex
         )
-        blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
+
 
         blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
         blockManager = BaseBlockManager(blockDatabase, statusManager, blockStrategy)

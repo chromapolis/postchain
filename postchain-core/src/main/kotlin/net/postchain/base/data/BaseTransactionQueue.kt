@@ -45,16 +45,12 @@ class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
     }
 
     @Synchronized
-    override fun enqueue(tx: Transaction, wait: Boolean): Boolean {
+    override fun enqueue(tx: Transaction): Boolean {
         val comparableTx = ComparableTransaction(tx)
         if (!queue.contains(comparableTx)) {
             try {
                 if (tx.isCorrect()) {
-                    if (wait)
-                        queue.put(comparableTx)
-                    else
-                        queue.offer(comparableTx)
-                    return true
+                    return queue.offer(comparableTx)
                 } else {
                     rejectTransaction(tx, null)
                 }
@@ -71,7 +67,7 @@ class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
             return TransactionStatus.WAITING
         } else if (taken.find({it.tx.getRID().contentEquals(txHash)}) != null) {
             return TransactionStatus.WAITING
-        } else if (ByteArrayKey(txHash) in rejects){
+        } else if (ByteArrayKey(txHash) in rejects) {
             return TransactionStatus.REJECTED
         } else
             return TransactionStatus.UNKNOWN

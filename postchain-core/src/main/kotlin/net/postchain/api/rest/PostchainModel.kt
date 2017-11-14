@@ -20,7 +20,8 @@ open class PostchainModel(
         if (!decodedTransaction.isCorrect()) {
             throw UserMistake("Transaction ${decodedTransaction.getRID()} is not correct")
         }
-        txQueue.enqueue(decodedTransaction)
+        if (!txQueue.enqueue(decodedTransaction))
+            throw OverloadedException("Transaction queue is full")
     }
 
     override fun getTransaction(txRID: TxRID): ApiTx? {

@@ -5,6 +5,7 @@ package net.postchain.integrationtest
 import net.postchain.PostchainNode
 import net.postchain.api.rest.ApiTx
 import net.postchain.base.toHex
+import net.postchain.core.BlockBuilder
 import net.postchain.core.BlockBuildingStrategy
 import net.postchain.core.BlockData
 import net.postchain.core.BlockQueries
@@ -36,6 +37,10 @@ class TxForwardingTest: EbftWithApiIntegrationTest() {
         override fun shouldBuildBlock(): Boolean {
             logger.debug { "Node $index shouldBuildBlock? ${txQueue.getTransactionQueueSize()}" }
             return txQueue.getTransactionQueueSize() >= 3
+        }
+
+        override fun shouldStopBuildingBlock(bb: BlockBuilder): Boolean {
+            return false
         }
 
         override fun blockCommitted(blockData: BlockData) {

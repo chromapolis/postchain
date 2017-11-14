@@ -2,6 +2,7 @@
 
 package net.postchain.base.data
 
+import net.postchain.base.BaseBlockBuildingStrategy
 import net.postchain.base.BaseBlockHeader
 import net.postchain.base.BaseBlockQueries
 import net.postchain.base.BaseBlockWitness
@@ -87,50 +88,3 @@ open class BaseBlockchainConfiguration(final override val chainID: Long,
     }
 }
 
-class BaseBlockBuildingStrategy(val config: Configuration,
-                                val blockchainConfiguration: BlockchainConfiguration,
-                                blockQueries: BlockQueries,
-                                private val txQueue: TransactionQueue): BlockBuildingStrategy {
-    private var lastBlockTime: Long
-    private var lastTxTime = System.currentTimeMillis()
-    private var lastTxSize = 0
-    private val maxBlockTime = config.getLong("basestrategy.maxblocktime", 30000)
-    private val blockDelay = config.getLong("basestrategy.blockdelay", 1000)
-    private val enqueueLocally = false
-    init {
-        val height = blockQueries.getBestHeight().get()
-        if (height == -1L) {
-            lastBlockTime = System.currentTimeMillis()
-        } else {
-            val blockRID = blockQueries.getBlockRids(height).get()[0]
-            lastBlockTime = (blockQueries.getBlockHeader(blockRID).get() as BaseBlockHeader).timestamp
-        }
-    }
-
-    override fun blockCommitted(blockData: BlockData) {
-        lastBlockTime = (blockData.header as BaseBlockHeader).timestamp
-    }
-
-    override fun shouldBuildBlock(): Boolean {
-        if (System.currentTimeMillis() - lastBlockTime > maxBlockTime) {
-            lastTxSize = 0
-            lastTxTime = System.currentTimeMillis()
-            return true
-        }
-        val transactionQueueSize = txQueue.getTransactionQueueSize()
-        if (transactionQueueSize > 0) {
-            if (transactionQueueSize == lastTxSize && lastTxTime + blockDelay < System.currentTimeMillis()) {
-                lastTxSize = 0
-                lastTxTime = System.currentTimeMillis()
-                return true
-            }
-            if (transactionQueueSize > lastTxSize) {
-                lastTxTime = System.currentTimeMillis()
-                lastTxSize = transactionQueueSize
-            }
-            return false
-        }
-        return false
-    }
-
-}
