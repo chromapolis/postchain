@@ -1,11 +1,14 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.ebft
+package net.postchain.test.ebft
 
 import mu.KLogging
 import net.postchain.base.PeerCommConfiguration
-import net.postchain.base.test.IntegrationTest
+import net.postchain.test.IntegrationTest
 import net.postchain.core.UserMistake
+import net.postchain.ebft.CommManager
+import net.postchain.ebft.PacketConverter
+import net.postchain.ebft.PeerConnection
 import net.postchain.parseInt
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -129,13 +132,13 @@ class CommManagerTest : IntegrationTest() {
         commManagers = peerCommConfigurations.map { makeCommManager(it) }
     }
 
-    private fun makeCommManager(pc: PeerCommConfiguration): CommManager<CommManagerTest.DummyMessage> {
+    private fun makeCommManager(pc: PeerCommConfiguration): CommManager<DummyMessage> {
         val peerInfo = pc.peerInfo
-        return CommManager<CommManagerTest.DummyMessage>(
+        return CommManager<DummyMessage>(
                 pc.myIndex,
                 peerInfo,
                 DummyPacketConverter(pc.myIndex),
-                { handleError(it)}
+                { handleError(it) }
         )
     }
 

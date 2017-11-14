@@ -1,11 +1,15 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.ebft
+package net.postchain.test.ebft
 
 import mu.KLogging
 import net.postchain.PostchainNode
-import net.postchain.base.test.IntegrationTest
+import net.postchain.test.IntegrationTest
 import net.postchain.core.*
+import net.postchain.ebft.BaseBlockDatabase
+import net.postchain.ebft.BaseStatusManager
+import net.postchain.ebft.BlockManager
+import net.postchain.ebft.SyncManager
 import org.apache.commons.configuration2.Configuration
 import org.junit.After
 import java.util.concurrent.LinkedBlockingQueue

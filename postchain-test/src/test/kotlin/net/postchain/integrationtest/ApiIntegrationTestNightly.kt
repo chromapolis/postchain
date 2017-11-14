@@ -2,22 +2,18 @@
 
 package net.postchain.integrationtest
 
-import net.postchain.api.RestTools
-import net.postchain.api.TestResponse
-import net.postchain.api.rest.PostchainModel
-import net.postchain.api.rest.RestApi
+import net.postchain.common.RestTools
+import net.postchain.common.TestResponse
 import net.postchain.base.*
 import net.postchain.core.Signature
 import net.postchain.core.Transaction
-import net.postchain.ebft.EbftIntegrationTest
-import net.postchain.ebft.EbftWithApiIntegrationTest
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
 import com.google.gson.reflect.TypeToken
-import org.junit.After
+import net.postchain.test.ebft.EbftIntegrationTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -120,7 +116,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     }
 
     private fun awaitConfirmed(tx: Transaction) {
-        restTools.awaitConfirmed(ebftNodes[0].restApi!!.actualPort(), tx)
+        restTools.awaitConfirmed(ebftNodes[0].restApi!!.actualPort(), tx.getRID().toHex())
     }
 
     private fun testStatusGet(path: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {

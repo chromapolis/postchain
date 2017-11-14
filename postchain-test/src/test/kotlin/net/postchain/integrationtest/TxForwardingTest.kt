@@ -10,9 +10,7 @@ import net.postchain.core.BlockData
 import net.postchain.core.BlockQueries
 import net.postchain.core.BlockchainConfiguration
 import net.postchain.core.TransactionQueue
-import net.postchain.ebft.EbftNode
-import net.postchain.ebft.EbftWithApiIntegrationTest
-import net.postchain.ebft.OnDemandBlockBuildingStrategy
+import net.postchain.test.ebft.EbftWithApiIntegrationTest
 import org.apache.commons.configuration2.Configuration
 import org.junit.Assert
 import org.junit.Test

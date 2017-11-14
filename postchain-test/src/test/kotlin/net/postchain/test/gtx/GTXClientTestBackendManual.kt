@@ -1,10 +1,10 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.gtx
+package net.postchain.test.gtx
 
 import net.postchain.configurations.GTXTestModule
 import net.postchain.configurations.SingleNodeGtxBlockchainConfigurationFactory
-import net.postchain.ebft.EbftWithApiIntegrationTest
+import net.postchain.test.ebft.EbftWithApiIntegrationTest
 import org.junit.Test
 
 class GTXClientTestBackendManual: EbftWithApiIntegrationTest() {

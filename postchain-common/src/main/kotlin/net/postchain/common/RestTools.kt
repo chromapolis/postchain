@@ -1,18 +1,13 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.api
+package net.postchain.common
 
-import net.postchain.base.toHex
-import net.postchain.core.Transaction
 import com.google.gson.Gson
-import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
-import org.junit.Assert
-import org.junit.Assert.assertEquals
-import org.junit.Assert.fail
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
+import java.lang.RuntimeException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -34,8 +29,7 @@ open class RestTools {
             return readResponse(connection)
         } catch (e: IOException) {
             e.printStackTrace()
-            fail("Sending request failed: " + e.message)
-            throw Error()
+            throw RuntimeException("Sending request failed: " + e.message)
         }
     }
 
@@ -50,25 +44,19 @@ open class RestTools {
             return readResponse(connection)
         } catch (e: IOException) {
             e.printStackTrace()
-            fail("Sending request failed: " + e.message)
-            return null
+            throw RuntimeException("Sending request failed: " + e.message)
         }
-    }
-
-    fun assertJsonEquals(expectedJson: String, actual: String) {
-        val parser = JsonParser()
-        assertEquals(parser.parse(expectedJson), parser.parse(actual))
     }
 
     val mapType = object : TypeToken<Map<String, Any>>() {}.type
 
-    fun awaitConfirmed(port: Int, tx: Transaction) {
+    fun awaitConfirmed(port: Int, txRidHex: String) {
         do {
-            val response = get(port, "/tx/${tx.getRID().toHex()}/status")
-            if (response == null) throw Error()
-            assertEquals(200, response.code)
+            val response = get(port, "/tx/${txRidHex}/status")
+            if (response == null) throw RuntimeException()
+            if (response.code != 200) throw RuntimeException()
             val resultMap: Map<String, Any> = Gson().fromJson(response.body, mapType)
-            Assert.assertTrue(resultMap.containsKey("status"))
+            if (!resultMap.containsKey("status")) throw RuntimeException()
             Thread.sleep(100)
         } while (resultMap.get("status") != "confirmed")
     }

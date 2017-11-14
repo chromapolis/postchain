@@ -4,9 +4,9 @@ package net.postchain.api
 
 import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.base.toHex
+import net.postchain.common.RestTools
 import net.postchain.configurations.GTXTestModule
 import net.postchain.gtx.*
-import org.junit.Test
 import org.junit.Assert.*
 import java.util.Random
 
@@ -37,6 +37,6 @@ class RestApiTestManual {
         assertEquals(200, response2!!.code)
 
         val transaction = GTXTransactionFactory(EMPTY_SIGNATURE, GTXTestModule(), cryptoSystem).decodeTransaction(txBytes)
-        restTools.awaitConfirmed(port, transaction)
+        restTools.awaitConfirmed(port, transaction.getRID().toHex())
     }
 }

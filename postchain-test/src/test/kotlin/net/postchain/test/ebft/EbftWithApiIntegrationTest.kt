@@ -1,6 +1,6 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.ebft
+package net.postchain.test.ebft
 
 import net.postchain.api.rest.PostchainModel
 import net.postchain.api.rest.RestApi

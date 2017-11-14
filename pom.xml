@@ -9,6 +9,7 @@
     <artifactId>postchain</artifactId>
     <version>1.0-SNAPSHOT</version>
     <modules>
+        <module>postchain-common</module>
         <module>postchain-core</module>
         <module>postchain-test</module>
     </modules>

@@ -1,8 +1,8 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.base
+package net.postchain.test.base
 
-import net.postchain.base.test.IntegrationTest
+import net.postchain.test.IntegrationTest
 import net.postchain.core.*
 import org.junit.Assert.*
 import org.junit.Test

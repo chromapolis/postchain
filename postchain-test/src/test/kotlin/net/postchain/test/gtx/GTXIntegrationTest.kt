@@ -1,36 +1,53 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.gtx
+package net.postchain.test.gtx
 
-import net.postchain.base.test.IntegrationTest
+import net.postchain.base.SECP256K1CryptoSystem
+import net.postchain.base.hexStringToByteArray
+import net.postchain.test.IntegrationTest
 import net.postchain.base.toHex
 import net.postchain.configurations.GTXTestModule
 import net.postchain.core.Transaction
+import net.postchain.gtx.GTXBlockchainConfigurationFactory
+import net.postchain.gtx.GTXDataBuilder
+import net.postchain.gtx.GTXNull
+import net.postchain.gtx.StandardOpsGTXModule
+import net.postchain.gtx.gtx
 import org.junit.Assert
 import org.junit.Test
 
-
-fun makeTestTx(id: Long, value: String): ByteArray {
-    val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(0)), myCS)
-    b.addOperation("gtx_test", arrayOf(gtx(id), gtx(value)))
-    b.finish()
-    b.sign(myCS.makeSigner(pubKey(0), privKey(0)))
-    return b.serialize()
-}
-
-fun makeTimeBTx(from: Long, to: Long?): ByteArray {
-    val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(0)), myCS)
-    b.addOperation("timeb", arrayOf(
-            gtx(from),
-            if (to != null) gtx(to) else GTXNull
-    ))
-    b.finish()
-    b.sign(myCS.makeSigner(pubKey(0), privKey(0)))
-    return b.serialize()
-}
+val testBlockchainRID = "78967baa4768cbcef11c508326ffb13a956689fcb6dc3ba17f4b895cbb1577a3".hexStringToByteArray()
+val myCS = SECP256K1CryptoSystem()
 
 
 class GTXIntegrationTest: IntegrationTest() {
+
+    fun makeNOPGTX(): ByteArray {
+        val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(0)), myCS)
+        b.addOperation("nop", arrayOf(gtx(42)))
+        b.finish()
+        b.sign(myCS.makeSigner(pubKey(0), privKey(0)))
+        return b.serialize()
+    }
+
+    fun makeTestTx(id: Long, value: String): ByteArray {
+        val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(0)), myCS)
+        b.addOperation("gtx_test", arrayOf(gtx(id), gtx(value)))
+        b.finish()
+        b.sign(myCS.makeSigner(pubKey(0), privKey(0)))
+        return b.serialize()
+    }
+
+    fun makeTimeBTx(from: Long, to: Long?): ByteArray {
+        val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(0)), myCS)
+        b.addOperation("timeb", arrayOf(
+                gtx(from),
+                if (to != null) gtx(to) else GTXNull
+        ))
+        b.finish()
+        b.sign(myCS.makeSigner(pubKey(0), privKey(0)))
+        return b.serialize()
+    }
 
     @Test
     fun testBuildBlock() {

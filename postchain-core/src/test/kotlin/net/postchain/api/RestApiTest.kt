@@ -2,17 +2,30 @@
 
 package net.postchain.api
 
-import net.postchain.api.rest.*
-import net.postchain.base.hexStringToByteArray
-import net.postchain.base.toHex
-import net.postchain.core.ProgrammerMistake
-import net.postchain.core.UserMistake
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import mu.KLogging
-import org.easymock.EasyMock.*
+import net.postchain.api.rest.ApiTx
+import net.postchain.api.rest.Model
+import net.postchain.api.rest.Query
+import net.postchain.api.rest.QueryResult
+import net.postchain.api.rest.RestApi
+import net.postchain.api.rest.TxRID
+import net.postchain.base.hexStringToByteArray
+import net.postchain.base.toHex
+import net.postchain.common.RestTools
+import net.postchain.common.TestResponse
+import net.postchain.core.ProgrammerMistake
+import net.postchain.core.UserMistake
+import org.easymock.EasyMock.createMock
+import org.easymock.EasyMock.expect
+import org.easymock.EasyMock.replay
+import org.easymock.EasyMock.verify
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -203,6 +216,11 @@ class RestApiTest : RestTools() {
 
     private fun get(path: String): TestResponse? {
         return super.get(restApi.actualPort(), basePath + path)
+    }
+
+    fun assertJsonEquals(expectedJson: String, actual: String) {
+        val parser = JsonParser()
+        assertEquals(parser.parse(expectedJson), parser.parse(actual))
     }
 }
 

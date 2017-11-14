@@ -1,6 +1,6 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.base.test
+package net.postchain.test
 
 import mu.KLogging
 import net.postchain.base.BaseBlockQueries

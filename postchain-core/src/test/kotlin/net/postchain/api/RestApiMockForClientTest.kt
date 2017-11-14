@@ -10,6 +10,7 @@ import net.postchain.core.ProgrammerMistake
 import net.postchain.core.TransactionStatus
 import net.postchain.core.UserMistake
 import mu.KLogging
+import net.postchain.common.RestTools
 import org.junit.After
 import org.junit.Test
 
