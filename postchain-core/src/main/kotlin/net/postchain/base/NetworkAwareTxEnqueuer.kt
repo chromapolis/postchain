@@ -2,21 +2,19 @@
 
 package net.postchain.base
 
-import net.postchain.core.Transaction
-import net.postchain.core.TransactionEnqueuer
+import mu.KLogging
+import net.postchain.core.TransactionQueue
 import net.postchain.ebft.CommManager
 import net.postchain.ebft.message.EbftMessage
-import mu.KLogging
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 
-class NetworkAwareTxEnqueuer(private val te: TransactionEnqueuer, private val network: CommManager<EbftMessage>, private val nodeIndex: Int) : TransactionEnqueuer by te {
+class NetworkAwareTxQueue(
+        private val queue: TransactionQueue,
+        private val network: CommManager<EbftMessage>, private val nodeIndex: Int)
+    : TransactionQueue by queue {
+
     companion object : KLogging()
 
-    override fun enqueue(tx: net.postchain.core.Transaction) {
-
-        /*
+    /*
 These are the cases to take care of:
 
 1. I'm currently primary and haven't done buildBlock() yet
@@ -43,18 +41,24 @@ I ended up opting for this solution instead:
 This has a few drawbacks:
 
 * DoS attacks becomes easy. Correct (isCorrect() == true) transactions that will fail during
-  apply(), can be created en-masse to fill up the "mempools". We have no way to control
-  this but to throttle rate of incoming transactions prior to queueing.
+apply(), can be created en-masse to fill up the "mempools". We have no way to control
+this but to throttle rate of incoming transactions prior to queueing.
 * High bandwith requirement
 
 Despite these drawbacks, I think this is the way to go for now. I haven't found another model
 where we are guaranteed not to drop transactions.
-         */
+ */
+
+    override fun enqueue(tx: net.postchain.core.Transaction, wait: Boolean): Boolean {
         val rid = tx.getRID().toHex()
         logger.debug("Node ${nodeIndex} enqueueing tx ${rid}")
-        te.enqueue(tx)
-        logger.debug("Node ${nodeIndex} broadcasting tx ${rid}")
-        network.broadcastPacket(net.postchain.ebft.message.Transaction(tx.getRawData()))
-        logger.debug("Node ${nodeIndex} Enqueueing tx ${rid} Done")
+        if (queue.enqueue(tx, wait)) {
+            logger.debug("Node ${nodeIndex} broadcasting tx ${rid}")
+            network.broadcastPacket(net.postchain.ebft.message.Transaction(tx.getRawData()))
+            logger.debug("Node ${nodeIndex} Enqueueing tx ${rid} Done")
+            return true
+        }
+        else
+            return false
     }
 }

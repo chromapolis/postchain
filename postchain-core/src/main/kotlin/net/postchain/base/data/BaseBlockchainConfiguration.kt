@@ -109,8 +109,6 @@ class BaseBlockBuildingStrategy(val config: Configuration,
 
     override fun blockCommitted(blockData: BlockData) {
         lastBlockTime = (blockData.header as BaseBlockHeader).timestamp
-        val txFactory = blockchainConfiguration.getTransactionFactory()
-        txQueue.removeAll(blockData.transactions.map {txFactory.decodeTransaction(it)})
     }
 
     override fun shouldBuildBlock(): Boolean {
@@ -119,16 +117,16 @@ class BaseBlockBuildingStrategy(val config: Configuration,
             lastTxTime = System.currentTimeMillis()
             return true
         }
-        val peekTransactions = txQueue.peekTransactions()
-        if (peekTransactions.size > 0) {
-            if (peekTransactions.size == lastTxSize && lastTxTime + blockDelay < System.currentTimeMillis()) {
+        val transactionQueueSize = txQueue.getTransactionQueueSize()
+        if (transactionQueueSize > 0) {
+            if (transactionQueueSize == lastTxSize && lastTxTime + blockDelay < System.currentTimeMillis()) {
                 lastTxSize = 0
                 lastTxTime = System.currentTimeMillis()
                 return true
             }
-            if (peekTransactions.size > lastTxSize) {
+            if (transactionQueueSize > lastTxSize) {
                 lastTxTime = System.currentTimeMillis()
-                lastTxSize = peekTransactions.size
+                lastTxSize = transactionQueueSize
             }
             return false
         }

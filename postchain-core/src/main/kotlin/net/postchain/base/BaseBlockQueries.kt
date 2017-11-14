@@ -2,8 +2,8 @@
 
 package net.postchain.base
 
-import net.postchain.core.*
 import mu.KLogging
+import net.postchain.core.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
@@ -33,10 +33,8 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
             val witnessData = blockStore.getWitnessData(ctx, blockRID)
             val witness = blockchainConfiguration.decodeWitness(witnessData) as MultiSigBlockWitness
             val signature = witness.getSignatures().find { it.subjectID.contentEquals(mySubjectId) }
-            if (signature == null) {
-                throw UserMistake("Trying to get a signature from a node that doesn't have one")
-            }
-            signature!!
+            signature ?:
+                    throw UserMistake("Trying to get a signature from a node that doesn't have one")
         })
     }
 

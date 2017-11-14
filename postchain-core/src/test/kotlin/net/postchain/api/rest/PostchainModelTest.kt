@@ -7,10 +7,10 @@ import org.junit.Test
 class PostchainModelTest {
     @Test
     fun postTransaction() {
-//        val txEnqueuer = EasyMock.mock(TransactionEnqueuer::class.java)
+//        val txQueue = EasyMock.mock(TransactionEnqueuer::class.java)
 //        val txFactory = EasyMock.mock(TransactionFactory::class.java)
 //        val blockQueries = EasyMock.mock(BlockQueries::class.java)
-//        val SUT = PostchainModel(txEnqueuer, txFactory, blockQueries)
+//        val SUT = PostchainModel(txQueue, txFactory, blockQueries)
 //        txFactory.
 //        val tx = ApiTx(IntegrationTest.TestTransaction(1))
 //        SUT.postTransaction(tx)

@@ -2,24 +2,11 @@
 
 package net.postchain.ebft
 
-import net.postchain.core.BlockData
-import net.postchain.core.BlockDataWithWitness
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.ProgrammerMistake
-import net.postchain.core.Signature
-import net.postchain.core.TransactionEnqueuer
-import net.postchain.core.UserMistake
-import net.postchain.ebft.message.BlockSignature
-import net.postchain.ebft.message.CompleteBlock
-import net.postchain.ebft.message.GetBlockAtHeight
-import net.postchain.ebft.message.GetBlockSignature
-import net.postchain.ebft.message.GetUnfinishedBlock
-import net.postchain.ebft.message.EbftMessage
-import net.postchain.ebft.message.Status
-import net.postchain.ebft.message.Transaction
-import net.postchain.ebft.message.UnfinishedBlock
 import mu.KLogging
-import java.util.Date
+import net.postchain.core.*
+import net.postchain.ebft.message.*
+import net.postchain.ebft.message.Transaction
+import java.util.*
 
 fun decodeBlockDataWithWitness(block: CompleteBlock, bc: BlockchainConfiguration)
         : BlockDataWithWitness {
@@ -83,7 +70,7 @@ class SyncManager(
         val blockManager: BlockManager,
         val blockDatabase: BlockDatabase,
         val commManager: CommManager<EbftMessage>,
-        private val txEnqueuer: TransactionEnqueuer,
+        private val txQueue: TransactionQueue,
         val blockchainConfiguration: BlockchainConfiguration
 ) {
     private val revoltTracker = RevoltTracker(60000, statusManager)
@@ -141,7 +128,7 @@ class SyncManager(
         if (!tx.isCorrect()) {
             throw UserMistake("Transaction ${tx.getRID()} is not correct")
         }
-        txEnqueuer.enqueue(tx)
+        txQueue.enqueue(tx)
     }
 
     private fun sendBlockSignature(nodeIndex: Int, blockRID: ByteArray) {

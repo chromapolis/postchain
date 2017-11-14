@@ -58,8 +58,6 @@ class OnDemandBlockBuildingStrategy(config: Configuration,
 
     override fun blockCommitted(blockData: BlockData) {
         blocks.add(blockData)
-        val txFactory = blockchainConfiguration.getTransactionFactory()
-        txQueue.removeAll(blockData.transactions.map {txFactory.decodeTransaction(it)})
     }
 
     fun awaitCommitted(blockHeight: Int) {

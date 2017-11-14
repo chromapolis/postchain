@@ -37,7 +37,7 @@ class FullEbftTestNightly : EbftIntegrationTest() {
         var statusManager = ebftNodes[0].statusManager
         for (i in 0 until blockCount) {
             for (tx in 0 until txPerBlock) {
-                ebftNodes[statusManager.primaryIndex()].txEnqueuer.enqueue(TestTransaction(txId++))
+                ebftNodes[statusManager.primaryIndex()].txQueue.enqueue(TestTransaction(txId++))
             }
             strat(ebftNodes[statusManager.primaryIndex()]).triggerBlock()
             ebftNodes.forEach { strat(it).awaitCommitted(i) }

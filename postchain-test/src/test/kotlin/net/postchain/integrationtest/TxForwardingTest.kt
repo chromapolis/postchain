@@ -34,14 +34,12 @@ class TxForwardingTest: EbftWithApiIntegrationTest() {
         var committedHeight = -1
         val index = config.getInteger("testmyindex", -1)
         override fun shouldBuildBlock(): Boolean {
-            logger.debug { "Node $index shouldBuildBlock? ${txQueue.peekTransactions().size}" }
-            return txQueue.peekTransactions().size >= 3
+            logger.debug { "Node $index shouldBuildBlock? ${txQueue.getTransactionQueueSize()}" }
+            return txQueue.getTransactionQueueSize() >= 3
         }
 
         override fun blockCommitted(blockData: BlockData) {
             blocks.add(blockData)
-            val txFactory = blockchainConfiguration.getTransactionFactory()
-            txQueue.removeAll(blockData.transactions.map {txFactory.decodeTransaction(it)})
             logger.debug { "Node $index committed height ${blocks.size}" }
         }
 
