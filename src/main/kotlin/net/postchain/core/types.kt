@@ -104,6 +104,7 @@ interface Transaction : Transactor {
 interface BlockBuildingStrategy {
     fun shouldBuildBlock(): Boolean
     fun blockCommitted(blockData: BlockData)
+    fun shouldStopBuildingBlock(bb: BlockBuilder): Boolean
 }
 
 // BlockchainConfiguration is a stateless objects which describes
@@ -132,7 +133,7 @@ interface TransactionFactory {
 
 interface TransactionQueue {
     fun takeTransaction(): Transaction?
-    fun enqueue(tx: Transaction, wait: Boolean = true): Boolean
+    fun enqueue(tx: Transaction): Boolean
     fun getTransactionStatus(txHash: ByteArray): TransactionStatus
     fun getTransactionQueueSize(): Int
     fun removeAll(transactionsToRemove: Collection<Transaction>)

@@ -197,22 +197,21 @@ open class IntegrationTest {
     protected fun createDataLayer(nodeIndex: Int, nodeCount: Int = 1): DataLayer {
 
         val config = createConfig(nodeIndex, nodeCount)
-        //config.getKeys().forEach { logger.debug("$it = ${config.getString(it)}") }
-        //logger.debug { config.getProperties("") }
         val chainId = config.getLong("activechainids")
-
         val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
-
         val storage = baseStorage(config, nodeIndex)
-
         val txQueue = BaseTransactionQueue()
+        val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
+        val strategy = OnDemandBlockBuildingStrategy(config,
+                blockchainConfiguration,
+                blockQueries, txQueue)
+
 
         val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
-                chainId, txQueue)
+                chainId, txQueue, strategy
+        )
 
         engine.initializeDB()
-
-        val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
         val node = DataLayer(engine,
                 txQueue,

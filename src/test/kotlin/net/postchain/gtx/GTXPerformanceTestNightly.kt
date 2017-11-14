@@ -2,17 +2,7 @@
 
 package net.postchain.gtx
 
-import junitparams.JUnitParamsRunner
-import junitparams.Parameters
-import mu.KLogging
-import net.postchain.PostchainNode
-import net.postchain.configurations.GTXTestModule
-import net.postchain.ebft.EbftIntegrationTest
-import net.postchain.ebft.OnDemandBlockBuildingStrategy
-import org.junit.Test
-import org.junit.runner.RunWith
-import kotlin.system.measureNanoTime
-
+/*
 @RunWith(JUnitParamsRunner::class)
 class GTXPerformanceTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
@@ -25,9 +15,9 @@ class GTXPerformanceTestNightly : EbftIntegrationTest() {
 
     @Test
     @Parameters(
-            "3, 100", "4, 100", "10, 100",
-            "4, 1000", "10, 1000",
-            "4, 10", "10, 10", "16, 10"
+            //"3, 100", "4, 100", "10, 100",
+            "4, 2000"//, "10, 1000",
+            //"4, 10", "10, 10", "16, 10"
     )
     fun runXNodesWithYTxPerBlock(nodeCount: Int, txPerBlock: Int) {
         val blockCount = 2
@@ -55,4 +45,4 @@ class GTXPerformanceTestNightly : EbftIntegrationTest() {
         }
     }
 
-}
+}*/

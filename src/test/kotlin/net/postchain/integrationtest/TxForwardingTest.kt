@@ -34,6 +34,10 @@ class TxForwardingTest: EbftWithApiIntegrationTest() {
             return txQueue.getTransactionQueueSize() >= 3
         }
 
+        override fun shouldStopBuildingBlock(bb: BlockBuilder): Boolean {
+            return false
+        }
+
         override fun blockCommitted(blockData: BlockData) {
             blocks.add(blockData)
             logger.debug { "Node $index committed height ${blocks.size}" }

@@ -5,10 +5,8 @@ package net.postchain.ebft
 import mu.KLogging
 import net.postchain.PostchainNode
 import net.postchain.base.test.IntegrationTest
-import net.postchain.core.*
-import org.apache.commons.configuration2.Configuration
+import net.postchain.core.BlockBuildingStrategy
 import org.junit.After
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
@@ -33,34 +31,6 @@ open class EbftIntegrationTest : IntegrationTest() {
             it.stop()
         }
         ebftNodes = arrayOf()
-    }
-}
-
-@Suppress("UNUSED_PARAMETER")
-class OnDemandBlockBuildingStrategy(config: Configuration,
-                                    val blockchainConfiguration: BlockchainConfiguration,
-                                    blockQueries: BlockQueries, val txQueue: TransactionQueue)
-    : BlockBuildingStrategy {
-    val triggerBlock = AtomicBoolean(false)
-    val blocks = LinkedBlockingQueue<BlockData>()
-    var committedHeight = -1
-    override fun shouldBuildBlock(): Boolean {
-        return triggerBlock.getAndSet(false)
-    }
-
-    fun triggerBlock() {
-        triggerBlock.set(true)
-    }
-
-    override fun blockCommitted(blockData: BlockData) {
-        blocks.add(blockData)
-    }
-
-    fun awaitCommitted(blockHeight: Int) {
-        while (committedHeight < blockHeight) {
-            blocks.take()
-            committedHeight++
-        }
     }
 }
 
