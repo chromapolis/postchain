@@ -11,8 +11,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.postchain</groupId>
-    <artifactId>postchain-test</artifactId>
-    <name>Postchain Test</name>
+    <artifactId>postchain-devtools</artifactId>
+    <name>Postchain Dev Tools</name>
 
     <dependencies>
         <dependency>

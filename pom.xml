@@ -10,8 +10,8 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>postchain-common</module>
-        <module>postchain-core</module>
-        <module>postchain-test</module>
+        <module>postchain-base</module>
+        <module>postchain-devtools</module>
     </modules>
     <packaging>pom</packaging>
 

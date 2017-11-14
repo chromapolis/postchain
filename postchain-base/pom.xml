@@ -10,12 +10,12 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <groupId>net.postchain</groupId>
-    <artifactId>postchain-core</artifactId>
+    <artifactId>postchain-base</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
-    <name>Postchain Core</name>
+    <name>Postchain Base</name>
     <url>http://postchain.org</url>
     <properties>
         <main-class>net.postchain.PostchainNodeKt</main-class>
