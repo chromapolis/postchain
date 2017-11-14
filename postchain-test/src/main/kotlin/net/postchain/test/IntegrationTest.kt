@@ -3,13 +3,13 @@
 package net.postchain.test
 
 import mu.KLogging
+import net.postchain.DataLayer
 import net.postchain.base.BaseBlockQueries
 import net.postchain.base.BaseBlockchainEngine
 import net.postchain.base.BasePeerCommConfiguration
 import net.postchain.base.DynamicPortPeerInfo
 import net.postchain.base.PeerInfo
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.base.Storage
 import net.postchain.base.data.BaseBlockchainConfiguration
 import net.postchain.base.data.BaseTransactionQueue
 import net.postchain.base.secp256k1_derivePubKey
@@ -22,9 +22,9 @@ import net.postchain.core.BlockchainConfigurationFactory
 import net.postchain.core.MultiSigBlockWitnessBuilder
 import net.postchain.core.Transaction
 import net.postchain.core.TransactionFactory
-import net.postchain.core.TransactionQueue
 import net.postchain.core.TxEContext
 import net.postchain.core.UserMistake
+import net.postchain.createDataLayer
 import net.postchain.ebft.BlockchainEngine
 import net.postchain.getBlockchainConfiguration
 import org.apache.commons.configuration2.CompositeConfiguration
@@ -64,15 +64,6 @@ open class IntegrationTest {
 
     fun pubKeyHex(index: Int): String {
         return pubKey(index).toHex()
-    }
-
-    class DataLayer(val engine: BlockchainEngine,
-                    val txQueue: TransactionQueue,
-                    val blockchainConfiguration: BlockchainConfiguration,
-                    val storage: Storage, val blockQueries: BaseBlockQueries) {
-        fun close() {
-            storage.close()
-        }
     }
 
     open class TestBlockchainConfiguration(chainID: Long, config: Configuration) : BaseBlockchainConfiguration(chainID, config) {
@@ -215,28 +206,12 @@ open class IntegrationTest {
 
         val config = createConfig(nodeIndex, nodeCount)
         val chainId = config.getLong("activechainids")
-        val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
-        val storage = baseStorage(config, nodeIndex)
-        val txQueue = BaseTransactionQueue()
-        val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
-        val strategy = OnDemandBlockBuildingStrategy(config,
-                blockchainConfiguration,
-                blockQueries, txQueue)
 
+        val dataLayer = createDataLayer(config, chainId, nodeIndex)
 
-        val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
-                chainId, txQueue, strategy
-        )
-
-        engine.initializeDB()
-
-        val node = DataLayer(engine,
-                txQueue,
-                blockchainConfiguration, storage,
-                blockQueries as BaseBlockQueries)
         // keep list of nodes to close after test
-        nodes.add(node)
-        return node
+        nodes.add(dataLayer)
+        return dataLayer
     }
 
 

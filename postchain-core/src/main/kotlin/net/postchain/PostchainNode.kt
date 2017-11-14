@@ -67,20 +67,11 @@ class PostchainNode {
     fun start(config: Configuration, nodeIndex: Int) {
         // This will eventually become a list of chain ids.
         // But for now it's just a single integer.
-        val chainId = config.getInt("activechainids").toLong()
-
-        blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
-        storage = baseStorage(config, nodeIndex)
-        blockQueries = blockchainConfiguration.makeBlockQueries(storage)
-        peerInfos = createPeerInfos(config)
-        txQueue = BaseTransactionQueue()
-        blockStrategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
-        engine = BaseBlockchainEngine(blockchainConfiguration, storage,
-                chainId, txQueue, blockStrategy)
-
-        engine.initializeDB()
+        val chainId = config.getLong("activechainids")
+        setupDataLayer(config, chainId, nodeIndex)
 
         val bestHeight = blockQueries.getBestHeight().get()
+        peerInfos = createPeerInfos(config)
         statusManager = BaseStatusManager(peerInfos.size, nodeIndex, bestHeight+1)
 
         val privKey = config.getString("messaging.privkey").hexStringToByteArray()
@@ -93,7 +84,6 @@ class PostchainNode {
                 commManager,
                 nodeIndex
         )
-
 
         blockDatabase = BaseBlockDatabase(engine, blockQueries, nodeIndex)
         blockManager = BaseBlockManager(blockDatabase, statusManager, blockStrategy)
@@ -111,6 +101,16 @@ class PostchainNode {
         syncManager = SyncManager(statusManager, blockManager, blockDatabase, commManager, txQueue, blockchainConfiguration)
         statusManager.recomputeStatus()
         startUpdateLoop(syncManager)
+    }
+
+    private fun setupDataLayer(config: Configuration, chainId: Long, nodeIndex: Int) {
+        val dataLayer = createDataLayer(config, chainId, nodeIndex)
+        blockchainConfiguration = dataLayer.blockchainConfiguration
+        storage = dataLayer.storage
+        blockQueries = dataLayer.blockQueries
+        txQueue = dataLayer.txQueue
+        blockStrategy = dataLayer.blockBuildingStrategy
+        engine = dataLayer.engine
     }
 
     fun start(configFile: String, nodeIndex: Int) {

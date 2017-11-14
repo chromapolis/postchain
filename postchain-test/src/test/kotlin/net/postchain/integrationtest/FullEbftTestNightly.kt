@@ -7,7 +7,7 @@ import junitparams.Parameters
 import mu.KLogging
 import net.postchain.PostchainNode
 import net.postchain.test.OnDemandBlockBuildingStrategy
-import net.postchain.test.ebft.EbftIntegrationTest
+import net.postchain.test.EbftIntegrationTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test

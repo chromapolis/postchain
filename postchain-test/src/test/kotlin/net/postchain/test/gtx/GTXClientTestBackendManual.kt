@@ -4,17 +4,17 @@ package net.postchain.test.gtx
 
 import net.postchain.configurations.GTXTestModule
 import net.postchain.configurations.SingleNodeGtxBlockchainConfigurationFactory
-import net.postchain.test.ebft.EbftWithApiIntegrationTest
+import net.postchain.test.EbftIntegrationTest
 import org.junit.Test
 
-class GTXClientTestBackendManual: EbftWithApiIntegrationTest() {
+class GTXClientTestBackendManual: EbftIntegrationTest() {
 
     @Test
     fun testBuildBlock() {
         configOverrides.setProperty("api.port", 7741)
         configOverrides.setProperty("blockchain.1.configurationfactory", SingleNodeGtxBlockchainConfigurationFactory::class.qualifiedName)
         configOverrides.setProperty("blockchain.1.gtx.modules", GTXTestModule::class.qualifiedName)
-        createSystem(1)
+        createEbftNodes(1)
         Thread.sleep(600000)
     }
 }

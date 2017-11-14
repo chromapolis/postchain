@@ -2,6 +2,7 @@
 
 package net.postchain.test.base
 
+import net.postchain.DataLayer
 import net.postchain.test.IntegrationTest
 import net.postchain.core.*
 import org.junit.Assert.*

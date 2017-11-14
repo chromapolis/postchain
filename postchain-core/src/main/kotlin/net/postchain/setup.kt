@@ -2,12 +2,25 @@
 
 package net.postchain
 
+import net.postchain.base.BaseBlockBuildingStrategy
+import net.postchain.base.BaseBlockQueries
+import net.postchain.base.BaseBlockchainEngine
+import net.postchain.base.Storage
 import net.postchain.base.data.BaseStorage
+import net.postchain.base.data.BaseTransactionQueue
+import net.postchain.base.withWriteConnection
+import net.postchain.core.BlockBuildingStrategy
 import net.postchain.core.BlockchainConfiguration
 import net.postchain.core.BlockchainConfigurationFactory
+import net.postchain.core.TransactionQueue
+import net.postchain.ebft.BlockchainEngine
+import org.apache.commons.configuration2.CompositeConfiguration
 import org.apache.commons.configuration2.Configuration
+import org.apache.commons.configuration2.builder.fluent.Configurations
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.apache.commons.dbcp2.BasicDataSource
 import org.apache.commons.dbutils.QueryRunner
+import java.io.File
 import javax.sql.DataSource
 
 
@@ -18,6 +31,36 @@ fun getBlockchainConfiguration(config: Configuration, chainId: Long): Blockchain
     return factory.makeBlockchainConfiguration(chainId, config)
 }
 
+class DataLayer(val engine: BlockchainEngine,
+                val txQueue: TransactionQueue,
+                val blockchainConfiguration: BlockchainConfiguration,
+                val storage: Storage, val blockQueries: BaseBlockQueries, val blockBuildingStrategy: BlockBuildingStrategy) {
+    fun close() {
+        storage.close()
+    }
+}
+
+fun createDataLayer(config: Configuration, chainId: Long, nodeIndex: Int): DataLayer {
+
+
+    val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
+    val storage = baseStorage(config, nodeIndex)
+    withWriteConnection(storage, chainId, { blockchainConfiguration.initializeDB(it); true })
+
+    val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
+
+    val txQueue = BaseTransactionQueue()
+    val strategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
+
+    val engine = BaseBlockchainEngine(blockchainConfiguration, storage,
+            chainId, txQueue, strategy)
+
+    val node = DataLayer(engine,
+            txQueue,
+            blockchainConfiguration, storage,
+            blockQueries as BaseBlockQueries, strategy)
+    return node
+}
 
 fun baseStorage(config: Configuration, nodeIndex: Int): BaseStorage {
     val writeDataSource = createBasicDataSource(config)

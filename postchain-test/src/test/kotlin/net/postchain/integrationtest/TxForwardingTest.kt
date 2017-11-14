@@ -11,13 +11,13 @@ import net.postchain.core.BlockData
 import net.postchain.core.BlockQueries
 import net.postchain.core.BlockchainConfiguration
 import net.postchain.core.TransactionQueue
-import net.postchain.test.ebft.EbftWithApiIntegrationTest
+import net.postchain.test.EbftIntegrationTest
 import org.apache.commons.configuration2.Configuration
 import org.junit.Assert
 import org.junit.Test
 import java.util.concurrent.LinkedBlockingQueue
 
-class TxForwardingTest: EbftWithApiIntegrationTest() {
+class TxForwardingTest: EbftIntegrationTest() {
 
     fun strat(node: PostchainNode): ThreeTxStrategy {
         return node.blockStrategy as ThreeTxStrategy
