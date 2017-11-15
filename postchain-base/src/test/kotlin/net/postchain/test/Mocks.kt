@@ -18,7 +18,6 @@ class MockCryptoSystem : CryptoSystem {
 
     override fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer {
         return { data ->
-            val signature = ByteArray(32)
             val digest = digest(data)
             digest.forEachIndexed { index, byte ->  byte xor pubKey[index]}
             Signature(pubKey, digest)

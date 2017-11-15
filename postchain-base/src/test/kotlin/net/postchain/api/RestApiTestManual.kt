@@ -7,8 +7,8 @@ import net.postchain.base.toHex
 import net.postchain.common.RestTools
 import net.postchain.configurations.GTXTestModule
 import net.postchain.gtx.*
-import org.junit.Assert.*
-import java.util.Random
+import org.junit.Assert.assertEquals
+import java.util.*
 
 class RestApiTestManual {
     val port = 58373
@@ -28,13 +28,13 @@ class RestApiTestManual {
         val restTools = RestTools()
         val query = """{"type"="gtx_test_get_value", "txRID"="abcd"}"""
         val response = restTools.post(port, "/query", query)
-        assertEquals(200, response!!.code)
+        assertEquals(200, response.code)
         assertEquals("null", response.body)
 
 
         val txBytes = makeTestTx(1L, "hello${Random().nextLong()}")
         val response2 = restTools.post(port, "/tx", """{"tx"="${txBytes.toHex()}"}""")
-        assertEquals(200, response2!!.code)
+        assertEquals(200, response2.code)
 
         val transaction = GTXTransactionFactory(EMPTY_SIGNATURE, GTXTestModule(), cryptoSystem).decodeTransaction(txBytes)
         restTools.awaitConfirmed(port, transaction.getRID().toHex())
