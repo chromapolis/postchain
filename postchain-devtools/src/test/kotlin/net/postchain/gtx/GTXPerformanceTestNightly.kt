@@ -2,8 +2,17 @@
 
 package net.postchain.gtx
 
-/*
->>>>>>> 02b1b27791e9d027f4262a70199fcbe3207fc3e9:src/test/kotlin/net/postchain/gtx/GTXPerformanceTestNightly.kt
+import junitparams.JUnitParamsRunner
+import junitparams.Parameters
+import mu.KLogging
+import net.postchain.PostchainNode
+import net.postchain.configurations.GTXTestModule
+import net.postchain.test.EbftIntegrationTest
+import net.postchain.test.OnDemandBlockBuildingStrategy
+import org.junit.Test
+import org.junit.runner.RunWith
+import kotlin.system.measureNanoTime
+
 @RunWith(JUnitParamsRunner::class)
 class GTXPerformanceTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
@@ -52,4 +61,4 @@ class GTXPerformanceTestNightly : EbftIntegrationTest() {
         }
     }
 
-}*/
+}

@@ -9,7 +9,6 @@
         <groupId>net.postchain</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <groupId>net.postchain</groupId>
     <artifactId>postchain-base</artifactId>
 
     <packaging>jar</packaging>

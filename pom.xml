@@ -12,6 +12,7 @@
         <module>postchain-common</module>
         <module>postchain-base</module>
         <module>postchain-devtools</module>
+        <module>postchain-examples</module>
     </modules>
     <packaging>pom</packaging>
 
