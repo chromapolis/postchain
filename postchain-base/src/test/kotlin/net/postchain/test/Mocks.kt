@@ -11,7 +11,6 @@ import java.security.MessageDigest
 import kotlin.experimental.xor
 
 class MockCryptoSystem : CryptoSystem {
-
     override fun digest(bytes: ByteArray): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         return digest.digest(bytes)
@@ -35,4 +34,9 @@ class MockCryptoSystem : CryptoSystem {
             secp256k1_verify(digest(data), signature.subjectID, signature.data)
         }
     }
+
+    override fun getRandomBytes(size: Int): ByteArray {
+        return ByteArray(size)
+    }
+
 }
