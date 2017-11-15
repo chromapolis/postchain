@@ -18,6 +18,17 @@
     <properties>
         <main-class>net.postchain.PostchainNodeKt</main-class>
 
+        <commons-dbutils.version>1.6</commons-dbutils.version>
+        <postgresql.version>42.1.4</postgresql.version>
+        <spongycastle.core.version>1.56.0.0</spongycastle.core.version>
+        <commons-dbcp2.version>2.1.1</commons-dbcp2.version>
+        <commons-configuration2.version>2.1.1</commons-configuration2.version>
+        <commons-beanutils.version>1.9.3</commons-beanutils.version>
+        <asnrt.version>3.14.15</asnrt.version>
+        <spark-core.version>2.6.0</spark-core.version>
+        <easymock.version>3.4</easymock.version>
+
+
         <executable-classifier>jar-with-dependencies</executable-classifier>
         <dist-classifier>dist</dist-classifier>
         <easymock.version>3.4</easymock.version>
@@ -28,8 +39,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib</artifactId>
-            <version>${kotlin.version}</version>
+            <artifactId>kotlin-stdlib-jre8</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-dbutils</groupId>
@@ -37,9 +47,8 @@
             <version>${commons-dbutils.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>${json.version}</version>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
         </dependency>
         <dependency>
             <groupId>nl.komponents.kovenant</groupId>
@@ -79,33 +88,21 @@
         <dependency>
             <groupId>io.github.microutils</groupId>
             <artifactId>kotlin-logging</artifactId>
-            <version>${kotlin-logging.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jul-to-slf4j</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
-            <version>${kotlin.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
             <version>${spark-core.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
-        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.easymock</groupId>
@@ -116,23 +113,21 @@
         <dependency>
             <groupId>net.postchain</groupId>
             <artifactId>postchain-common</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-             <!--<scope>test</scope>-->
         </dependency>
     </dependencies>
 
     <build>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <groupId>org.jetbrains.kotlin</groupId>
-                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -203,7 +198,9 @@
                     <execution>
                         <id>make-executable-jar</id>
                         <phase>package</phase>
-                        <goals> <goal>single</goal> </goals>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
                         <configuration>
                             <archive>
                                 <manifest>
@@ -221,7 +218,9 @@
                     <execution>
                         <id>make-archive</id>
                         <phase>package</phase>
-                        <goals> <goal>single</goal> </goals>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
                         <configuration>
                             <descriptors>
                                 <descriptor>src/main/assembly/targz.xml</descriptor>

@@ -19,32 +19,107 @@
     <name>Postchain</name>
     <url>http://postchain.org</url>
     <properties>
-        <kotlin.version>1.1.4-2</kotlin.version>
+        <kotlin.version>1.1.4-3</kotlin.version>
         <json.version>20170516</json.version>
         <kovenant-core.version>3.3.0</kovenant-core.version>
         <junit.version>4.12</junit.version>
-        <commons-dbutils.version>1.6</commons-dbutils.version>
-        <postgresql.version>42.1.4</postgresql.version>
-        <spongycastle.core.version>1.56.0.0</spongycastle.core.version>
-        <commons-dbcp2.version>2.1.1</commons-dbcp2.version>
-        <commons-configuration2.version>2.1.1</commons-configuration2.version>
-        <commons-beanutils.version>1.9.3</commons-beanutils.version>
-        <asnrt.version>3.14.15</asnrt.version>
-        <mockito-core.version>2.8.47</mockito-core.version>
         <mockito-kotlin-kt1.1.version>1.5.0</mockito-kotlin-kt1.1.version>
         <kotlin-logging.version>1.4.6</kotlin-logging.version>
-        <JUnitParams.version>1.1.0</JUnitParams.version>
         <slf4j.version>1.7.25</slf4j.version>
         <gson.version>2.8.2</gson.version>
-        <spark-core.version>2.6.0</spark-core.version>
+        <junitparams.version>1.1.0</junitparams.version>
+
+
         <main-class>net.postchain.PostchainNodeKt</main-class>
 
         <executable-classifier>jar-with-dependencies</executable-classifier>
         <dist-classifier>dist</dist-classifier>
-        <easymock.version>3.4</easymock.version>
 
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <build>
+        <sourceDirectory>src/main/kotlin</sourceDirectory>
+        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>kotlin-maven-plugin</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <version>${kotlin.version}</version>
+
+                    <executions>
+                        <execution>
+                            <id>compile</id>
+                            <goals>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+
+                        <execution>
+                            <id>test-compile</id>
+                            <goals>
+                                <goal>test-compile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-jre8</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-reflect</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>pl.pragmatists</groupId>
+                <artifactId>JUnitParams</artifactId>
+                <version>${junitparams.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.microutils</groupId>
+                <artifactId>kotlin-logging</artifactId>
+                <version>${kotlin-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.postchain</groupId>
+                <artifactId>postchain-base</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.postchain</groupId>
+                <artifactId>postchain-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <profiles>
         <profile>
