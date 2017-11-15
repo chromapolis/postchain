@@ -42,6 +42,7 @@
         <dist-classifier>dist</dist-classifier>
         <easymock.version>3.4</easymock.version>
 
+        <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     </properties>
 
