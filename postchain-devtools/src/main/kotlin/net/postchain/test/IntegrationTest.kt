@@ -181,7 +181,7 @@ open class IntegrationTest {
 
     protected fun createConfig(nodeIndex: Int, nodeCount: Int = 1): Configuration {
         val configs = Configurations()
-        val baseConfig = configs.properties(File("src/test/resources/config.properties"))
+        val baseConfig = configs.properties(File("config.properties"))
         baseConfig.listDelimiterHandler = DefaultListDelimiterHandler(',')
         val chainId = baseConfig.getLong("activechainids")
         baseConfig.setProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))
