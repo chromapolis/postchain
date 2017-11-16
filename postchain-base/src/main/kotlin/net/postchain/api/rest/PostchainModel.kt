@@ -7,6 +7,7 @@ import net.postchain.base.ConfirmationProof
 import net.postchain.base.toHex
 import net.postchain.core.TransactionFactory
 import net.postchain.core.TransactionQueue
+import net.postchain.core.TransactionStatus.CONFIRMED
 import net.postchain.core.TransactionStatus.UNKNOWN
 import net.postchain.core.UserMistake
 
@@ -39,9 +40,10 @@ open class PostchainModel(
         if (status != UNKNOWN)
             return ApiStatus(status)
         else {
-            val dbStatus = blockQueries.getTxStatus(txRID.bytes).get()
-            if (dbStatus == null) return ApiStatus(UNKNOWN)
-            return ApiStatus(dbStatus)
+            val confirmed = blockQueries.isTransactionConfirmed(txRID.bytes).get()
+            return ApiStatus(
+                    if (confirmed) CONFIRMED else UNKNOWN
+            )
         }
     }
 

@@ -150,7 +150,7 @@ interface BlockQueries {
     fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception>
     fun getTransaction(txRID: ByteArray): Promise<Transaction?, Exception>
     fun query(query: String): Promise<String, Exception>
-    fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception>
+    fun isTransactionConfirmed(txRID: ByteArray): Promise<Boolean, Exception>
 }
 
 interface BlockBuilder {
@@ -184,6 +184,6 @@ interface BlockStore {
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
     fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): List<ByteArray>
 
-    fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
+    fun isTransactionConfirmed(ctx: EContext, txRID: ByteArray): Boolean
     fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Any
 }

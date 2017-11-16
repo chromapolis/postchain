@@ -7,7 +7,6 @@ import net.postchain.base.toHex
 import net.postchain.core.*
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.*
-import java.sql.Connection
 import java.util.stream.Stream
 
 interface DatabaseAccess {
@@ -31,7 +30,7 @@ interface DatabaseAccess {
     fun getBlockTxRIDs(ctx: EContext, blockIid: Long): List<ByteArray>
     fun getBlockTxHashes(ctx: EContext, blokcIid: Long): List<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
-    fun getTxStatus(ctx: EContext, txRID: ByteArray): TransactionStatus?
+    fun isTransactionConfirmed(ctx: EContext, txRID: ByteArray): Boolean
     fun initialize(ctx: EContext, blockchainRID: ByteArray, expectedDbVersion: Int)
 }
 
@@ -174,19 +173,13 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 nullableByteArrayRes, ctx.chainID, rid)
     }
 
-    override fun getTxStatus(ctx: EContext, txRID: ByteArray): TransactionStatus? {
-        // Note that PostgreSQL does not support READ UNCOMMITTED, so setting
-        // it is useless. It will be run as READ COMMITTED.
-        // Currently, due to the above, transactions will look like they are unknown if they are in the
-        // middle of block-building.
-        val list = r.query(ctx.conn,
+    override fun isTransactionConfirmed(ctx: EContext, txRID: ByteArray): Boolean {
+        val res = r.query(ctx.conn,
                 """
-                        SELECT 1
-                        FROM transactions t
+                        SELECT 1 FROM transactions t
                         WHERE t.chain_id=? AND t.tx_rid=?
                         """, nullableIntRes, ctx.chainID, txRID)
-        if (list == null) return null
-        return TransactionStatus.CONFIRMED
+        return (res != null)
     }
 
     override fun getBlockchainRID(ctx: EContext): ByteArray? {

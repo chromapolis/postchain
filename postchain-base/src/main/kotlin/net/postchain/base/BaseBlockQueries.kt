@@ -70,9 +70,9 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
         }
     }
 
-    override fun getTxStatus(txRID: ByteArray): Promise<TransactionStatus?, Exception> {
+    override fun isTransactionConfirmed(txRID: ByteArray): Promise<Boolean, Exception> {
         return runOp {
-            blockStore.getTxStatus(it, txRID)
+            blockStore.isTransactionConfirmed(it, txRID)
         }
     }
 

@@ -102,8 +102,8 @@ class BaseBlockStore : BlockStore {
         return db.getTxBytes(ctx, rid)
     }
 
-    override fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus? {
-        return db.getTxStatus(ctx, txHash)
+    override fun isTransactionConfirmed(ctx: EContext, txRID: ByteArray): Boolean {
+        return db.isTransactionConfirmed(ctx, txRID)
     }
 
     fun initialize(ctx: EContext, blockchainRID: ByteArray) {
