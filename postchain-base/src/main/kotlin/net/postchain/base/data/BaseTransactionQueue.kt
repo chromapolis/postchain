@@ -23,6 +23,7 @@ val MAX_REJECTED = 1000
 class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
 
     val queue = LinkedBlockingQueue<ComparableTransaction>(queueCapacity)
+    val queueSet = HashSet<ByteArrayKey>()
     val taken = mutableListOf<ComparableTransaction>()
     val rejects = object: LinkedHashMap<ByteArrayKey, Exception?>() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<ByteArrayKey, java.lang.Exception?>?): Boolean {
@@ -35,6 +36,7 @@ class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
         val tx = queue.poll()
         if (tx != null) {
             taken.add(tx)
+            queueSet.remove(ByteArrayKey(tx.tx.getRID()))
             return tx.tx
         }
         else return null
@@ -44,30 +46,38 @@ class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
         return queue.size
     }
 
-    @Synchronized
     override fun enqueue(tx: Transaction): Boolean {
+        val rid = ByteArrayKey(tx.getRID())
+        synchronized(this) {
+            if (queueSet.contains(rid)) return false
+        }
+
         val comparableTx = ComparableTransaction(tx)
-        if (!queue.contains(comparableTx)) {
-            try {
-                if (tx.isCorrect()) {
-                    return queue.offer(comparableTx)
+        try {
+            if (tx.isCorrect())
+                synchronized(this) {
+                    if (queueSet.contains(rid)) return false
+                    if (queue.offer(comparableTx)) {
+                        queueSet.add(rid)
+                        return true
+                    } else return false
                 } else {
-                    rejectTransaction(tx, null)
-                }
-            } catch (e: UserMistake) {
-                rejectTransaction(tx, e)
+                rejectTransaction(tx, null)
             }
+        } catch (e: UserMistake) {
+            rejectTransaction(tx, e)
         }
         return false
     }
 
     @Synchronized
     override fun getTransactionStatus(txHash: ByteArray): TransactionStatus {
-        if (queue.find({it.tx.getRID().contentEquals(txHash)}) != null) {
+        val rid = ByteArrayKey(txHash)
+        if (queueSet.contains(rid)) {
             return TransactionStatus.WAITING
         } else if (taken.find({it.tx.getRID().contentEquals(txHash)}) != null) {
             return TransactionStatus.WAITING
-        } else if (ByteArrayKey(txHash) in rejects) {
+        } else if (rid in rejects) {
             return TransactionStatus.REJECTED
         } else
             return TransactionStatus.UNKNOWN
@@ -82,6 +92,7 @@ class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
     @Synchronized
     override fun removeAll(transactionsToRemove: Collection<Transaction>) {
         queue.removeAll(transactionsToRemove.map{ ComparableTransaction(it) })
+        queueSet.removeAll(transactionsToRemove.map { ByteArrayKey(it.getRID()) })
         taken.removeAll(transactionsToRemove.map{ ComparableTransaction(it) })
     }
 }
