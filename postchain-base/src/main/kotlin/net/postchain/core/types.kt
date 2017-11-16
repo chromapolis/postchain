@@ -182,7 +182,7 @@ interface BlockStore {
 
     fun getTxRIDsAtHeight(ctx: EContext, height: Long): Array<ByteArray>
     fun getTxBytes(ctx: EContext, rid: ByteArray): ByteArray?
-    fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray>
+    fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): List<ByteArray>
 
     fun getTxStatus(ctx: EContext, txHash: ByteArray): TransactionStatus?
     fun getConfirmationProofMaterial(ctx: EContext, txRID: ByteArray): Any

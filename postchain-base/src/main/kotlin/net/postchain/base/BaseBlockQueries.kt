@@ -114,17 +114,7 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
             val header = blockchainConfiguration.decodeBlockHeader(headerBytes)
             val witness = blockchainConfiguration.decodeWitness(witnessBytes)
 
-            // txBytes is a stream, and it would be nice to be able to stream all transaction data
-            // all the way from database connection to the peer's socket.
-            // For now we store it in an ArrayList below.
-            // Using this streaming stuff actually makes it worse than using
-            // ArrayList, because the data is not really streamed from the database connection
-            // but from an intermediary ArrayList in BaseBlockStore. So now we store all
-            // the txdata both in the blockStore and in the following list. Not cool.
-            val list = ArrayList<ByteArray>()
-            txBytes.forEach { list.add(it) }
-
-            BlockDataWithWitness(header, list, witness)
+            BlockDataWithWitness(header, txBytes, witness)
         }
     }
 }

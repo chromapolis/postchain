@@ -21,7 +21,7 @@ interface DatabaseAccess {
     fun getBlockHeight(ctx: EContext, blockRID: ByteArray): Long?
     fun getBlockRIDs(ctx: EContext, height: Long): List<ByteArray>
     fun getBlockHeader(ctx: EContext, blockRID: ByteArray): ByteArray
-    fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray>
+    fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): List<ByteArray>
     fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray
     fun getLastBlockHeight(ctx: EContext): Long
     fun getLastBlockTimestamp(ctx: EContext): Long
@@ -41,6 +41,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
     private val longRes = ScalarHandler<Long>()
     private val signatureRes = BeanListHandler<Signature>(Signature::class.java)
     private val nullableByteArrayRes = ScalarHandler<ByteArray?>()
+    private val nullableIntRes = ScalarHandler<Int?>()
     private val nullableLongRes = ScalarHandler<Long?>()
     private val byteArrayRes = ScalarHandler<ByteArray>()
     private val blockDataRes = BeanHandler<BlockData>(BlockData::class.java)
@@ -92,19 +93,14 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 byteArrayRes, ctx.chainID, blockRID)
     }
 
-    // This implementation does not actually *stream* data from the database connection.
-    // It is buffered in an ArrayList by ArrayListHandler() which is unfortunate.
-    // Eventually, we may change this implementation to actually deliver a true
-    // stream so that we don't have to store all transaction data in memory.
-    override fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray> {
+    override fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): List<ByteArray> {
         val sql = """
             SELECT tx_data
             FROM transactions t
             JOIN blocks b ON t.block_iid=b.block_iid
             WHERE b.block_rid=? AND b.chain_id=?
             ORDER BY tx_iid"""
-        return r.query(ctx.conn, sql, ArrayListHandler(), blockRID, ctx.chainID).
-                stream().map { array -> array[0] as ByteArray}
+        return r.query(ctx.conn, sql, byteArrayListRes, blockRID, ctx.chainID)
     }
 
     override fun getWitnessData(ctx: EContext, blockRID: ByteArray): ByteArray {
@@ -139,7 +135,7 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 """
                     SELECT b.block_iid, b.block_header_data, b.block_witness
                     FROM blocks b JOIN transactions t ON b.block_iid=t.block_iid
-                    WHERE b.chain_id=? and t.tx_rid=?
+                    WHERE t.chain_id=? and t.tx_rid=?
                     """, mapListHandler, ctx.chainID, txRID)!!
         if (block.size < 1) throw UserMistake("Can't get confirmation proof for nonexistent tx")
         if (block.size > 1) throw ProgrammerMistake("Expected at most one hit")
@@ -179,26 +175,18 @@ class SQLDatabaseAccess(): DatabaseAccess {
     }
 
     override fun getTxStatus(ctx: EContext, txRID: ByteArray): TransactionStatus? {
-        try {
-            // Note that PostgreSQL does not support READ UNCOMMITTED, so setting
-            // it is useless. It will be run as READ COMMITTED.
-            // I leave this here to mark my intention.
-            // Currently, due to the above, transactions will look like they are unknown if they are in the
-            // middle of block-building.
-            ctx.conn.transactionIsolation = Connection.TRANSACTION_READ_UNCOMMITTED
-            val list = r.query(ctx.conn,
-                    """
-                        SELECT tx_iid, block_witness
-                        FROM transactions t JOIN blocks b ON t.block_iid=b.block_iid
-                        WHERE b.chain_id=? AND t.tx_rid=?
-                        """, mapListHandler, ctx.chainID, txRID)
-            if (list.isEmpty()) return null
-            if (list.size != 1) throw ProgrammerMistake("Expected at most one result for ${txRID.toHex()}")
-            if (list[0].get("block_witness") == null) return TransactionStatus.WAITING
-            return TransactionStatus.CONFIRMED
-        } finally {
-            ctx.conn.transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
-        }
+        // Note that PostgreSQL does not support READ UNCOMMITTED, so setting
+        // it is useless. It will be run as READ COMMITTED.
+        // Currently, due to the above, transactions will look like they are unknown if they are in the
+        // middle of block-building.
+        val list = r.query(ctx.conn,
+                """
+                        SELECT 1
+                        FROM transactions t
+                        WHERE t.chain_id=? AND t.tx_rid=?
+                        """, nullableIntRes, ctx.chainID, txRID)
+        if (list == null) return null
+        return TransactionStatus.CONFIRMED
     }
 
     override fun getBlockchainRID(ctx: EContext): ByteArray? {
@@ -277,6 +265,12 @@ class SQLDatabaseAccess(): DatabaseAccess {
                 "    tx_hash bytea NOT NULL," +
                 "    block_iid bigint NOT NULL REFERENCES blocks(block_iid)," +
                 "    UNIQUE (chain_id, tx_rid))"
+
         r.update(ctx.conn, createTxTable)
+
+        val createTransactionsBlockIidIndex = """CREATE INDEX transactions_block_iid_idx ON transactions(block_iid)"""
+
+        // This is for eg getBlockTransactions()
+        r.update(ctx.conn, createTransactionsBlockIidIndex)
     }
 }

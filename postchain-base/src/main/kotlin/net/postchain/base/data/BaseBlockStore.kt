@@ -68,7 +68,7 @@ class BaseBlockStore : BlockStore {
     // It is buffered in an ArrayList by ArrayListHandler() which is unfortunate.
     // Eventually, we may change this implementation to actually deliver a true
     // stream so that we don't have to store all transaction data in memory.
-    override fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): Stream<ByteArray> {
+    override fun getBlockTransactions(ctx: EContext, blockRID: ByteArray): List<ByteArray> {
         return db.getBlockTransactions(ctx, blockRID)
     }
 
