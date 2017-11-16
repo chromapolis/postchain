@@ -19,7 +19,7 @@
     <name>Postchain</name>
     <url>http://postchain.org</url>
     <properties>
-        <kotlin.version>1.1.4-3</kotlin.version>
+        <kotlin.version>1.1.60</kotlin.version>
         <json.version>20170516</json.version>
         <kovenant-core.version>3.3.0</kovenant-core.version>
         <junit.version>4.12</junit.version>
@@ -35,6 +35,7 @@
         <executable-classifier>jar-with-dependencies</executable-classifier>
         <dist-classifier>dist</dist-classifier>
 
+        <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

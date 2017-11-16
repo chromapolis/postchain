@@ -32,7 +32,6 @@ fun pubKey(index: Int): ByteArray {
     return secp256k1_derivePubKey(privKey(index))
 }
 
-
 class GTXDataTest {
 
     @Test

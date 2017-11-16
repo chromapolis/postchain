@@ -39,6 +39,7 @@ interface CryptoSystem {
     fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer
     fun verifyDigest(ddigest: ByteArray, s: Signature): Boolean
     fun makeVerifier(): Verifier
+    fun getRandomBytes(size: Int): ByteArray
 }
 
 // block builder which automatically manages the connection

@@ -13,6 +13,7 @@ import org.spongycastle.crypto.signers.HMacDSAKCalculator
 import org.spongycastle.util.Arrays
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.security.SecureRandom
 
 
 // signing code taken from bitcoinj ECKey
@@ -113,6 +114,7 @@ fun secp256k1_derivePubKey(privKey: ByteArray): ByteArray {
 }
 
 class SECP256K1CryptoSystem : CryptoSystem {
+    private val rand = SecureRandom()
 
     override fun digest(bytes: ByteArray): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
@@ -131,5 +133,11 @@ class SECP256K1CryptoSystem : CryptoSystem {
         return { data, signature: Signature ->
             secp256k1_verify(digest(data), signature.subjectID, signature.data)
         }
+    }
+
+    override fun getRandomBytes(size: Int): ByteArray {
+        val ret = ByteArray(size)
+        rand.nextBytes(ret)
+        return ret
     }
 }
