@@ -67,6 +67,7 @@ class BaseBlockDatabase(private val engine: BlockchainEngine, private val blockQ
 
     override fun addBlock(block: BlockDataWithWitness): Promise<Unit, Exception> {
         return runOp("addBlock ${block.header.blockRID.toHex()}") {
+            maybeRollback()
             engine.addBlock(block)
         }
     }

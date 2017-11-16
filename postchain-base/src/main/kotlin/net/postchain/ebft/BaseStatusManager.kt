@@ -4,6 +4,7 @@ package net.postchain.ebft
 
 import net.postchain.core.Signature
 import mu.KLogging
+import net.postchain.base.toHex
 import java.util.*
 
 class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long)
@@ -103,11 +104,11 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                 acceptBlock(blockRID, mySignature)
                 return true
             } else {
-                logger.error("Received block which is irrelevant")
+                logger.error("Received block which is irrelevant. Need ${needBlockRID.toHex()}, got ${blockRID.toHex()}")
                 return false
             }
         } else {
-            logger.error("Received block which is irrelevant")
+            logger.error("Received block which is irrelevant, intent was ${_intent::class.simpleName}")
             return false
         }
     }
