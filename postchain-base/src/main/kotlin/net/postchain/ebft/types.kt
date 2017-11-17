@@ -3,10 +3,11 @@
 package net.postchain.ebft
 
 import net.postchain.base.ManagedBlockBuilder
-import net.postchain.core.*
-import nl.komponents.kovenant.*
+import net.postchain.core.BlockData
+import net.postchain.core.BlockDataWithWitness
+import net.postchain.core.Signature
+import nl.komponents.kovenant.Promise
 import java.util.*
-import java.util.concurrent.Future
 
 interface ErrContext {
     fun fatal(msg: String)
@@ -51,6 +52,10 @@ sealed class BlockIntent {
         if (super.equals(other)) return true
         if (this::class != other::class) return false
         return true
+    }
+
+    override fun hashCode(): Int {
+        return 42
     }
 }
 

@@ -3,6 +3,7 @@
 package net.postchain.ebft
 
 import mu.KLogging
+import net.postchain.base.toHex
 import net.postchain.core.*
 import net.postchain.ebft.message.*
 import net.postchain.ebft.message.Transaction
@@ -77,7 +78,7 @@ class SyncManager(
     private val statusSender = StatusSender(1000, statusManager, commManager)
     private val defaultTimeout = 1000
     private var currentTimeout = defaultTimeout
-    private var processingIntent = DoNothingIntent
+    private var processingIntent : BlockIntent = DoNothingIntent
     private var processingIntentDeadline = 0L
 
     companion object : KLogging()
@@ -98,8 +99,13 @@ class SyncManager(
                     }
                     is BlockSignature -> {
                         val signature = Signature(message.signature.subjectID, message.signature.data)
-                        if (this.blockDatabase.verifyBlockSignature(signature)) {
-                            this.statusManager.onCommitSignature(nodeIndex, message.blockRID, signature)
+                        val smBlockRID = this.statusManager.myStatus.blockRID
+                        if (smBlockRID == null) {
+                            logger.info("Received signature not needed")
+                        } else if (!smBlockRID.contentEquals(message.blockRID)) {
+                            logger.info("Receive signature for a different block")
+                        } else if (this.blockDatabase.verifyBlockSignature(signature)) {
+                                this.statusManager.onCommitSignature(nodeIndex, message.blockRID, signature)
                         }
                     }
                     is CompleteBlock -> {
@@ -134,6 +140,7 @@ class SyncManager(
     private fun sendBlockSignature(nodeIndex: Int, blockRID: ByteArray) {
         val currentBlock = this.blockManager.currentBlock
         if (currentBlock != null && currentBlock.header.blockRID.contentEquals(blockRID)) {
+            assert(statusManager.myStatus.blockRID!!.contentEquals(currentBlock.header.blockRID))
             val signature = statusManager.getCommitSignature()
             if (signature != null) {
                 commManager.sendPacket(BlockSignature(blockRID, signature), setOf(nodeIndex))
@@ -177,22 +184,25 @@ class SyncManager(
 
     private fun fetchBlockAtHeight(height: Long) {
         val nodeIndex = selectRandomNode { it.height > height } ?: return
+        logger.debug("Fetching block at height ${height} from node ${nodeIndex}")
         commManager.sendPacket(GetBlockAtHeight(height), setOf(nodeIndex))
     }
 
     private fun fetchCommitSignatures(blockRID: ByteArray, nodes: Array<Int>) {
         val message = GetBlockSignature(blockRID)
+        logger.debug("Fetching commit signature for block with RID ${blockRID.toHex()} from nodes ${Arrays.toString(nodes)}")
         commManager.sendPacket(message, nodes.toSet())
     }
 
     private fun fetchUnfinishedBlock(blockRID: ByteArray) {
         val height = statusManager.myStatus.height
-        var nodeIndex = selectRandomNode {
+        val nodeIndex = selectRandomNode {
             it.height == height && (it.blockRID?.contentEquals(blockRID) ?: false)
         }
         if (nodeIndex == null) {
             return
         }
+        logger.debug("Fetching unfinished block with RID ${blockRID.toHex()}from node ${nodeIndex} ")
         commManager.sendPacket(GetUnfinishedBlock(blockRID), setOf(nodeIndex))
     }
 
@@ -215,6 +225,8 @@ class SyncManager(
             is FetchUnfinishedBlockIntent -> fetchUnfinishedBlock(intent.blockRID)
             else -> throw ProgrammerMistake("Unrecognized intent: ${intent::class}")
         }
+        processingIntent = intent
+        processingIntentDeadline = Date().time + currentTimeout
     }
 
 
