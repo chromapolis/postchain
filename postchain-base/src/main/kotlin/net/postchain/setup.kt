@@ -64,6 +64,7 @@ fun createDataLayer(config: Configuration, chainId: Long, nodeIndex: Int): DataL
 
 fun baseStorage(config: Configuration, nodeIndex: Int): BaseStorage {
     val writeDataSource = createBasicDataSource(config)
+    writeDataSource.maxWaitMillis = 0
     writeDataSource.defaultAutoCommit = false
     writeDataSource.maxTotal = 1
     if (config.getBoolean("database.wipe", false)) {
