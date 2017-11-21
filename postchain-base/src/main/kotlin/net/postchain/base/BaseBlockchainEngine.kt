@@ -6,12 +6,14 @@ import mu.KLogging
 import net.postchain.base.data.BaseManagedBlockBuilder
 import net.postchain.core.*
 import net.postchain.ebft.BlockchainEngine
+import nl.komponents.kovenant.task
 
 open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                                 val s: Storage,
                                 private val chainID: Long,
                                 private val tq: TransactionQueue,
-                                private val strategy: BlockBuildingStrategy
+                                private val strategy: BlockBuildingStrategy,
+                                private val useParallelDecoding: Boolean = false
 ) : BlockchainEngine
 {
     companion object : KLogging()
@@ -37,7 +39,25 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
         blockBuilder.commit(block.witness)
     }
 
-    override  fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
+    fun parLoadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
+        val factory = bc.getTransactionFactory()
+        val transactions = block.transactions.map { txData ->
+            task {
+                val tx = factory.decodeTransaction(txData)
+                if (!tx.isCorrect()) throw UserMistake("Transaction is not correct")
+                tx
+            }
+        }
+        val blockBuilder = makeBlockBuilder()
+        blockBuilder.begin()
+        for (tx in transactions) {
+            blockBuilder.appendTransaction(tx.get())
+        }
+        blockBuilder.finalizeAndValidate(block.header)
+        return blockBuilder
+    }
+
+    fun seqLoadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
         val blockBuilder = makeBlockBuilder()
         val factory = bc.getTransactionFactory()
         blockBuilder.begin()
@@ -48,8 +68,14 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
         return blockBuilder
     }
 
+    override fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
+        return if (useParallelDecoding)
+            parLoadUnfinishedBlock(block)
+        else
+            seqLoadUnfinishedBlock(block)
+    }
+
     override fun buildBlock(): ManagedBlockBuilder {
-        logger.info("Starting to build block")
         val blockBuilder = makeBlockBuilder()
         val abstractBlockBuilder = ((blockBuilder as BaseManagedBlockBuilder).bb as AbstractBlockBuilder)
         blockBuilder.begin()
@@ -67,12 +93,13 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                 if (exception != null) {
                     tq.rejectTransaction(tx, exception)
                 } else {
+                    // tx is fine, consider stopping
                     if (strategy.shouldStopBuildingBlock(abstractBlockBuilder)) {
                         logger.info("Block size limit is reached")
                         break
                     }
                 }
-            } else {
+            } else { // tx == null
                 break
             }
         }
