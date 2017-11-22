@@ -6,12 +6,20 @@ import mu.KLogging
 import net.postchain.base.data.BaseManagedBlockBuilder
 import net.postchain.core.*
 import net.postchain.ebft.BlockchainEngine
+import nl.komponents.kovenant.task
+
+val LOG_STATS = true
+
+fun ms(n1: Long, n2: Long): Long {
+    return (n2-n1)/1000000
+}
 
 open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                                 val s: Storage,
                                 private val chainID: Long,
                                 private val tq: TransactionQueue,
-                                private val strategy: BlockBuildingStrategy
+                                private val strategy: BlockBuildingStrategy,
+                                private val useParallelDecoding: Boolean = true
 ) : BlockchainEngine
 {
     companion object : KLogging()
@@ -37,19 +45,78 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
         blockBuilder.commit(block.witness)
     }
 
-    override  fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
-        val blockBuilder = makeBlockBuilder()
+    fun parLoadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
+        val tStart = System.nanoTime()
         val factory = bc.getTransactionFactory()
-        blockBuilder.begin()
-        for (txData in block.transactions) {
-            blockBuilder.appendTransaction(factory.decodeTransaction(txData))
+        val transactions = block.transactions.map { txData ->
+            task {
+                val tx = factory.decodeTransaction(txData)
+                if (!tx.isCorrect()) throw UserMistake("Transaction is not correct")
+                tx
+            }
         }
+
+        val blockBuilder = makeBlockBuilder()
+        blockBuilder.begin()
+
+        val tBegin = System.nanoTime()
+        for (tx in transactions) {
+            blockBuilder.appendTransaction(tx.get())
+        }
+        val tEnd = System.nanoTime()
+
         blockBuilder.finalizeAndValidate(block.header)
+        val tDone = System.nanoTime()
+
+        if (LOG_STATS) {
+            val nTransactions = block.transactions.size
+            val netRate = (nTransactions * 1000000000L) / (tEnd-tBegin)
+            val grossRate = (nTransactions * 1000000000L) / (tDone-tStart)
+            logger.info("""Loaded block (par), ${nTransactions} transactions, \
+                ${ms(tStart, tDone)} ms, ${netRate} net tps, ${grossRate} gross tps"""
+            )
+        }
+
         return blockBuilder
     }
 
+    fun seqLoadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
+        val tStart = System.nanoTime()
+        val blockBuilder = makeBlockBuilder()
+        val factory = bc.getTransactionFactory()
+        blockBuilder.begin()
+
+        val tBegin = System.nanoTime()
+        for (txData in block.transactions) {
+            blockBuilder.appendTransaction(factory.decodeTransaction(txData))
+        }
+        val tEnd = System.nanoTime()
+
+        blockBuilder.finalizeAndValidate(block.header)
+        val tDone = System.nanoTime()
+
+        if (LOG_STATS) {
+            val nTransactions = block.transactions.size
+            val netRate = (nTransactions * 1000000000L) / (tEnd-tBegin)
+            val grossRate = (nTransactions * 1000000000L) / (tDone-tStart)
+            logger.info("""Loaded block (seq), ${nTransactions} transactions, \
+                ${ms(tStart, tDone)} ms, ${netRate} net tps, ${grossRate} gross tps"""
+            )
+        }
+
+        return blockBuilder
+    }
+
+    override fun loadUnfinishedBlock(block: BlockData): ManagedBlockBuilder {
+        return if (useParallelDecoding)
+            parLoadUnfinishedBlock(block)
+        else
+            seqLoadUnfinishedBlock(block)
+    }
+
     override fun buildBlock(): ManagedBlockBuilder {
-        logger.info("Starting to build block")
+        val tStart = System.nanoTime()
+
         val blockBuilder = makeBlockBuilder()
         val abstractBlockBuilder = ((blockBuilder as BaseManagedBlockBuilder).bb as AbstractBlockBuilder)
         blockBuilder.begin()
@@ -58,6 +125,10 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
         // the transaction queue is gone. This could potentially happen
         // during a revolt. We might need a "transactional" tx queue...
 
+        val tBegin = System.nanoTime()
+        var nTransactions = 0
+        var nRejects = 0
+
         while (true) {
             logger.debug("Checking transaction queue")
             val tx = tq.takeTransaction()
@@ -65,19 +136,39 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
                 logger.info("Appending transaction ${tx.getRID().toHex()}")
                 val exception = blockBuilder.maybeAppendTransaction(tx)
                 if (exception != null) {
+                    nRejects += 1
                     tq.rejectTransaction(tx, exception)
                 } else {
+                    nTransactions += 1
+                    // tx is fine, consider stopping
                     if (strategy.shouldStopBuildingBlock(abstractBlockBuilder)) {
                         logger.info("Block size limit is reached")
                         break
                     }
                 }
-            } else {
+            } else { // tx == null
                 break
             }
         }
+
+        val tEnd = System.nanoTime()
+
         blockBuilder.finalizeBlock()
-        logger.info("Block is finalized")
+
+        val tDone = System.nanoTime()
+
+        if (LOG_STATS) {
+            val netRate = (nTransactions * 1000000000L) / (tEnd-tBegin)
+            val grossRate = (nTransactions * 1000000000L) / (tDone-tStart)
+            logger.info("""Block is finalized, ${nTransactions} + ${nRejects} transactions, \
+                ${ms(tStart, tDone)} ms, ${netRate} net tps, ${grossRate} gross tps"""
+            )
+
+        } else {
+            logger.info("Block is finalized")
+        }
+
+
         return blockBuilder
     }
 }
