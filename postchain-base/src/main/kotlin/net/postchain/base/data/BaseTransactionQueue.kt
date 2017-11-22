@@ -2,6 +2,7 @@
 
 package net.postchain.base.data
 
+import mu.KLogging
 import net.postchain.core.*
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -20,7 +21,9 @@ class ComparableTransaction(val tx: Transaction) {
 
 val MAX_REJECTED = 1000
 
-class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
+class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
+
+    companion object : KLogging()
 
     val queue = LinkedBlockingQueue<ComparableTransaction>(queueCapacity)
     val queueSet = HashSet<ByteArrayKey>()
@@ -58,13 +61,19 @@ class BaseTransactionQueue(queueCapacity: Int = 1000): TransactionQueue {
                 synchronized(this) {
                     if (queueSet.contains(rid)) return false
                     if (queue.offer(comparableTx)) {
+                        logger.debug("Enqueued tx ${rid}")
                         queueSet.add(rid)
                         return true
-                    } else return false
+                    } else {
+                        logger.debug("Skipping tx ${rid}, overloaded")
+                        return false
+                    }
                 } else {
+                logger.debug("Tx ${rid} didn't pass the check")
                 rejectTransaction(tx, null)
             }
         } catch (e: UserMistake) {
+            logger.debug("Tx ${rid} didn't pass the check")
             rejectTransaction(tx, e)
         }
         return false

@@ -51,7 +51,7 @@ where we are guaranteed not to drop transactions.
 
     override fun enqueue(tx: net.postchain.core.Transaction): Boolean {
         val rid = tx.getRID().toHex()
-        logger.debug("Node ${nodeIndex} enqueueing tx ${rid}")
+
         if (queue.enqueue(tx)) {
             logger.debug("Node ${nodeIndex} broadcasting tx ${rid}")
             network.broadcastPacket(net.postchain.ebft.message.Transaction(tx.getRawData()))

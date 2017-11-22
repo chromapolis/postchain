@@ -2,6 +2,8 @@
 
 package net.postchain.core
 
+import net.postchain.base.toHex
+
 class ByteArrayKey(val byteArray: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
@@ -13,5 +15,9 @@ class ByteArrayKey(val byteArray: ByteArray) {
 
     override fun hashCode(): Int {
         return byteArray.contentHashCode()
+    }
+
+    override fun toString(): String {
+        return byteArray.toHex()
     }
 }
