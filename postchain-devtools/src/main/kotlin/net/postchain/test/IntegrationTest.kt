@@ -33,12 +33,16 @@ import org.apache.commons.configuration2.MapConfiguration
 import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.junit.After
+import org.junit.Assert
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
+import java.util.HashMap
+import javax.xml.crypto.Data
 
 open class IntegrationTest {
     protected val nodes = mutableListOf<DataLayer>()
@@ -104,7 +108,7 @@ open class IntegrationTest {
         private fun bytes(length: Int): ByteArray {
             val byteStream = ByteArrayOutputStream(length)
             val out = DataOutputStream(byteStream)
-            for (i in 0 until length/4) {
+            for (i in 0 until length / 4) {
                 out.writeInt(id)
             }
             out.flush()
@@ -120,7 +124,7 @@ open class IntegrationTest {
         }
     }
 
-    class UnexpectedExceptionTransaction(id: Int): TestTransaction(id) {
+    class UnexpectedExceptionTransaction(id: Int) : TestTransaction(id) {
         override fun apply(ctx: TxEContext): Boolean {
             throw RuntimeException("Expected exception")
         }
@@ -137,34 +141,37 @@ open class IntegrationTest {
             return true
         }
     }
-/*
-    class TestTxQueue : TransactionQueue {
-        private val q = ArrayList<Transaction>()
-
-        override fun dequeueTransactions(): Array<Transaction> {
-            val result = Array(q.size, { q[it] })
-            q.clear()
-            return result
-        }
-
-        override fun peekTransactions(): List<Transaction> {
-            return q
-        }
-
-        fun add(tx: Transaction) {
-            q.add(tx)
-        }
-
-        override fun removeAll(transactionsToRemove: Collection<Transaction>) {
-            q.removeAll(transactionsToRemove)
-        }
-    }
-    */
 
     // PeerInfos must be shared between all nodes because
     // a listening node will update the PeerInfo port after
     // ServerSocket is created.
     var peerInfos: Array<PeerInfo>? = null
+
+    private var expectedSuccessRids = mutableMapOf<Long, MutableList<ByteArray>>()
+
+    protected fun enqueueTx(node: DataLayer, data: ByteArray, expectedConfirmationHeight: Long): Transaction? {
+        val tx = node.blockchainConfiguration.getTransactionFactory().decodeTransaction(data)
+        node.txQueue.enqueue(tx)
+        if (expectedConfirmationHeight >= 0) {
+            val list = expectedSuccessRids.get(expectedConfirmationHeight)
+            if (list == null) {
+                expectedSuccessRids.put(expectedConfirmationHeight, mutableListOf(tx.getRID()))
+            } else {
+                list.add(tx.getRID())
+            }
+        }
+        return tx
+    }
+
+    protected fun verifyBlockchainTransactions(node: DataLayer) {
+        val expectAtLeastHeight = expectedSuccessRids.keys.reduce { acc, l -> maxOf(l, acc) }
+        val bestHeight = getBestHeight(node)
+        assertTrue(bestHeight >= expectAtLeastHeight)
+        for (height in 0..bestHeight) {
+            val txRidsAtHeight = getTxRidsAtHeight(node, height)
+            assertArrayEquals(txRidsAtHeight, expectedSuccessRids.get(height)!!.toTypedArray())
+        }
+    }
 
     @After
     fun tearDown() {
@@ -172,6 +179,7 @@ open class IntegrationTest {
         nodes.clear()
         logger.debug("Closed nodes")
         peerInfos = null
+        expectedSuccessRids = mutableMapOf()
         configOverrides.clear()
     }
 
@@ -233,6 +241,10 @@ open class IntegrationTest {
         return Array(count, { createBasePeerCommConfiguration(count, it) })
     }
 
+    protected fun buildBlockAndCommit(node: DataLayer) {
+        buildBlockAndCommit(node.engine)
+    }
+
     protected fun buildBlockAndCommit(engine: BlockchainEngine) {
         val blockBuilder = engine.buildBlock()
         commitBlock(blockBuilder)
@@ -263,7 +275,6 @@ open class IntegrationTest {
         return node.blockQueries.getBestHeight().get()
     }
 }
-
 
 
 class TestBlockchainConfigurationFactory : BlockchainConfigurationFactory {
