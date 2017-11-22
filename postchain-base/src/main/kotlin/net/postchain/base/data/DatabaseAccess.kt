@@ -7,7 +7,6 @@ import net.postchain.base.toHex
 import net.postchain.core.*
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.*
-import java.util.stream.Stream
 
 interface DatabaseAccess {
     class BlockInfo(val blockIid: Long, val blockHeader: ByteArray, val witness: ByteArray)
@@ -250,20 +249,18 @@ class SQLDatabaseAccess(): DatabaseAccess {
                         "  UNIQUE (chain_id, block_rid)," +
                         "  UNIQUE (chain_id, block_height))")
 
-        val createTxTable = "CREATE TABLE transactions (" +
+        r.update(ctx.conn, "CREATE TABLE transactions (" +
                 "    tx_iid BIGSERIAL PRIMARY KEY, " +
                 "    chain_id bigint NOT NULL," +
                 "    tx_rid bytea NOT NULL," +
                 "    tx_data bytea NOT NULL," +
                 "    tx_hash bytea NOT NULL," +
                 "    block_iid bigint NOT NULL REFERENCES blocks(block_iid)," +
-                "    UNIQUE (chain_id, tx_rid))"
+                "    UNIQUE (chain_id, tx_rid))");
 
-        r.update(ctx.conn, createTxTable)
 
-        val createTransactionsBlockIidIndex = """CREATE INDEX transactions_block_iid_idx ON transactions(block_iid)"""
+        r.update(ctx.conn,"""CREATE INDEX transactions_block_iid_idx ON transactions(block_iid)""")
+        r.update(ctx.conn,"""CREATE INDEX blocks_chain_id_timestamp ON blocks(chain_id, timestamp)""")
 
-        // This is for eg getBlockTransactions()
-        r.update(ctx.conn, createTransactionsBlockIidIndex)
     }
 }
