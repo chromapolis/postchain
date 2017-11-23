@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>postchain-examples</artifactId>
-    <name>Postchain Examples</name>
+    <artifactId>postchain-cw-modules</artifactId>
+    <name>Postchain ChromaWay Modules</name>
 
     <dependencies>
         <dependency>

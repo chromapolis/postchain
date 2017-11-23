@@ -12,7 +12,7 @@
         <module>postchain-common</module>
         <module>postchain-base</module>
         <module>postchain-devtools</module>
-        <module>postchain-examples</module>
+        <module>postchain-cw-modules</module>
     </modules>
     <packaging>pom</packaging>
 
