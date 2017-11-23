@@ -89,22 +89,6 @@ class CommManagerTest : IntegrationTest() {
         }
     }
 
-    //
-//    private fun send(message: String, from: Int, to: Int) {
-//        while (true) {
-//            val dummyMessage = DummyMessage(from, message)
-//            commManagers[from].sendPacket(dummyMessage, setOf(to))
-//            Thread.sleep(1);
-//            val packets = commManagers[to].getPackets()
-//            packets.forEach {
-//                if (it.first == from && it.second.index == from
-//                        && it.second.text.equals(message)) {
-//                    return
-//                }
-//            }
-//        }
-//    }
-
     private fun send(message: String, from: Int, vararg to: Int) {
         val remaining = to.toMutableSet()
         while (true) {
@@ -137,13 +121,7 @@ class CommManagerTest : IntegrationTest() {
         return CommManager<DummyMessage>(
                 pc.myIndex,
                 peerInfo,
-                DummyPacketConverter(pc.myIndex),
-                { handleError(it) }
-        )
-    }
-
-    private fun handleError(e: Exception) {
-        logger.error("Shit pommes frites", e)
+                DummyPacketConverter(pc.myIndex))
     }
 
     class DummyPacketConverter(val myIndex: Int) : PacketConverter<DummyMessage> {

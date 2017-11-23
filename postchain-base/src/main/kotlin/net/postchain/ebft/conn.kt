@@ -54,8 +54,7 @@ class NullPeerConnect(override var id: Int) : AbstractPeerConnection {
     override fun sendPacket(b: ByteArray)  {/*logger.info(String(b))*/}
 }
 
-open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArray) -> Unit,
-                          val log: (Exception) -> Unit) : AbstractPeerConnection {
+open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArray) -> Unit) : AbstractPeerConnection {
     @Volatile protected var keepGoing: Boolean = true
     @Volatile var socket: Socket? = null
     private val outboundPackets = LinkedBlockingQueue<ByteArray>()
@@ -125,10 +124,9 @@ class PassivePeerConnection(
         val packetConverter: InitPacketConverter,
         inSocket: Socket,
         packetHandler: (Int, ByteArray) -> Unit,
-        log: (Exception) -> Unit,
         val registerConn: (PeerConnection) -> Unit,
         val myIndex: Int
-) : PeerConnection(-1, packetHandler, log) {
+) : PeerConnection(-1, packetHandler) {
 
     init {
         socket = inSocket
@@ -139,12 +137,12 @@ class PassivePeerConnection(
         try {
             val stream = DataOutputStream(socket1.getOutputStream())
             val err = writePacketsWhilePossible(stream)
-             if (err != null) {
-                log(err)
+            if (err != null) {
+                logger.debug("$myIndex closing socket to $id: ${err.message}")
             }
             socket1.close()
         } catch (e: Exception) {
-            log(e)
+            logger.error("$myIndex failed to cleanly close connection to $id", e)
         }
     }
 
@@ -160,10 +158,10 @@ class PassivePeerConnection(
 
             val err = readPacketsWhilePossible(stream)
             if (err != null) {
-                log(err)
+                logger.debug("$myIndex reading packet from ${id} stopped: ${err.message}")
             }
         } catch (e: Exception) {
-            log(e)
+            logger.error("$myIndex readLoop failed", e)
         }
     }
 }
@@ -173,9 +171,8 @@ class ActivePeerConnection(
         val peer: PeerInfo,
         val packetConverter: InitPacketConverter,
         packetHandler: (Int, ByteArray) -> Unit,
-        log: (Exception) -> Unit,
         val myIndex: Int
-) : PeerConnection(id, packetHandler, log) {
+) : PeerConnection(id, packetHandler) {
 
     val connAvail = CyclicBarrier(2)
 
@@ -192,11 +189,11 @@ class ActivePeerConnection(
                 writeOnePacket(stream, packetConverter.makeInitPacket(id)) // write init packet
                 val err = writePacketsWhilePossible(stream)
                 if (err != null) {
-                    log(err)
+                    logger.debug("$myIndex sending packet to ${id} failed: ${err.message}")
                 }
                 socket1.close()
             } catch (e: Exception) {
-                log(e)
+                logger.debug("$myIndex disconnected from ${id}: ${e.message}")
                 Thread.sleep(100)
             }
         }
@@ -209,11 +206,11 @@ class ActivePeerConnection(
                 val socket1 = socket ?: throw Exception("No connection")
                 val err = readPacketsWhilePossible(DataInputStream(socket1.getInputStream()))
                 if (err != null) {
-                    log(err)
+                    logger.debug("$myIndex reading packet from ${id} failed: ${err.message}")
                 }
                 socket1.close()
             } catch (e: Exception) {
-                log(e)
+                logger.debug("$myIndex readLoop for $id failed. Will retry. ${e.message}")
                 Thread.sleep(100)
             }
         }
@@ -229,7 +226,6 @@ class PeerConnectionAcceptor(
         peer: PeerInfo,
         val initPacketConverter: InitPacketConverter,
         val packetHandler: (Int, ByteArray) -> Unit,
-        val log: (Exception) -> Unit,
         val registerConn: (PeerConnection)->Unit,
         val myIndex: Int
 
@@ -258,13 +254,12 @@ class PeerConnectionAcceptor(
                         initPacketConverter,
                         socket,
                         packetHandler,
-                        log,
                         registerConn,
                         myIndex
                 )
             }
         } catch (e: Exception) {
-            log(e)
+            logger.debug("${myIndex} exiting accept loop")
         }
     }
 
@@ -289,8 +284,7 @@ interface PacketConverter<PT>: InitPacketConverter {
 
 class CommManager<PT> (val myIndex: Int,
                        peers: Array<PeerInfo>,
-                       val packetConverter: PacketConverter<PT>,
-                       val log: (Exception) -> Unit)
+                       val packetConverter: PacketConverter<PT>)
 {
     val connections: Array<AbstractPeerConnection>
     var inboundPackets = mutableListOf<Pair<Int, PT>>()
@@ -334,9 +328,9 @@ class CommManager<PT> (val myIndex: Int,
 
     private fun encoderLoop() {
         while (keepGoing) {
-            val pkt = outboundPackets.take()
-            if (!keepGoing) return
             try {
+                val pkt = outboundPackets.take()
+                if (!keepGoing) return
                 val data = packetConverter.encodePacket(pkt.packet)
                 if (pkt.recipients.isEmpty()) {
                     // Don't mind avoiding myIndex, just send to NullCommChannel. It's fine
@@ -346,8 +340,10 @@ class CommManager<PT> (val myIndex: Int,
                         connections[idx].sendPacket(data)
                     }
                 }
+            } catch (e: InterruptedException) {
+                logger.debug { "${myIndex} interrupted while taking next outbound packet" }
             } catch (e: Exception) {
-                log(e)
+                logger.debug("${myIndex} Exception in encoderLoop", e)
             }
         }
     }
@@ -359,7 +355,7 @@ class CommManager<PT> (val myIndex: Int,
                 val conn = ActivePeerConnection(index, peer,
                         packetConverter,
                         { idx, packet -> decodeAndEnqueue(idx, packet) },
-                        log, myIndex)
+                        myIndex)
                 conn.start()
                 connlist.add(conn)
             } else {
@@ -372,7 +368,6 @@ class CommManager<PT> (val myIndex: Int,
                 peers[myIndex],
                 packetConverter,
                 { idx, packet -> decodeAndEnqueue(idx, packet) },
-                log,
                 { conn -> logger.info("$myIndex Registering ${conn.id} $conn");connections[conn.id] = conn },
                 myIndex
         )
@@ -425,8 +420,7 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
     return CommManager<EbftMessage>(
             pc.myIndex,
             peerInfo,
-            packetConverter,
-            { e -> e.printStackTrace() }
+            packetConverter
     )
 
 }
