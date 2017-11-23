@@ -4,6 +4,13 @@ package net.postchain.gtx
 
 import net.postchain.core.Transactor
 import net.postchain.core.TxEContext
+import net.postchain.core.UserMistake
+
+class GTXOpMistake(message: String, opData: ExtOpData, argPos: Int? = null, cause: Exception? = null)
+    : UserMistake( message +
+        " (in ${opData.opName} #${opData.opIndex} " +
+        (if (argPos != null) "(arg ${argPos})" else "") + ")",
+        cause)
 
 abstract class GTXOperation(val data: ExtOpData): Transactor
 

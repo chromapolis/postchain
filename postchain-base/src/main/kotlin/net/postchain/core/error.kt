@@ -2,6 +2,6 @@
 
 package net.postchain.core
 
-class ProgrammerMistake(message: String, cause: Exception? = null) : RuntimeException(message, cause)
+open class ProgrammerMistake(message: String, cause: Exception? = null) : RuntimeException(message, cause)
 
-class UserMistake(message: String, cause: Exception? = null) : RuntimeException(message, cause)
+open class UserMistake(message: String, cause: Exception? = null) : RuntimeException(message, cause)

@@ -5,7 +5,6 @@ package net.postchain.gtx
 import net.postchain.base.hexStringToByteArray
 import net.postchain.core.ProgrammerMistake
 import net.postchain.core.UserMistake
-import net.postchain.gtx.messages.DictPair
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.*
@@ -27,12 +26,13 @@ interface GTXValue {
     fun asDict(): Map<String, GTXValue>
     fun asInteger(): Long
     fun asByteArray(convert: Boolean = false): ByteArray
+    fun asPrimitive(): Any?
     fun getRawGTXValue(): RawGTXValue
 }
 
 fun wrapValue(r: RawGTXValue): GTXValue {
     when (r.choiceID) {
-        RawGTXValue.null_Chosen -> return NullGTXValue()
+        RawGTXValue.null_Chosen -> return GTXNull
         RawGTXValue.byteArrayChosen -> return ByteArrayGTXValue(r.byteArray)
         RawGTXValue.stringChosen -> return StringGTXValue(r.string)
         RawGTXValue.integerChosen -> return IntegerGTXValue(r.integer)
@@ -51,8 +51,6 @@ fun encodeGTXValue(v: GTXValue): ByteArray {
     v.getRawGTXValue().der_encode(outs)
     return outs.toByteArray()
 }
-
-val GTXNull = NullGTXValue()
 
 // helper methods:
 fun gtx(i: Long): GTXValue { return IntegerGTXValue(i) }
@@ -123,6 +121,10 @@ class ArrayGTXValue(val array: Array<out GTXValue>): AbstractGTXValue() {
                 array.map { it.getRawGTXValue() }
         ))
     }
+
+    override fun asPrimitive(): Any? {
+        return array.map({ it.asPrimitive() }).toTypedArray()
+    }
 }
 
 fun makeDictPair (name: String, value: RawGTXValue): net.postchain.gtx.messages.DictPair {
@@ -149,9 +151,15 @@ class DictGTXValue(val dict: Map<String, GTXValue>): AbstractGTXValue() {
                     dict.entries.map { makeDictPair(it.key, it.value.getRawGTXValue()) }
                 ))
     }
+
+    override fun asPrimitive(): Any? {
+        return dict.mapValues {
+            it.value.asPrimitive()
+        }
+    }
 }
 
-class NullGTXValue: AbstractGTXValue() {
+object GTXNull: AbstractGTXValue() {
     override val type: GTXValueType = GTXValueType.NULL
     override fun isNull(): Boolean {
         return true
@@ -159,6 +167,10 @@ class NullGTXValue: AbstractGTXValue() {
 
     override fun getRawGTXValue(): net.postchain.gtx.messages.GTXValue {
         return RawGTXValue.null_(null)
+    }
+
+    override fun asPrimitive(): Any? {
+        return null
     }
 }
 
@@ -170,6 +182,10 @@ class IntegerGTXValue(val integer: Long): AbstractGTXValue() {
 
     override fun getRawGTXValue(): RawGTXValue {
         return RawGTXValue.integer(integer)
+    }
+
+    override fun asPrimitive(): Any {
+        return integer
     }
 }
 
@@ -193,6 +209,10 @@ class StringGTXValue(val string: String): AbstractGTXValue() {
         }
     }
 
+    override fun asPrimitive(): Any? {
+        return string
+    }
+
 }
 
 class ByteArrayGTXValue(val bytearray: ByteArray): AbstractGTXValue() {
@@ -202,5 +222,9 @@ class ByteArrayGTXValue(val bytearray: ByteArray): AbstractGTXValue() {
     }
     override fun getRawGTXValue(): RawGTXValue {
         return RawGTXValue.byteArray(bytearray)
+    }
+
+    override fun asPrimitive(): Any? {
+        return bytearray
     }
 }

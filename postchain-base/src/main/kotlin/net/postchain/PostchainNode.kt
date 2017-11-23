@@ -6,7 +6,6 @@ import net.postchain.api.rest.Model
 import net.postchain.api.rest.PostchainModel
 import net.postchain.api.rest.RestApi
 import net.postchain.base.*
-import net.postchain.base.data.BaseTransactionQueue
 import net.postchain.core.*
 import net.postchain.ebft.*
 import net.postchain.ebft.message.EbftMessage
@@ -46,7 +45,7 @@ class PostchainNode {
                     break
                 }
                 syncManager.update()
-                Thread.sleep(50)
+                Thread.sleep(2)
             }
         }
     }
