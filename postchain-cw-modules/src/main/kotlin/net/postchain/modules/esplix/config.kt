@@ -7,7 +7,8 @@ import org.apache.commons.configuration2.Configuration
 
 open class EsplixConfig (
         val cryptoSystem: CryptoSystem,
-        val blockchainRID: ByteArray
+        val blockchainRID: ByteArray,
+        val dbOps: EsplixDBOps
 )
 
 fun makeBaseEsplixConfig(config: Configuration): EsplixConfig {
@@ -17,6 +18,7 @@ fun makeBaseEsplixConfig(config: Configuration): EsplixConfig {
     val cs = SECP256K1CryptoSystem()
     return EsplixConfig(
             cs,
-            blockchainRID
+            blockchainRID,
+            BaseDBOps()
     )
 }

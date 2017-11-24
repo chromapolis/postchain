@@ -160,6 +160,6 @@ END
 $$
 LANGUAGE plpgsql VOLATILE;
 
-SELECT create_index_if_not_exists('certificate', 'id_index', '(id)');
+--SELECT create_index_if_not_exists('certificate', 'id_index', '(id)');
 
 
