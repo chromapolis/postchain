@@ -66,7 +66,7 @@ class GTXTestModule: SimpleGTXModule<Unit>(Unit,
                     WHERE transactions.tx_rid = ?""",
                     nullableStringReader, txRID.asByteArray(true))
             if (value == null)
-                NullGTXValue()
+                GTXNull
             else
                 gtx(value)
         })
