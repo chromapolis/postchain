@@ -1,9 +1,5 @@
-package net.postchain.test.gtx
+package net.postchain.gtx
 
-import net.postchain.gtx.GTXBlockchainConfigurationFactory
-import net.postchain.gtx.GTXDataBuilder
-import net.postchain.gtx.SQLGTXModuleFactory
-import net.postchain.gtx.gtx
 import net.postchain.test.IntegrationTest
 import org.junit.Test
 
@@ -11,12 +7,12 @@ class SQLModuleIntegrationTest: IntegrationTest() {
 
     fun makeTx(ownerIdx: Int, key: String, value: String): ByteArray {
         val owner = pubKey(ownerIdx)
-        val b = GTXDataBuilder(testBlockchainRID,  arrayOf(owner), myCS)
+        val b = GTXDataBuilder(net.postchain.test.gtx.testBlockchainRID, arrayOf(owner), net.postchain.test.gtx.myCS)
         b.addOperation("test_set_value",
                 arrayOf(gtx(key), gtx(value), gtx(owner))
         )
         b.finish()
-        b.sign(myCS.makeSigner(owner, privKey(ownerIdx)))
+        b.sign(net.postchain.test.gtx.myCS.makeSigner(owner, privKey(ownerIdx)))
         return b.serialize()
     }
 
@@ -27,7 +23,7 @@ class SQLModuleIntegrationTest: IntegrationTest() {
         configOverrides.setProperty("blockchain.1.gtx.modules",
                 listOf(SQLGTXModuleFactory::class.qualifiedName))
         configOverrides.setProperty("blockchain.1.gtx.sqlmodules",
-                listOf("postchain-base/src/test/resources/sqlmodule1.sql"))
+                listOf(javaClass.getResource("sqlmodule1.sql").file))
         val node = createDataLayer(0)
 
         enqueueTx(node, makeTx(0, "k", "v"), 0)

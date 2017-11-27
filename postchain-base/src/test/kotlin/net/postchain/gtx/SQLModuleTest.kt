@@ -11,8 +11,7 @@ class SQLModuleTest {
     @Test
     fun testModule() {
         val config = MapConfiguration(mapOf(
-                "gtx.sqlmodules" to "postchain-base/src/test/resources/sqlmodule1.sql"
-        //TODO: use more explicit absolute path
+                "gtx.sqlmodules" to javaClass.getResource("sqlmodule1.sql").file
         ))
 
         val mf = SQLGTXModuleFactory()
