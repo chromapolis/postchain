@@ -2,7 +2,7 @@
 
 package net.postchain.gtx
 
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.core.ProgrammerMistake
 import net.postchain.core.UserMistake
 import java.io.ByteArrayInputStream

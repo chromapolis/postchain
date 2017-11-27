@@ -4,17 +4,13 @@ package net.postchain.test
 
 import mu.KLogging
 import net.postchain.DataLayer
-import net.postchain.base.BaseBlockQueries
-import net.postchain.base.BaseBlockchainEngine
 import net.postchain.base.BasePeerCommConfiguration
 import net.postchain.base.DynamicPortPeerInfo
 import net.postchain.base.PeerInfo
 import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.base.data.BaseBlockchainConfiguration
-import net.postchain.base.data.BaseTransactionQueue
 import net.postchain.base.secp256k1_derivePubKey
-import net.postchain.base.toHex
-import net.postchain.baseStorage
+import net.postchain.common.toHex
 import net.postchain.core.BlockBuilder
 import net.postchain.core.BlockWitness
 import net.postchain.core.BlockchainConfiguration
@@ -26,14 +22,12 @@ import net.postchain.core.TxEContext
 import net.postchain.core.UserMistake
 import net.postchain.createDataLayer
 import net.postchain.ebft.BlockchainEngine
-import net.postchain.getBlockchainConfiguration
 import org.apache.commons.configuration2.CompositeConfiguration
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.MapConfiguration
 import org.apache.commons.configuration2.builder.fluent.Configurations
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import org.junit.After
-import org.junit.Assert
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -41,8 +35,6 @@ import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
-import java.util.HashMap
-import javax.xml.crypto.Data
 
 open class IntegrationTest {
     protected val nodes = mutableListOf<DataLayer>()

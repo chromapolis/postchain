@@ -4,7 +4,7 @@ package net.postchain.ebft
 
 import net.postchain.core.Signature
 import mu.KLogging
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import java.util.*
 
 class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long)

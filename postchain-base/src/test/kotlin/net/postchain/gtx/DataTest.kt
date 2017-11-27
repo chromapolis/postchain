@@ -3,7 +3,7 @@
 package net.postchain.gtx
 
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.base.secp256k1_derivePubKey
 import net.postchain.core.Signature
 import org.junit.Assert.*

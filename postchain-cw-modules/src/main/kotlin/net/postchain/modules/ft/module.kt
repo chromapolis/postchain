@@ -25,7 +25,7 @@ class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
 
     override fun initializeDB(ctx: EContext) {
         GTXSchemaManager.autoUpdateSQLSchema(
-                ctx, 0, javaClass, "schema.sql", "chromaway.ft"
+                ctx, 0, javaClass, "/net/postchain/modules/ft/schema.sql", "chromaway.ft"
         )
     }
 }

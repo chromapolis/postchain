@@ -12,8 +12,8 @@ import net.postchain.api.rest.Query
 import net.postchain.api.rest.QueryResult
 import net.postchain.api.rest.RestApi
 import net.postchain.api.rest.TxRID
-import net.postchain.base.hexStringToByteArray
-import net.postchain.base.toHex
+import net.postchain.common.hexStringToByteArray
+import net.postchain.common.toHex
 import net.postchain.common.RestTools
 import net.postchain.common.TestResponse
 import net.postchain.core.ProgrammerMistake

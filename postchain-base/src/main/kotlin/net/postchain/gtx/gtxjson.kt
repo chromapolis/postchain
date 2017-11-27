@@ -2,7 +2,7 @@
 
 package net.postchain.gtx
 
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.core.ProgrammerMistake
 import com.google.gson.*
 import java.lang.reflect.Type

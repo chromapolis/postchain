@@ -5,7 +5,7 @@ package net.postchain.base.data
 import mu.KLogging
 import net.postchain.base.ManagedBlockBuilder
 import net.postchain.base.Storage
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.core.*
 
 class BaseManagedBlockBuilder(

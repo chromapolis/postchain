@@ -3,7 +3,7 @@
 package net.postchain.api
 
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.common.RestTools
 import net.postchain.configurations.GTXTestModule
 import net.postchain.gtx.*

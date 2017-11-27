@@ -4,8 +4,8 @@ package net.postchain.api
 
 import net.postchain.api.rest.*
 import net.postchain.base.ConfirmationProof
-import net.postchain.base.hexStringToByteArray
-import net.postchain.base.toHex
+import net.postchain.common.hexStringToByteArray
+import net.postchain.common.toHex
 import net.postchain.core.ProgrammerMistake
 import net.postchain.core.TransactionStatus
 import net.postchain.core.UserMistake

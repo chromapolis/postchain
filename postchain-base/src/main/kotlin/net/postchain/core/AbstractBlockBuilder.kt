@@ -2,7 +2,7 @@
 
 package net.postchain.core
 
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 
 abstract class AbstractBlockBuilder (
         val ectx: EContext,

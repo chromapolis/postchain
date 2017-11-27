@@ -5,7 +5,7 @@ package net.postchain.gtx
 import net.postchain.core.EContext
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.ScalarHandler
-import spark.utils.IOUtils
+import java.util.Scanner
 
 object GTXSchemaManager {
     private val r = QueryRunner()
@@ -43,9 +43,7 @@ object GTXSchemaManager {
 
     fun loadModuleSQLSchema(ctx: EContext, jclass: Class<*>, name: String) {
         val r = QueryRunner()
-        val stream = jclass.getResourceAsStream(name)
-        val schemaSQL = IOUtils.toString(stream)
-        stream.close()
+        val schemaSQL = Scanner(javaClass.getResourceAsStream(name), "UTF-8").useDelimiter("\\A").next()
         r.update(ctx.conn, schemaSQL)
     }
 

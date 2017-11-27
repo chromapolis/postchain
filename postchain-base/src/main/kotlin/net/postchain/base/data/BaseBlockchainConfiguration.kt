@@ -10,7 +10,7 @@ import net.postchain.base.CryptoSystem
 import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.base.Signer
 import net.postchain.base.Storage
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.base.secp256k1_derivePubKey
 import net.postchain.core.*
 import org.apache.commons.configuration2.Configuration

@@ -5,7 +5,7 @@ package net.postchain.gtx
 import net.postchain.base.BaseBlockQueries
 import net.postchain.base.Storage
 import net.postchain.base.data.BaseBlockchainConfiguration
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.base.secp256k1_derivePubKey
 import net.postchain.core.*
 import nl.komponents.kovenant.Promise

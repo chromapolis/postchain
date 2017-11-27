@@ -1,9 +1,6 @@
 // Copyright (c) 2017 ChromaWay Inc. See README for license information.
 
-package net.postchain.base
-
-import net.postchain.base.data.BaseStorage
-import net.postchain.core.EContext
+package net.postchain.common
 
 private val HEX_CHARS = "0123456789abcdef"
 

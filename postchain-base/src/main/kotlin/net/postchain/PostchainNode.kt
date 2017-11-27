@@ -6,6 +6,7 @@ import net.postchain.api.rest.Model
 import net.postchain.api.rest.PostchainModel
 import net.postchain.api.rest.RestApi
 import net.postchain.base.*
+import net.postchain.common.hexStringToByteArray
 import net.postchain.core.*
 import net.postchain.ebft.*
 import net.postchain.ebft.message.EbftMessage

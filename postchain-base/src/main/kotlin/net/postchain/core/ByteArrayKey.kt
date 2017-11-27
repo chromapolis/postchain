@@ -2,7 +2,7 @@
 
 package net.postchain.core
 
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 
 class ByteArrayKey(val byteArray: ByteArray) {
     override fun equals(other: Any?): Boolean {

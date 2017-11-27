@@ -3,6 +3,7 @@
 package net.postchain.base
 
 import mu.KLogging
+import net.postchain.common.toHex
 import net.postchain.core.TransactionQueue
 import net.postchain.ebft.CommManager
 import net.postchain.ebft.message.EbftMessage

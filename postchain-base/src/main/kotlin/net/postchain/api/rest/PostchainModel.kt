@@ -4,7 +4,7 @@ package net.postchain.api.rest
 
 import net.postchain.base.BaseBlockQueries
 import net.postchain.base.ConfirmationProof
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.core.TransactionFactory
 import net.postchain.core.TransactionQueue
 import net.postchain.core.TransactionStatus.CONFIRMED

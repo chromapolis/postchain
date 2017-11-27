@@ -4,7 +4,7 @@ package net.postchain.integrationtest
 
 import net.postchain.PostchainNode
 import net.postchain.api.rest.ApiTx
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.core.BlockBuilder
 import net.postchain.core.BlockBuildingStrategy
 import net.postchain.core.BlockData

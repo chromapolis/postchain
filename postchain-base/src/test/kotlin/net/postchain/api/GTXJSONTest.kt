@@ -3,7 +3,7 @@
 package net.postchain.api
 
 import net.postchain.gtx.make_gtx_gson
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.gtx.GTXValue
 import net.postchain.gtx.gtx
 import com.google.gson.JsonObject

@@ -6,8 +6,8 @@ import com.google.gson.*
 import mu.KLogging
 import net.postchain.base.ConfirmationProof
 import net.postchain.base.Side
-import net.postchain.base.hexStringToByteArray
-import net.postchain.base.toHex
+import net.postchain.common.hexStringToByteArray
+import net.postchain.common.toHex
 import net.postchain.core.MultiSigBlockWitness
 import net.postchain.core.TransactionStatus
 import net.postchain.core.UserMistake

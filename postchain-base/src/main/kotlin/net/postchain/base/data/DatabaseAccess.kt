@@ -3,7 +3,7 @@
 package net.postchain.base.data
 
 import net.postchain.base.BaseBlockHeader
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.core.*
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.*

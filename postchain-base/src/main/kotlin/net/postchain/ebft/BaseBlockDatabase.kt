@@ -3,13 +3,12 @@
 package net.postchain.ebft
 
 import net.postchain.base.ManagedBlockBuilder
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.core.BlockData
 import net.postchain.core.BlockDataWithWitness
 import net.postchain.core.BlockQueries
 import net.postchain.core.MultiSigBlockWitnessBuilder
 import net.postchain.core.Signature
-import net.postchain.core.TransactionStatus
 import mu.KLogging
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred

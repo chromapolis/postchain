@@ -3,9 +3,9 @@
 package net.postchain.test.gtx
 
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.test.IntegrationTest
-import net.postchain.base.toHex
+import net.postchain.common.toHex
 import net.postchain.configurations.GTXTestModule
 import net.postchain.core.Transaction
 import net.postchain.gtx.GTXBlockchainConfigurationFactory

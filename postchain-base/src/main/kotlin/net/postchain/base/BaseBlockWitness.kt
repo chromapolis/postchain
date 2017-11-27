@@ -4,6 +4,7 @@ package net.postchain.base
 
 import net.postchain.core.*
 import mu.KLogging
+import net.postchain.common.toHex
 import java.nio.ByteBuffer
 
 class BaseBlockWitness(val _rawData: ByteArray, val _signatures: Array<Signature>)

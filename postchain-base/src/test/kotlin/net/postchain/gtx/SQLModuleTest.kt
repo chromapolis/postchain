@@ -11,7 +11,7 @@ class SQLModuleTest {
     @Test
     fun testModule() {
         val config = MapConfiguration(mapOf(
-                "gtx.sqlmodules" to "src/test/resources/sqlmodule1.sql"
+                "gtx.sqlmodules" to "/net/postchain/gtx/sqlmodule1.sql"
         ))
 
         val mf = SQLGTXModuleFactory()

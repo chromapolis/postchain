@@ -3,7 +3,7 @@
 package net.postchain.modules.ft
 
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.core.ByteArrayKey
 import org.apache.commons.configuration2.Configuration
 

@@ -4,6 +4,7 @@ package net.postchain.base
 
 import mu.KLogging
 import net.postchain.base.data.BaseManagedBlockBuilder
+import net.postchain.common.toHex
 import net.postchain.core.*
 import net.postchain.ebft.BlockchainEngine
 import nl.komponents.kovenant.task
