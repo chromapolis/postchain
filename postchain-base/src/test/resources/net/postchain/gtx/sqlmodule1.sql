@@ -16,13 +16,14 @@ BEGIN
     WHERE chain_id = ctx.chain_id AND key = _key;
 
     IF current_owner is NULL THEN
-        INSERT INTO test_hello (chain_id, key, value, owner)
-        VALUES (ctx.chain_id, key, value, owner);
+        INSERT INTO test_kv (chain_id, key, value, owner)
+        VALUES (ctx.chain_id, _key, _value, _owner);
     ELSIF current_owner = _owner THEN
         UPDATE test_kv SET value = _value WHERE chain_id = ctx.chain_id AND key = _key AND owner = _owner;
     ELSE
         RAISE EXCEPTION 'Record is owned by another user';
     END IF;
+    RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql;
 
