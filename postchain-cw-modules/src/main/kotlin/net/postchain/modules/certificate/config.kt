@@ -1,21 +1,21 @@
-package net.postchain.modules.esplix
+package net.postchain.modules.certificate
 
 import net.postchain.base.CryptoSystem
 import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.common.hexStringToByteArray
 import org.apache.commons.configuration2.Configuration
 
-open class EsplixConfig (
+class CertificateConfig (
         val cryptoSystem: CryptoSystem,
         val blockchainRID: ByteArray
 )
 
-fun makeBaseEsplixConfig(config: Configuration): EsplixConfig {
+fun makeBaseCertificateConfig(config: Configuration): CertificateConfig {
     val blockchainRID = config.getString("blockchainrid").hexStringToByteArray()
-    val esplixConfig = config.subset("gtx.esplix")
+    val esplixConfig = config.subset("gtx.certificate")
 
     val cs = SECP256K1CryptoSystem()
-    return EsplixConfig(
+    return CertificateConfig(
             cs,
             blockchainRID
     )

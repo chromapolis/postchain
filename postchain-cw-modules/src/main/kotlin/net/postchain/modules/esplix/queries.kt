@@ -1,7 +1,7 @@
 package net.postchain.modules.esplix
 
-import net.postchain.base.hexStringToByteArray
-import net.postchain.base.toHex
+import net.postchain.common.hexStringToByteArray
+import net.postchain.common.toHex
 import net.postchain.core.EContext
 import net.postchain.core.UserMistake
 import net.postchain.gtx.GTXValue
