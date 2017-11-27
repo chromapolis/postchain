@@ -1,7 +1,7 @@
 package net.postchain.test.modules.esplix
 
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.base.hexStringToByteArray
+import net.postchain.common.hexStringToByteArray
 import net.postchain.gtx.GTXBlockchainConfigurationFactory
 import net.postchain.gtx.GTXDataBuilder
 import net.postchain.gtx.gtx
@@ -15,12 +15,11 @@ val myCS = SECP256K1CryptoSystem()
 
 class EsplixIntegrationTest : IntegrationTest() {
 
-    fun makeCreateChainTx(chainID: ByteArray, creator: Int, nonce: ByteArray, callIndex: Long, payload: ByteArray): ByteArray {
+    fun makeCreateChainTx(chainID: ByteArray, creator: Int, nonce: ByteArray, payload: ByteArray): ByteArray {
         val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(creator)), myCS)
         b.addOperation("esplix_create_chain",arrayOf(
                 gtx(chainID),
                 gtx(nonce),
-                gtx(callIndex),
                 gtx(payload)))
         b.finish()
         b.sign(myCS.makeSigner(pubKey(creator), privKey(creator)))
@@ -28,10 +27,9 @@ class EsplixIntegrationTest : IntegrationTest() {
 
     }
 
-    fun makePostMessage(poster: Int, callIndex: Long, prevID: ByteArray, payload: ByteArray): ByteArray {
+    fun makePostMessage(poster: Int, prevID: ByteArray, payload: ByteArray): ByteArray {
         val b = GTXDataBuilder(testBlockchainRID, arrayOf(pubKey(poster)), myCS)
         b.addOperation("esplix_post_message",arrayOf(
-                gtx(callIndex),
                 gtx(prevID),
                 gtx(payload)))
         b.finish()
@@ -77,14 +75,12 @@ class EsplixIntegrationTest : IntegrationTest() {
                 chainID,
                 creator,
                 nonce,
-                0,
                 payload)
         buildBlockAndCommitWithTx(createChainTx)
 
         val messageID = chainID
         val postmessageTx = makePostMessage(
                 creator,
-                1,
                 messageID,
                 payload)
         buildBlockAndCommitWithTx(postmessageTx)
@@ -92,7 +88,6 @@ class EsplixIntegrationTest : IntegrationTest() {
         val messageID2 = myCS.digest(messageID+payload+pubKey(creator))
         val postMessageTx2 = makePostMessage(
                 user,
-                2,
                 messageID2,
                 payload
         )
@@ -101,7 +96,6 @@ class EsplixIntegrationTest : IntegrationTest() {
         val messageID3 = myCS.digest(messageID2+payload+pubKey(user))
         val postMessageTx3 = makePostMessage(
                 creator,
-                3,
                 messageID3,
                 payload
         )
@@ -110,7 +104,6 @@ class EsplixIntegrationTest : IntegrationTest() {
         //Deliberately try to post a message that has the incorrect prevID
         val postMessageTx4 = makePostMessage(
                 creator,
-                4,
                 ByteArray(32,{0}),
                 payload
         )

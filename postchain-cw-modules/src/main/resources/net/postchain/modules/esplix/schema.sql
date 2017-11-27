@@ -17,16 +17,6 @@ CREATE TABLE IF NOT EXISTS mcs_r2_messages (
   UNIQUE (message_id)
 );
 
-CREATE TABLE IF NOT EXISTS certificate (
-  certificate_iid SERIAL PRIMARY KEY,
-  id        TEXT   NOT NULL,
-  name      TEXT   NOT NULL,
-  pubkey    BYTEA  NOT NULL,
-  expires   BIGINT NOT NULL,
-  authority BYTEA  NOT NULL,
-  reason    BYTEA  NOT NULL
-);
-
 CREATE OR REPLACE FUNCTION mcs_r2_createChain
 (p_nonce bytea, p_chain_id bytea, p_tx_iid BIGINT, p_call_index INTEGER, p_payload bytea)
 RETURNS bigint AS $$
@@ -159,7 +149,4 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql VOLATILE;
-
---SELECT create_index_if_not_exists('certificate', 'id_index', '(id)');
-
 

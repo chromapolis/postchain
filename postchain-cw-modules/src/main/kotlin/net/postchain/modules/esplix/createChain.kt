@@ -3,33 +3,27 @@ package net.postchain.modules.esplix
 import net.postchain.core.TxEContext
 import net.postchain.gtx.ExtOpData
 import net.postchain.gtx.GTXOperation
-import net.postchain.modules.ft.ExtraData
-import net.postchain.modules.ft.getExtraData
+import org.apache.commons.dbutils.QueryRunner
+import org.apache.commons.dbutils.handlers.ScalarHandler
 
-class EsplixCreateChainData(val chainID: ByteArray, val nonce: ByteArray, val callIndex: Int, val payload: ByteArray, extra: ExtraData)
+//class EsplixCreateChainData(val chainID: ByteArray, val nonce: ByteArray, val callIndex: Int, val payload: ByteArray)
 
 class create_chain_op (val config: EsplixConfig, data: ExtOpData): GTXOperation(data) {
-    val chainData = EsplixCreateChainData(
-            data.args[0].asByteArray(),
-            data.args[1].asByteArray(),
-            data.args[2].asInteger().toInt(),
-            data.args[3].asByteArray(),
-            getExtraData(data,4)
-    )
+    private val r = QueryRunner()
+    private val longHandler = ScalarHandler<Long>()
+    val chainID = data.args[0].asByteArray()
+    val nonce = data.args[1].asByteArray()
+    val payload = data.args[2].asByteArray()
 
     override fun isCorrect(): Boolean {
-        if (data.args.size < 4)
+        if (data.args.size != 3)
             return false
         return true
     }
 
     override fun apply(ctx: TxEContext): Boolean {
-        config.dbOps.createChain(ctx,
-                chainData.chainID,
-                chainData.nonce,
-                ctx.txIID,
-                chainData.callIndex,
-                chainData.payload)
+        r.query(ctx.conn, "SELECT mcs_r2_createChain (?, ?, ?, ?, ?)", longHandler,
+                nonce, chainID, ctx.txIID, data.opIndex, payload)
         return true
     }
 }

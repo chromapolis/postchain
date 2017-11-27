@@ -11,12 +11,10 @@ class EsplixModule(val config: EsplixConfig) : SimpleGTXModule<EsplixConfig>(
         config,
         mapOf(
                 "esplix_create_chain" to ::create_chain_op,
-                "esplix_post_message" to ::post_message_op,
-                "esplix_certificate" to ::certificate_op
+                "esplix_post_message" to ::post_message_op
         ),
         mapOf(
                 "esplix_get_nonce" to ::getNonceQ,
-                "esplix_get_certificates" to ::getCertificatesQ,
                 "esplix_get_messages" to ::getMessagesQ
         )
 ) {

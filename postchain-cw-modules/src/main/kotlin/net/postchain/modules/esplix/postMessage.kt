@@ -3,35 +3,27 @@ package net.postchain.modules.esplix
 import net.postchain.core.TxEContext
 import net.postchain.gtx.ExtOpData
 import net.postchain.gtx.GTXOperation
-import net.postchain.modules.ft.ExtraData
-import net.postchain.modules.ft.getExtraData
-
-class EsplixPostMessageData(val callIndex: Int, val messageID: ByteArray, val prevID: ByteArray, val payload: ByteArray, extra: ExtraData)
+import org.apache.commons.dbutils.QueryRunner
+import org.apache.commons.dbutils.handlers.ScalarHandler
 
 class post_message_op (val config: EsplixConfig, data: ExtOpData): GTXOperation(data) {
-    val messageData = EsplixPostMessageData(
-            data.args[0].asInteger().toInt(), //CallIndex
-            config.cryptoSystem.digest(
-                    data.args[1].asByteArray()+
-                            data.args[2].asByteArray()+
-                            data.signers.reduce{it, acc -> it + acc}),
-            data.args[1].asByteArray(), //prevID
-            data.args[2].asByteArray(), //payload
-            getExtraData(data,3))
+    val prevID = data.args[0].asByteArray()
+    val payload = data.args[1].asByteArray()
+    val signers = data.signers.reduce{it, acc -> it + acc}
+    val messageID = config.cryptoSystem.digest(prevID+payload+signers)
+
+    private val r = QueryRunner()
+    private val unitHandler = ScalarHandler<Unit>()
 
     override fun isCorrect(): Boolean {
-        if (data.args.size < 3)
+        if (data.args.size != 2)
             return false
         return true
     }
 
     override fun apply(ctx: TxEContext): Boolean {
-        config.dbOps.postMessage(ctx,
-                ctx.txIID,
-                messageData.messageID,
-                messageData.prevID,
-                messageData.callIndex,
-                messageData.payload)
+        r.query(ctx.conn, "SELECT mcs_r2_postMessage(?, ?, ?, ?, ?)", unitHandler,
+                ctx.txIID, data.opIndex, messageID, prevID, payload)
         return true
     }
 }
