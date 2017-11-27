@@ -27,7 +27,7 @@ class SQLModuleIntegrationTest: IntegrationTest() {
         configOverrides.setProperty("blockchain.1.gtx.modules",
                 listOf(SQLGTXModuleFactory::class.qualifiedName))
         configOverrides.setProperty("blockchain.1.gtx.sqlmodules",
-                listOf("../postchain-base/src/test/resources/sqlmodule1.sql"))
+                listOf("postchain-base/src/test/resources/sqlmodule1.sql"))
         val node = createDataLayer(0)
 
         enqueueTx(node, makeTx(0, "k", "v"), 0)
