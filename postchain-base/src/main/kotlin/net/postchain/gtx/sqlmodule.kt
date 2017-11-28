@@ -11,7 +11,6 @@ import org.apache.commons.dbutils.handlers.ScalarHandler
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.Scanner
 
 fun decodeSQLTextArray(a: Any): Array<String> {
     val arr = a as java.sql.Array
@@ -134,7 +133,7 @@ class SQLGTXModule(private val moduleFiles: Array<String>): GTXModule
             val version = GTXSchemaManager.getModuleVersion(ctx, moduleName)
             if (version == null) {
                 try {
-                    val sql = Scanner(javaClass.getResourceAsStream(fileName), "UTF-8").useDelimiter("\\A").next()
+                    val sql = String(Files.readAllBytes(Paths.get(fileName)), StandardCharsets.UTF_8)
                     ctx.conn.createStatement().use {
                         it.execute(sql)
                     }

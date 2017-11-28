@@ -43,7 +43,7 @@ object GTXSchemaManager {
 
     fun loadModuleSQLSchema(ctx: EContext, jclass: Class<*>, name: String) {
         val r = QueryRunner()
-        val schemaSQL = Scanner(javaClass.getResourceAsStream(name), "UTF-8").useDelimiter("\\A").next()
+        val schemaSQL = Scanner(jclass.getResourceAsStream(name), "UTF-8").useDelimiter("\\A").next()
         r.update(ctx.conn, schemaSQL)
     }
 
