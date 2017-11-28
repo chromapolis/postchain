@@ -42,7 +42,7 @@ fun makeSQLOpDesc(opName: String, argNames: Array<String>, argTypes: Array<Strin
         // only signer is not nullable
         args.add(SQLOpArg(argNames[i], gtxType.first, gtxType.second, !gtxType.second))
     }
-    val query = "SELECT ${opName} (${Array(argTypes.size, { "?" }).joinToString(", ")})"
+    val query = "SELECT ${opName} (?::gtx_ctx, ${Array(args.size, { "?" }).joinToString(", ")})"
     return SQLOpDesc(opName, query, args.toTypedArray())
 }
 
@@ -78,12 +78,10 @@ class SQLGTXOperation(val opDesc: SQLOpDesc, opData: ExtOpData):
     }
 
     override fun apply(ctx: TxEContext): Boolean {
-        val s = ctx.conn.createStruct("gtx_ctx",
-                arrayOf(ctx.chainID, ctx.txIID, data.opIndex)
-        )
         val r = QueryRunner()
         return r.query(ctx.conn, opDesc.query, ScalarHandler<Boolean>(),
-                s, *args)
+                "(${ctx.chainID}, ${ctx.txIID}, ${data.opIndex})",
+                *args)
     }
 }
 

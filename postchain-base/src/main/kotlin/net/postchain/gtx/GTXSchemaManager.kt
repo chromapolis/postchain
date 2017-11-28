@@ -5,7 +5,7 @@ package net.postchain.gtx
 import net.postchain.core.EContext
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.ScalarHandler
-import java.util.Scanner
+import java.util.*
 
 object GTXSchemaManager {
     private val r = QueryRunner()
