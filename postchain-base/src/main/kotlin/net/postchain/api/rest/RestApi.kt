@@ -6,6 +6,7 @@ import com.google.gson.*
 import mu.KLogging
 import net.postchain.base.ConfirmationProof
 import net.postchain.base.Side
+import net.postchain.common.TimeLog
 import net.postchain.common.hexStringToByteArray
 import net.postchain.common.toHex
 import net.postchain.core.MultiSigBlockWitness
@@ -103,6 +104,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
 
         http.path(basePath, {
             http.post("/tx") { req, _ ->
+                val n = TimeLog.startSumConc("RestApi.route().postTx")
                 val b = req.body()
                 logger.debug("Request body: $b")
                 val tx = toTransaction(req)
@@ -110,6 +112,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
                     throw UserMistake("Invalid tx format. Expected {\"tx\": <hexString>}")
                 }
                 model.postTransaction(tx)
+                TimeLog.end("RestApi.route().postTx", n)
                 "{}"
             }
 

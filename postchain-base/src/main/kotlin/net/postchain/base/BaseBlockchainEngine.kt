@@ -4,6 +4,7 @@ package net.postchain.base
 
 import mu.KLogging
 import net.postchain.base.data.BaseManagedBlockBuilder
+import net.postchain.common.TimeLog
 import net.postchain.common.toHex
 import net.postchain.core.*
 import net.postchain.ebft.BlockchainEngine
@@ -116,7 +117,7 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
     }
 
     override fun buildBlock(): ManagedBlockBuilder {
-        val tStart = System.nanoTime()
+        TimeLog.startSum("BaseBlockchainEngine.buildBlock().buildBlock")
 
         val blockBuilder = makeBlockBuilder()
         val abstractBlockBuilder = ((blockBuilder as BaseManagedBlockBuilder).bb as AbstractBlockBuilder)
@@ -126,16 +127,20 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
         // the transaction queue is gone. This could potentially happen
         // during a revolt. We might need a "transactional" tx queue...
 
-        val tBegin = System.nanoTime()
+        TimeLog.startSum("BaseBlockchainEngine.buildBlock().appendtransactions")
         var nTransactions = 0
         var nRejects = 0
 
         while (true) {
             logger.debug("Checking transaction queue")
+            TimeLog.startSum("BaseBlockchainEngine.buildBlock().takeTransaction")
             val tx = tq.takeTransaction()
+            TimeLog.end("BaseBlockchainEngine.buildBlock().takeTransaction")
             if (tx != null) {
                 logger.info("Appending transaction ${tx.getRID().toHex()}")
+                TimeLog.startSum("BaseBlockchainEngine.buildBlock().maybeApppendTransaction")
                 val exception = blockBuilder.maybeAppendTransaction(tx)
+                TimeLog.end("BaseBlockchainEngine.buildBlock().maybeApppendTransaction")
                 if (exception != null) {
                     nRejects += 1
                     tq.rejectTransaction(tx, exception)
@@ -152,17 +157,17 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
             }
         }
 
-        val tEnd = System.nanoTime()
+        TimeLog.end("BaseBlockchainEngine.buildBlock().appendtransactions")
 
         blockBuilder.finalizeBlock()
 
-        val tDone = System.nanoTime()
+        TimeLog.end("BaseBlockchainEngine.buildBlock().buildBlock")
 
         if (LOG_STATS) {
-            val netRate = (nTransactions * 1000000000L) / (tEnd-tBegin)
-            val grossRate = (nTransactions * 1000000000L) / (tDone-tStart)
-            logger.info("""Block is finalized, ${nTransactions} + ${nRejects} transactions, \
-                ${ms(tStart, tDone)} ms, ${netRate} net tps, ${grossRate} gross tps"""
+            val netRate = (nTransactions * 1000000000L) / TimeLog.getLastValue("BaseBlockchainEngine.buildBlock().appendtransactions", true)
+            val grossRate = (nTransactions * 1000000000L) / TimeLog.getLastValue("BaseBlockchainEngine.buildBlock().buildBlock", true)
+            logger.info("""Block is finalized, ${nTransactions} + ${nRejects} transactions,
+                ${TimeLog.getLastValue("BaseBlockchainEngine.buildBlock().buildBlock")} ms, ${netRate} net tps, ${grossRate} gross tps"""
             )
 
         } else {

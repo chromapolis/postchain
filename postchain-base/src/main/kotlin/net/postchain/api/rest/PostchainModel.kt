@@ -2,8 +2,10 @@
 
 package net.postchain.api.rest
 
+import mu.KLogging
 import net.postchain.base.BaseBlockQueries
 import net.postchain.base.ConfirmationProof
+import net.postchain.common.TimeLog
 import net.postchain.common.toHex
 import net.postchain.core.TransactionFactory
 import net.postchain.core.TransactionQueue
@@ -16,13 +18,22 @@ open class PostchainModel(
         val transactionFactory: TransactionFactory,
         val blockQueries: BaseBlockQueries
 ) : Model {
+    companion object: KLogging()
+
     override fun postTransaction(tx: ApiTx) {
+        var n = TimeLog.startSumConc("PostchainModel.postTransaction().decodeTransaction")
         val decodedTransaction = transactionFactory.decodeTransaction(tx.bytes)
+        TimeLog.end("PostchainModel.postTransaction().decodeTransaction", n)
+
+        n = TimeLog.startSumConc("PostchainModel.postTransaction().isCorrect")
         if (!decodedTransaction.isCorrect()) {
             throw UserMistake("Transaction ${decodedTransaction.getRID()} is not correct")
         }
+        TimeLog.end("PostchainModel.postTransaction().isCorrect", n)
+        n = TimeLog.startSumConc("PostchainModel.postTransaction().enqueue")
         if (!txQueue.enqueue(decodedTransaction))
             throw OverloadedException("Transaction queue is full")
+        TimeLog.end("PostchainModel.postTransaction().enqueue", n)
     }
 
     override fun getTransaction(txRID: TxRID): ApiTx? {

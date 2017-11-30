@@ -52,20 +52,26 @@ class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
     override fun enqueue(tx: Transaction): Boolean {
         val rid = ByteArrayKey(tx.getRID())
         synchronized(this) {
-            if (queueSet.contains(rid)) return false
+            if (queueSet.contains(rid)) {
+                logger.debug("Skipping ${rid} first test")
+                return false
+            }
         }
 
         val comparableTx = ComparableTransaction(tx)
         try {
             if (tx.isCorrect())
                 synchronized(this) {
-                    if (queueSet.contains(rid)) return false
+                    if (queueSet.contains(rid)) {
+                        logger.debug("Skipping ${rid} second test")
+                        return false
+                    }
                     if (queue.offer(comparableTx)) {
                         logger.debug("Enqueued tx ${rid}")
                         queueSet.add(rid)
                         return true
                     } else {
-                        logger.debug("Skipping tx ${rid}, overloaded")
+                        logger.debug("Skipping tx ${rid}, overloaded. Queue contains ${queue.size} elements")
                         return false
                     }
                 } else {

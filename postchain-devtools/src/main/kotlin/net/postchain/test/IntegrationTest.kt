@@ -161,7 +161,7 @@ open class IntegrationTest {
         assertTrue(bestHeight >= expectAtLeastHeight)
         for (height in 0..bestHeight) {
             val txRidsAtHeight = getTxRidsAtHeight(node, height)
-            assertArrayEquals(txRidsAtHeight, expectedSuccessRids.get(height)!!.toTypedArray())
+            assertArrayEquals(expectedSuccessRids.get(height)!!.toTypedArray(), txRidsAtHeight)
         }
     }
 

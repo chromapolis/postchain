@@ -43,13 +43,14 @@ class DataLayer(val engine: BlockchainEngine,
 fun createDataLayer(config: Configuration, chainId: Long, nodeIndex: Int): DataLayer {
 
 
-    val blockchainConfiguration = getBlockchainConfiguration(config.subset("blockchain.$chainId"), chainId)
+    val blockchainSubset = config.subset("blockchain.$chainId")
+    val blockchainConfiguration = getBlockchainConfiguration(blockchainSubset, chainId)
     val storage = baseStorage(config, nodeIndex)
     withWriteConnection(storage, chainId, { blockchainConfiguration.initializeDB(it); true })
 
     val blockQueries = blockchainConfiguration.makeBlockQueries(storage)
 
-    val txQueue = BaseTransactionQueue()
+    val txQueue = BaseTransactionQueue(blockchainSubset.getInt("queuecapacity", 2500))
     val strategy = blockchainConfiguration.getBlockBuildingStrategy(blockQueries, txQueue)
 
     val engine = BaseBlockchainEngine(blockchainConfiguration, storage,

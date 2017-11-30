@@ -5,6 +5,7 @@ package net.postchain.base.data
 import mu.KLogging
 import net.postchain.base.ManagedBlockBuilder
 import net.postchain.base.Storage
+import net.postchain.common.TimeLog
 import net.postchain.common.toHex
 import net.postchain.core.*
 
@@ -38,17 +39,23 @@ class BaseManagedBlockBuilder(
     }
 
     override fun maybeAppendTransaction(tx: Transaction): UserMistake? {
+        TimeLog.startSum("BaseManagedBlockBuilder.maybeAppendTransaction().withSavepoint")
         try {
             s.withSavepoint(ctxt) {
+                TimeLog.startSum("BaseManagedBlockBuilder.maybeAppendTransaction().insideSavepoint")
                 try {
                     bb.appendTransaction(tx)
                 } catch (userMistake: UserMistake) {
                     logger.info("Failed to append transaction ${tx.getRID().toHex()}", userMistake)
                     throw userMistake
+                } finally {
+                    TimeLog.end("BaseManagedBlockBuilder.maybeAppendTransaction().insideSavepoint")
                 }
             }
         } catch (userMistake: UserMistake) {
             return userMistake
+        } finally {
+            TimeLog.end("BaseManagedBlockBuilder.maybeAppendTransaction().withSavepoint")
         }
         return null
     }
