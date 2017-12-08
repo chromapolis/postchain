@@ -6,7 +6,7 @@ This is a **pre-release** "alpha" version, which means that interfaces
 are subject to change and production use is NOT recommended.
 
 Technical information & user guide is
- [here](https://bitbucket.org/chromawallet/postchain2/src/4f088f53c34751d5861fa38b344db8be07814064/docs/quick-guide.md?at=master&fileviewer=file-view-default).
+ [here](https://bitbucket.org/chromawallet/postchain2/wiki/QuickGuide).
 
 ## Copyright & License information
 
