@@ -9,6 +9,18 @@ import net.postchain.common.TimeLog
 import net.postchain.common.toHex
 import net.postchain.core.*
 
+/**
+ * Wrapper around BlockBuilder providing more control over the process of building blocks,
+ * with checks to see if current working block has been commited or not, and rolling back
+ * database state in case some operation fails
+ *
+ * @property ctxt Connection context including blockchain and node identifiers
+ * @property s For database access
+ * @property bb The base block builder
+ * @property onCommit Clean-up function to be called when block has been commited
+ * @property closed Boolean for if block is open to further modifications and queries. It is closed if
+ * an operation fails to execute in full or if a witness is created and the block commited.
+ */
 class BaseManagedBlockBuilder(
         val ctxt: EContext,
         val s: Storage,
@@ -19,6 +31,14 @@ class BaseManagedBlockBuilder(
 
     var closed: Boolean = false
 
+    /**
+     * Wrapper for blockbuilder operations. Will close current working block for further modifications
+     * if an operation fails to execute in full.
+     *
+     * @param RT type of returned object from called operation (Currently all Unit)
+     * @param fn operation to be executed
+     * @return whatever [fn] returns
+     */
     fun <RT> runOp(fn: () -> RT): RT {
         if (closed)
             throw ProgrammerMistake("Already closed")
@@ -38,6 +58,13 @@ class BaseManagedBlockBuilder(
         runOp { bb.appendTransaction(tx) }
     }
 
+    /**
+     * Append transaction as long as everything is OK. withSavepoint will roll back any potential changes
+     * to the database state if appendTransaction fails to complete
+     *
+     * @param tx Transaction to be added to the current working block
+     * @return exception if error occurs
+     */
     override fun maybeAppendTransaction(tx: Transaction): UserMistake? {
         TimeLog.startSum("BaseManagedBlockBuilder.maybeAppendTransaction().withSavepoint")
         try {

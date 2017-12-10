@@ -7,13 +7,35 @@ import net.postchain.core.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
+/**
+ * Encapsulating a proof of a transaction hash in a block header
+ *
+ * @param txHash The transaction hash the proof applies to
+ * @param header The block header the [txHash] is supposedly in
+ * @param witness The block witness
+ * @param merklePath A Merkle path describing the branch from [txHash] to the root hash of the Merkle tree located in [header]
+ */
 class ConfirmationProof(val txHash: ByteArray, val header: ByteArray, val witness: BlockWitness, val merklePath: MerklePath)
 
+/**
+ * A collection of methods for various blockchain-related queries. Each query is called with the wrapping method [runOp]
+ * which will handle connections and logging.
+ *
+ * @param blockchainConfiguration Configuration data for the blockchain
+ * @param storage Connection manager
+ * @param blockStore Blockchain storage facilitator
+ * @param chainID Blockchain identifier
+ * @param mySubjectId Public key related to the private key used for signing blocks
+ */
 open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfiguration,
                        private val storage: Storage, private val blockStore: BlockStore,
                        private val chainId: Long, private val mySubjectId: ByteArray) : BlockQueries {
     companion object : KLogging()
 
+    /**
+     * Wrapper function for a supplied function with the goal of opening a new read-only connection, catching any exceptions
+     * on the query being run and logging them, and finally closing the connection
+     */
     protected fun <T> runOp(operation: (EContext) -> T): Promise<T, Exception> {
         return task {
             val ctx = storage.openReadConnection(chainId)
@@ -44,10 +66,17 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
         }
     }
 
+    /**
+     * Retrieve the full list of transactions from the given block RID
+     *
+     * @param blockRID The block identifier
+     * @throws ProgrammerMistake [blockRID] could not be found
+     */
     override fun getBlockTransactionRids(blockRID: ByteArray): Promise<List<ByteArray>, Exception> {
         return runOp {
             val height = blockStore.getBlockHeight(it, blockRID)
             if (height == null) {
+                //Shouldn't this be UserMistake?
                 throw ProgrammerMistake("BlockRID does not exist")
             }
             blockStore.getTxRIDsAtHeight(it, height).toList()
@@ -98,6 +127,13 @@ open class BaseBlockQueries(private val blockchainConfiguration: BlockchainConfi
         }
     }
 
+    /**
+     * Retrieve the full block at a specified height by first retrieving the wanted block RID and then
+     * getting each element of that block that will allow us to build the full block.
+     *
+     * @throws UserMistake No block could be found at the specified height
+     * @throws ProgrammerMistake Too many blocks (>1) found at the specified height
+     */
     override fun getBlockAtHeight(height: Long): Promise<BlockDataWithWitness, Exception> {
         return runOp {
             val blockRIDs = blockStore.getBlockRIDs(it, height)

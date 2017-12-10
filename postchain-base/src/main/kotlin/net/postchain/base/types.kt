@@ -23,8 +23,15 @@ class DynamicPortPeerInfo(host: String, pubKey: ByteArray): PeerInfo(host, 0, pu
     }
 }
 
-
+/**
+ * Function that will sign some data and return a signature
+ * */
 typealias Signer = (ByteArray) -> Signature
+
+/**
+ * Function that will return a boolean depending on if the data and
+ * signature applied to that data will properly verify
+ * */
 typealias Verifier = (ByteArray, Signature) -> Boolean
 
 interface PeerCommConfiguration {
@@ -34,6 +41,9 @@ interface PeerCommConfiguration {
     fun getVerifier(): Verifier
 }
 
+/**
+ * Cryptosystem implements necessary cryptographic functionalities
+ */
 interface CryptoSystem {
     fun digest(bytes: ByteArray): ByteArray
     fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer
@@ -42,7 +52,9 @@ interface CryptoSystem {
     fun getRandomBytes(size: Int): ByteArray
 }
 
-// block builder which automatically manages the connection
+/**
+ * A block builder which automatically manages the connection
+ */
 interface ManagedBlockBuilder : BlockBuilder {
     fun maybeAppendTransaction(tx: Transaction): UserMistake?
     fun rollback()

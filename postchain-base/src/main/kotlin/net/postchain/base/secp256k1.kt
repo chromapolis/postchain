@@ -113,28 +113,64 @@ fun secp256k1_derivePubKey(privKey: ByteArray): ByteArray {
     return q.getEncoded(true)
 }
 
+/**
+ * A collection of cryptographic functions based on the elliptic curve secp256k1
+ */
 class SECP256K1CryptoSystem : CryptoSystem {
     private val rand = SecureRandom()
 
+    /**
+     * Calculate the hash digest of a message
+     *
+     * @param bytes A ByteArray of data consisting of the message we want the hash digest of
+     * @return The hash digest of [bytes]
+     */
     override fun digest(bytes: ByteArray): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         return digest.digest(bytes)
     }
+
+    /**
+     * Create a function to be used for signing data based on supplied key parameters
+     *
+     * @param pubkey The public key used to verify the signature
+     * @param privKey The private key used to create the signature
+     * @return A function to be used to sign specified [data] with [privkey]
+     */
     override fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer {
         return { data ->
             Signature(pubKey, secp256k1_sign(digest(data), privKey))  }
     }
 
-    override fun verifyDigest(ddigest: ByteArray, s: Signature): Boolean {
-        return secp256k1_verify(ddigest, s.subjectID, s.data)
+    /**
+     * Verify a signature from hash digest of a message
+     *
+     * @param digest The hash digest of the message we want to verify the signature [s] for
+     * @param s The signature to verify
+     * @return True or false depending on the outcome of the verification
+     */
+    override fun verifyDigest(digest: ByteArray, s: Signature): Boolean {
+        return secp256k1_verify(digest, s.subjectID, s.data)
     }
 
+    /**
+     * Create a function to be used for verifying a signature based on some data
+     *
+     * @return A function that will take a signature and some data and return a boolean
+     */
     override fun makeVerifier(): Verifier {
         return { data, signature: Signature ->
             secp256k1_verify(digest(data), signature.subjectID, signature.data)
         }
     }
 
+    /**
+     * Generate some amount of random bytes
+     *
+     * @param size The number of bytes to generate
+     * @return The random bytes in a ByteArray
+     */
+    //TODO: Is it really secure to use SecureRandom()? Needs more research.
     override fun getRandomBytes(size: Int): ByteArray {
         val ret = ByteArray(size)
         rand.nextBytes(ret)

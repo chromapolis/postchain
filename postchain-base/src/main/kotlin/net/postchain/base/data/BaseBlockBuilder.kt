@@ -18,21 +18,49 @@ import net.postchain.core.ProgrammerMistake
 import net.postchain.core.TransactionFactory
 import java.util.Arrays
 
+/**
+ * BaseBlockBuilder is used to aid in building blocks, including construction and validation of block header and witness
+ *
+ * @property cryptoSystem Crypto utilities
+ * @property eContext Connection context including blockchain and node identifiers
+ * @property store For database access
+ * @property txFactory Used for serializing transaction data
+ * @property subjects Public keys for nodes authorized to sign blocks
+ * @property blockSigner Signing function for local node to sign block
+ */
 open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, store: BlockStore,
                             txFactory: TransactionFactory, val subjects: Array<ByteArray>, val blockSigner: Signer)
     : AbstractBlockBuilder(eContext, store, txFactory ) {
 
 
+    /**
+     * Computes the root hash for the Merkle tree of transactions currently in a block
+     *
+     * @return The Merkle tree root hash
+     */
     fun computeRootHash(): ByteArray {
-
         val digests = rawTransactions.map { txFactory.decodeTransaction(it).getHash() }
         return computeMerkleRootHash(cryptoSystem, digests.toTypedArray())
     }
 
+    /**
+     * Create block header from initial block data
+     *
+     * @return Block header
+     */
     override fun makeBlockHeader(): BlockHeader {
         return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(), System.currentTimeMillis())
     }
 
+    /**
+     * Validate block header:
+     * - check that previous block RID is used in this block
+     * - check for correct height
+     * - check for correct root hash
+     * - check that timestamp occurs after previous blocks timestamp
+     *
+     * @param bh The block header to validate
+     */
     override fun validateBlockHeader(bh: BlockHeader): Boolean {
         val bbh = bh as BaseBlockHeader
         if (!Arrays.equals(bbh.prevBlockRID, iBlockData.prevBlockRID)) return false
@@ -43,6 +71,15 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
         return true
     }
 
+    /**
+     * Validates the following:
+     *  - Witness is of a correct implementation
+     *  - The signatures are valid with respect to the block being signed
+     *  - The number of signatures exceeds the threshold necessary to deem the block itself valid
+     *
+     *  @param w The witness to be validated
+     *  @throws ProgrammerMistake Invalid BlockWitness implementation
+     */
     override fun validateWitness(w: BlockWitness): Boolean {
         if (!(w is MultiSigBlockWitness)) {
             throw ProgrammerMistake("Invalid BlockWitness impelmentation.")
@@ -54,6 +91,13 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
         return witnessBuilder.isComplete()
     }
 
+    /**
+     * Retrieve the builder for block witnesses. It can only be retrieved if the block is finalized.
+     *
+     * @return The block witness builder
+     * @throws ProgrammerMistake If the block is not finalized yet signatures can't be created since they would
+     * be invalid when further transactions are added to the block
+     */
     override fun getBlockWitnessBuilder(): BlockWitnessBuilder? {
         if (!finalized) {
             throw ProgrammerMistake("Block is not finalized yet.")
@@ -64,6 +108,11 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
         return witnessBuilder
     }
 
+    /**
+     * Return the number of signature required for a finalized block to be deemed valid
+     *
+     * @return An integer representing the threshold value
+     */
     protected open fun getRequiredSigCount(): Int {
         val requiredSigs: Int
         if (subjects.size == 1)

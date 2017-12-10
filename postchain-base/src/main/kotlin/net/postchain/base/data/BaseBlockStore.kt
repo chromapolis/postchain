@@ -6,10 +6,23 @@ import net.postchain.base.ConfirmationProofMaterial
 import net.postchain.core.*
 import java.util.stream.Stream
 
+/**
+ * Provides database access to the location where the blockchain with related metadata and transactions
+ * are stored
+ *
+ * @property db Object used to access the DBMS
+ * @property dbVersion version of the database
+ */
 class BaseBlockStore : BlockStore {
     var db: DatabaseAccess = SQLDatabaseAccess()
     private val dbVersion = 1
 
+    /**
+     * Get initial block data, i.e. data necessary for building the next block
+     *
+     * @param ctx Connection context
+     * @returns Initial block data
+     */
     override fun beginBlock(ctx: EContext): InitialBlockData {
         if (ctx.chainID < 0) {
             throw UserMistake("ChainId must be >=0, got ${ctx.chainID}")

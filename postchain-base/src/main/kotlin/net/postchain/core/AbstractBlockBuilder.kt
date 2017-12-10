@@ -5,6 +5,18 @@ package net.postchain.core
 import net.postchain.common.TimeLog
 import net.postchain.common.toHex
 
+/**
+ * This class includes the bare minimum functionality required by a real block builder
+ *
+ * @property ectx Connection context including blockchain and node identifiers
+ * @property store For database access
+ * @property txFactory Used for serializing transaction data
+ * @property finalized Boolean signalling if further updates to block is permitted
+ * @property rawTransactions list of encoded transactions
+ * @property transactions list of decoded transactions
+ * @property _blockData complete set of data for the block including header and [rawTransactions]
+ * @property iBlockData
+ */
 abstract class AbstractBlockBuilder (
         val ectx: EContext,
         val store: BlockStore,
@@ -24,11 +36,23 @@ abstract class AbstractBlockBuilder (
     lateinit var iBlockData: InitialBlockData
     var _blockData: BlockData? = null
 
+    /**
+     * Retrieve initial block data and set block context
+     */
     override fun begin() {
         iBlockData = store.beginBlock(ectx)
         bctx = BlockEContext(ectx.conn, ectx.chainID, ectx.nodeID, iBlockData.blockIID, iBlockData.timestamp)
     }
 
+    /**
+     * Apply transaction to current working block
+     *
+     * @param tx transaction to be added to block
+     * @throws ProgrammerMistake if block is finalized
+     * @throws UserMistake transaction is not correct
+     * @throws UserMistake failed to save transaction to database
+     * @throws UserMistake failed to apply transaction and update database state
+     */
     override fun appendTransaction(tx: Transaction) {
         if (finalized) throw ProgrammerMistake("Block is already finalized")
         // tx.isCorrect may also throw UserMistake to provide
@@ -57,6 +81,9 @@ abstract class AbstractBlockBuilder (
         TimeLog.end("AbstractBlockBuilder.appendTransaction().apply")
     }
 
+    /**
+     * By finalizing the block we won't allow any more transactions to be added, and the block RID and timestamp are set
+     */
     override fun finalizeBlock() {
         val bh = makeBlockHeader()
         store.finalizeBlock(bctx, bh)
@@ -64,6 +91,12 @@ abstract class AbstractBlockBuilder (
         finalized = true
     }
 
+    /**
+     * Apart from finalizing the block, validate the header
+     *
+     * @param bh Block header to finalize and validate
+     * @throws UserMistake Happens if validation of the block header fails
+     */
     override fun finalizeAndValidate(bh: BlockHeader) {
         if (validateBlockHeader(bh)) {
             store.finalizeBlock(bctx, bh)
@@ -74,10 +107,21 @@ abstract class AbstractBlockBuilder (
         }
     }
 
+    /**
+     * Return block data if block is finalized.
+     *
+     * @throws ProgrammerMistake When block is not finalized
+     */
     override  fun getBlockData(): BlockData {
         return _blockData ?: throw ProgrammerMistake("Block is not finalized yet")
     }
 
+    /**
+     * By commiting to the block we update the database to include the witness for that block
+     *
+     * @param w The witness for the block
+     * @throws ProgrammerMistake If the witness is invalid
+     */
     override fun commit(w: BlockWitness?) {
         if (w != null && !validateWitness(w)) {
             throw ProgrammerMistake("Invalid witness")
