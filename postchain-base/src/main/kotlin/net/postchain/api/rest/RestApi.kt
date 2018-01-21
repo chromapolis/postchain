@@ -99,10 +99,29 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
         http.port(listenPort)
 
         http.before({ req, res ->
+            res.header("Access-Control-Allow-Origin", "*");
+            res.header("Access-Control-Request-Method", "POST, GET, OPTIONS");
+            //res.header("Access-Control-Allow-Headers", "");
             res.type("application/json")
         })
 
         http.path(basePath, {
+
+            http.options("/*") { request, response ->
+
+                val accessControlRequestHeaders = request.headers("Access-Control-Request-Headers")
+                if (accessControlRequestHeaders != null) {
+                    response.header("Access-Control-Allow-Headers", accessControlRequestHeaders)
+                }
+
+                val accessControlRequestMethod = request.headers("Access-Control-Request-Method")
+                if (accessControlRequestMethod != null) {
+                    response.header("Access-Control-Allow-Methods", accessControlRequestMethod)
+                }
+
+                "OK"
+            }
+
             http.post("/tx") { req, _ ->
                 val n = TimeLog.startSumConc("RestApi.route().postTx")
                 val b = req.body()
