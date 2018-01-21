@@ -17,6 +17,9 @@ import org.apache.commons.configuration2.builder.fluent.Parameters
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.system.exitProcess
+import net.postchain.base.CryptoSystem
+import net.postchain.common.toHex
 
 
 class PostchainNode {
@@ -149,8 +152,17 @@ class PostchainNode {
     }
 }
 
+fun keygen() {
+    val cs = SECP256K1CryptoSystem()
+    // check that privkey is between 1 - 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140 to be valid?
+    val privkey = cs.getRandomBytes(32)
+    val pubkey = secp256k1_derivePubKey(privkey)
+    println("privkey:\t${privkey.toHex()}")
+    println("pubkey: \t${pubkey.toHex()}")
+}
+
 /**
- * args: [ { --nodeIndex | -i } <index> ] [ { --config | -c } <configFile> ]
+ * args: [ { --nodeIndex | -i } <index> ] [ { --config | -c } <configFile> ] [ {--keygen | -k } ]
  */
 fun main(args: Array<String>) {
     var i = 0
@@ -163,6 +175,10 @@ fun main(args: Array<String>) {
             }
             "-c", "--config" -> {
                 config = args[++i]
+            }
+            "-k", "--keygen" -> {
+                keygen()
+                exitProcess(0)
             }
         }
         i++

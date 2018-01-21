@@ -24,8 +24,8 @@ class BaseBlockManager(val blockDB: BlockDatabase, val statusManager: StatusMana
             intent = DoNothingIntent
             val promise = op()
             promise.success({ res ->
-                processing = false
                 onSuccess(res)
+                processing = false
             })
             promise.fail { err ->
                 processing = false
