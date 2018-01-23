@@ -27,6 +27,10 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -k)
+    java -cp $scriptdir/${project.artifactId}-${project.version}-${executable-classifier}.jar net.postchain.PostchainNodeKt -k
+    exit 0
+    ;;
     -h)
     echo "$usage"
     echo "$description"
