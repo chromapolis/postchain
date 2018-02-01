@@ -27,8 +27,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE FUNCTION test_get_value(q_chain_id bigint, q_key text)
+  RETURNS TABLE (val text, owner bytea)
+AS $$
+SELECT value as val, owner
+FROM test_kv
+WHERE test_kv.chain_id = q_chain_id AND test_kv.key = q_key;
+$$ LANGUAGE sql;
+
+CREATE FUNCTION test_get_keys(q_chain_id bigint, q_value text)
+    RETURNS TABLE (key text)
+AS $$
+SELECT key
+FROM test_kv
+WHERE test_kv.chain_id = q_chain_id AND test_kv.value = q_value;
+$$ LANGUAGE sql;
+
 SELECT gtx_define_operation('test_set_value');
-
-
+SELECT gtx_define_query('test_get_value');
+SELECT gtx_define_query('test_get_keys');
 
 

@@ -30,6 +30,19 @@ RETURNS TABLE (
     INNER JOIN pg_proc p ON f.id = p.oid;
 $$ LANGUAGE SQL;
 
+
+CREATE FUNCTION gtx_sqlm_get_queries()
+  RETURNS TABLE (
+    name text,
+    argnames text[],
+    argtypes text[]
+  ) AS $$
+SELECT  p.proname::text as name, p.proargnames as argnames,
+        regexp_split_to_array(oidvectortypes(proargtypes), E', ') as argtypes
+FROM gtx_sqlm_queries f
+  INNER JOIN pg_proc p ON f.id = p.oid;
+$$ LANGUAGE SQL;
+
 CREATE FUNCTION gtx_define_operation(opid regproc, _allow_no_signers boolean = false) RETURNS VOID AS $$
 DECLARE
     argtypes text[];
@@ -52,5 +65,23 @@ BEGIN
     INSERT INTO gtx_sqlm_operations(id, allow_no_signers)
     VALUES (opid, _allow_no_signers);
 
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE FUNCTION gtx_define_query(opid regproc, returnsjson boolean = false) RETURNS VOID AS $$
+DECLARE
+  isretset boolean;
+BEGIN
+  if returnsjson THEN
+    RAISE EXCEPTION 'json return type is not supported yet';
+  END IF;
+  SELECT proretset INTO isretset from pg_proc where oid = opid;
+  IF isretset <> true THEN
+    RAISE EXCEPTION 'Query procedure must return a set';
+  END IF;
+
+  INSERT INTO gtx_sqlm_queries(id)
+  VALUES (opid);
 END;
 $$ LANGUAGE plpgsql;
