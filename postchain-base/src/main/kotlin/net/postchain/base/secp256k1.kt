@@ -108,7 +108,7 @@ fun secp256k1_verify(digest: ByteArray, pubKey: ByteArray, signature: ByteArray)
 }
 
 fun secp256k1_derivePubKey(privKey: ByteArray): ByteArray {
-    val d = BigInteger(privKey)
+    val d = BigInteger(1, privKey)
     val q = CURVE_PARAMS.g.multiply(d)
     return q.getEncoded(true)
 }
