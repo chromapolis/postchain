@@ -43,8 +43,15 @@ FROM test_kv
 WHERE test_kv.chain_id = q_chain_id AND test_kv.value = q_value;
 $$ LANGUAGE sql;
 
+CREATE FUNCTION test_get_count(q_chain_id bigint)
+  RETURNS TABLE (nbigint BIGINT, ncount INT)
+AS $$
+SELECT cast(1 as BIGINT) as nbigint, 2 as ncount;
+$$ LANGUAGE sql;
+
 SELECT gtx_define_operation('test_set_value');
 SELECT gtx_define_query('test_get_value');
 SELECT gtx_define_query('test_get_keys');
+SELECT gtx_define_query('test_get_count');
 
 

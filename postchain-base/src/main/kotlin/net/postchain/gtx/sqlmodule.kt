@@ -35,7 +35,7 @@ fun makeSQLQueryDesc(opName: String, argNames: Array<String>, argTypes: Array<St
         throw UserMistake("Cannot define SQL op ${opName}: wrong parameter list")
 
     val args = convertArgs(fixedArgNames, argTypes, opName)
-    val query = "SELECT * FROM ${opName} (?, ${Array(args.size, { "?" }).joinToString(", ")})"
+    val query = "SELECT * FROM ${opName} (?${Array(args.size, { ",?" }).joinToString(", ")})"
     return SQLOpDesc(opName, query, args.toTypedArray())
 }
 
@@ -164,7 +164,7 @@ class SQLGTXModule(private val moduleFiles: Array<String>): GTXModule
                 // Integer, String, ByteArray accepted as column type
                 val dbValue = it.value
                 val gtxValue = when (dbValue) {
-                    is Long, Int, Short, Byte -> gtx(dbValue as Long)
+                    is Int, is Long, is Short, is Byte -> gtx((dbValue as Number).toLong())
                     is String -> gtx(dbValue)
                     is ByteArray -> gtx(dbValue)
                     else -> throw ProgrammerMistake("Unsupported return type" +

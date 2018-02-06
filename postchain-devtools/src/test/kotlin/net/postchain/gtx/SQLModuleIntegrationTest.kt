@@ -56,13 +56,18 @@ class SQLModuleIntegrationTest: IntegrationTest() {
 
         result = node.blockQueries.query("""{type: 'test_get_value', q_key: 'k'}""").get()
         gtxResult = gson.fromJson<GTXValue>(result, GTXValue::class.java)
-
         assertEquals(1, gtxResult.getSize())
         val hit0 = gtxResult.get(0).asDict()
         assertNotNull(hit0.get("val"))
         assertEquals("v2", hit0.get("val")!!.asString())
         assertNotNull(hit0.get("owner"))
         assertTrue(pubKey(0).contentEquals(hit0.get("owner")!!.asByteArray(true)))
+
+        result = node.blockQueries.query("""{type: 'test_get_count'}""").get()
+        gtxResult = gson.fromJson<GTXValue>(result, GTXValue::class.java)
+        assertEquals(1, gtxResult.getSize())
+        assertEquals(1, gtxResult.get(0).get("nbigint")!!.asInteger())
+        assertEquals(2, gtxResult.get(0).get("ncount")!!.asInteger())
 
         println(result)
     }
