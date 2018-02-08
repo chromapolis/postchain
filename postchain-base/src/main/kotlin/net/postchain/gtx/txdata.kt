@@ -15,7 +15,11 @@ import net.postchain.gtx.messages.GTXTransaction as RawGTXTransaction
 import net.postchain.gtx.messages.GTXValue as RawGTXValue
 
 class OpData(val opName: String, val args: Array<GTXValue>)
-class ExtOpData(val opName: String, val opIndex: Int, val signers: Array<ByteArray>, val args: Array<GTXValue>)
+class ExtOpData(val opName: String,
+                val opIndex: Int,
+                val blockchainRID: ByteArray,
+                val signers: Array<ByteArray>,
+                val args: Array<GTXValue>)
 
 val EMPTY_SIGNATURE: ByteArray = ByteArray(0)
 
@@ -27,7 +31,7 @@ class GTXData(val blockchainRID: ByteArray,
     fun getExtOpData(): Array<ExtOpData> {
         return operations.mapIndexed({
             idx, op ->
-            ExtOpData(op.opName, idx, signers, op.args)
+            ExtOpData(op.opName, idx, blockchainRID, signers, op.args)
         }).toTypedArray()
     }
 

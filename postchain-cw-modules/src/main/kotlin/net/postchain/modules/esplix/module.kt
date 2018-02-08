@@ -10,18 +10,17 @@ import org.apache.commons.configuration2.Configuration
 class EsplixModule(val config: EsplixConfig) : SimpleGTXModule<EsplixConfig>(
         config,
         mapOf(
-                "esplix_create_chain" to ::create_chain_op,
-                "esplix_post_message" to ::post_message_op
+                "R4createChain" to ::create_chain_op,
+                "R4postMessage" to ::post_message_op
         ),
         mapOf(
-                "esplix_get_nonce" to ::getNonceQ,
-                "esplix_get_messages" to ::getMessagesQ
+                "R4getMessages" to ::getMessagesQ
         )
 ) {
 
     override fun initializeDB(ctx: EContext) {
         GTXSchemaManager.autoUpdateSQLSchema(
-                ctx, 0, javaClass, "schema.sql", "chromaway.esplix"
+                ctx, 0, javaClass, "schema.sql", "chromaway.R4"
         )
     }
 }
