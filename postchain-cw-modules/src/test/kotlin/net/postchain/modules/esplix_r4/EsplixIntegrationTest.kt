@@ -5,9 +5,9 @@ import net.postchain.common.hexStringToByteArray
 import net.postchain.gtx.GTXBlockchainConfigurationFactory
 import net.postchain.gtx.GTXDataBuilder
 import net.postchain.gtx.gtx
-import net.postchain.modules.esplix.BaseEsplixModuleFactory
-import net.postchain.modules.esplix.computeChainID
-import net.postchain.modules.esplix.computeMessageID
+import net.postchain.modules.esplix_r4.BaseEsplixModuleFactory
+import net.postchain.modules.esplix_r4.computeChainID
+import net.postchain.modules.esplix_r4.computeMessageID
 import net.postchain.test.IntegrationTest
 import org.junit.Assert
 import org.junit.Test

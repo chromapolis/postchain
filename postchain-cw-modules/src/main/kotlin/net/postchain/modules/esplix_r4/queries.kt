@@ -1,7 +1,6 @@
-package net.postchain.modules.esplix
+package net.postchain.modules.esplix_r4
 
 import net.postchain.common.hexStringToByteArray
-import net.postchain.common.toHex
 import net.postchain.core.EContext
 import net.postchain.core.UserMistake
 import net.postchain.gtx.GTXValue
@@ -9,11 +8,8 @@ import net.postchain.gtx.gtx
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.MapListHandler
 
-class MessageEntry(val gtx: ByteArray, val gtx_id: ByteArray, val callIndex: Array<Int>)
+class MessageEntry(val txData: ByteArray, val txRID: ByteArray, val opIndexes: Array<Int>)
 
-fun getNonceQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue {
-    return gtx(config.cryptoSystem.getRandomBytes(32).toHex())
-}
 
 fun getMessagesQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue {
     val r = QueryRunner()
@@ -34,20 +30,20 @@ fun getMessagesQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue 
                 maxHits)
         return List<MessageEntry>(res.size, { index ->
             MessageEntry(
-                    res[index]["gtx"] as ByteArray,
-                    res[index]["gtx_id"] as ByteArray,
-                    res[index]["call_index"] as Array<Int>
+                    res[index]["tx_data"] as ByteArray,
+                    res[index]["tx_rid"] as ByteArray,
+                    res[index]["op_indexes"] as Array<Int>
 
             )
         })
     }
 
-    val messages = getMessages(ctx, chainID!!, sinceMessageID, maxHits)
+    val messages = getMessages(ctx, chainID, sinceMessageID, maxHits)
     val result = messages.map {
-        gtx("gtx" to gtx(it.gtx),
-                "gtx_id" to gtx(it.gtx_id),
-                "call_index" to gtx(*it.callIndex.map {
-                    gtx(it as Long)
+        gtx("txData" to gtx(it.txData),
+                "txRID" to gtx(it.txRID),
+                "opIndexes" to gtx(*it.opIndexes.map {
+                    gtx(it.toLong())
                 }.toTypedArray()))
     }.toTypedArray()
 

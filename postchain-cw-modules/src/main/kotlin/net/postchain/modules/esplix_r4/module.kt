@@ -1,4 +1,4 @@
-package net.postchain.modules.esplix
+package net.postchain.modules.esplix_r4
 
 import net.postchain.core.EContext
 import net.postchain.gtx.GTXModule
@@ -20,7 +20,7 @@ class EsplixModule(val config: EsplixConfig) : SimpleGTXModule<EsplixConfig>(
 
     override fun initializeDB(ctx: EContext) {
         GTXSchemaManager.autoUpdateSQLSchema(
-                ctx, 0, javaClass, "schema.sql", "chromaway.R4"
+                ctx, 0, javaClass, "schema.sql", "chromaway.esplix_r4"
         )
     }
 }

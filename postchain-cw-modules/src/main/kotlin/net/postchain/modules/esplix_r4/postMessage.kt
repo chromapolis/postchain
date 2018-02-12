@@ -1,4 +1,4 @@
-package net.postchain.modules.esplix
+package net.postchain.modules.esplix_r4
 
 import net.postchain.base.CryptoSystem
 import net.postchain.core.TxEContext
@@ -29,7 +29,7 @@ class post_message_op (val config: EsplixConfig, data: ExtOpData): GTXOperation(
     }
 
     override fun apply(ctx: TxEContext): Boolean {
-        r.query(ctx.conn, "SELECT mcs_r2_postMessage(?, ?, ?, ?, ?)", unitHandler,
+        r.query(ctx.conn, "SELECT r4_postMessage(?, ?, ?, ?, ?)", unitHandler,
                 ctx.txIID, data.opIndex, messageID, prevID, payload)
         return true
     }
