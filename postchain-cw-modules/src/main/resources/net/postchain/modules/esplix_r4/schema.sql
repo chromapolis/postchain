@@ -37,7 +37,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION r4_postMessage
+CREATE FUNCTION r4_postMessage
   (p_tx_iid BIGINT, p_op_index INTEGER, p_message_id BYTEA, p_prev_id BYTEA, p_payload  BYTEA)
   RETURNS VOID AS $$
 DECLARE
@@ -74,7 +74,7 @@ $$ LANGUAGE plpgsql;
 -- recipient
 -- sinceHash only include messages after this GTX hash. If null fetch
 --    all the way back from genesis.
-CREATE OR REPLACE FUNCTION r4_getMessages(p_chain_id BYTEA, since_message_id BYTEA, max_hits INTEGER)
+CREATE FUNCTION r4_getMessages(p_chain_id BYTEA, since_message_id BYTEA, max_hits INTEGER)
   RETURNS TABLE(
     tx_data    BYTEA,
     tx_rid     BYTEA,
@@ -99,7 +99,7 @@ BEGIN
 
   RETURN QUERY
 
-  SELECT sub.tx_data as tx_data, sub.tx_rid as tx_rid, array_agg(sub.call_index ORDER BY sub.call_index) as op_indexes
+  SELECT sub.tx_data as tx_data, sub.tx_rid as tx_rid, array_agg(sub.op_index ORDER BY sub.op_index) as op_indexes
   FROM
   (
   SELECT
@@ -116,8 +116,6 @@ BEGIN
   LIMIT max_hits) sub
   GROUP BY sub.tx_rid, sub.tx_iid, sub.tx_data
   ORDER BY sub.tx_iid ASC;
-
-
 END; $$
 LANGUAGE 'plpgsql';
 

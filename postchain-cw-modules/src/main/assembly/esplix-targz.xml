@@ -21,17 +21,8 @@
     </files>
     <fileSets>
         <fileSet>
-            <directory>${project.build.scriptSourceDirectory}</directory>
-            <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>*.sh</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <filtered>true</filtered>
-        </fileSet>
-        <fileSet>
-            <directory>src/main/resources/config</directory>
-            <outputDirectory>/config</outputDirectory>
+            <directory>src/main/resources/esplix-example-config</directory>
+            <outputDirectory>/esplix-example-config</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>

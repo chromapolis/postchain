@@ -2,6 +2,7 @@ package net.postchain.test.modules.esplix
 
 import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.common.hexStringToByteArray
+import net.postchain.common.toHex
 import net.postchain.gtx.GTXBlockchainConfigurationFactory
 import net.postchain.gtx.GTXDataBuilder
 import net.postchain.gtx.gtx
@@ -109,5 +110,20 @@ class EsplixIntegrationTest : IntegrationTest() {
                 payload
         )
         buildBlockAndCommitWithTx(postMessageTx4, true)
+
+        val msg1 = node.blockQueries.query(
+                """{"type":"R4getMessages",
+                    "chainID":"${chainID.toHex()}",
+                    "maxHits":1
+                   }""")
+        println(msg1.get())
+        val msg2 = node.blockQueries.query(
+                """{"type":"R4getMessages",
+                    "chainID":"${chainID.toHex()}",
+                    "sinceMessageID":"${messageID.toHex()}",
+                    "maxHits":1
+                   }""")
+        println(msg2.get())
+
     }
 }

@@ -2,6 +2,7 @@ package net.postchain.modules.esplix_r4
 
 import net.postchain.base.CryptoSystem
 import net.postchain.core.TxEContext
+import net.postchain.gtx.EMPTY_SIGNATURE
 import net.postchain.gtx.ExtOpData
 import net.postchain.gtx.GTXOperation
 import org.apache.commons.dbutils.QueryRunner
@@ -9,7 +10,11 @@ import org.apache.commons.dbutils.handlers.ScalarHandler
 
 fun computeMessageID(cryptoSystem: CryptoSystem,
                    prevID: ByteArray, payload: ByteArray, signers: Array<ByteArray>): ByteArray {
-    val signersCombined = signers.reduce{it, acc -> it + acc}
+    val signersCombined = if (signers.size > 0) {
+        signers.reduce{it, acc -> it + acc}
+    } else {
+        EMPTY_SIGNATURE
+    }
     return cryptoSystem.digest(prevID + payload + signersCombined)
 }
 

@@ -7,6 +7,7 @@ import net.postchain.gtx.GTXValue
 import net.postchain.gtx.gtx
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.MapListHandler
+import org.postgresql.jdbc.PgArray
 
 class MessageEntry(val txData: ByteArray, val txRID: ByteArray, val opIndexes: Array<Int>)
 
@@ -15,16 +16,16 @@ fun getMessagesQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue 
     val r = QueryRunner()
     val mapListHandler = MapListHandler()
 
-    val chainID = args["chainId"]?.asString()?.hexStringToByteArray()
+    val chainID = args["chainID"]?.asString()?.hexStringToByteArray()
     if (chainID == null)
         throw UserMistake("Invalid ChainID")
 
-    val sinceMessageID = args["sinceMessageId"]?.asString()?.hexStringToByteArray()
-    val maxHits = args["maxHits"]?.asInteger() ?: 100
+    val sinceMessageID = args["sinceMessageID"]?.asString()?.hexStringToByteArray()
+    val maxHits = (args["maxHits"]?.asInteger() ?: 100).toInt()
     if (maxHits < 1 || maxHits > 1000) throw UserMistake("Invalid maxHits")
 
-    fun getMessages(ctx: EContext, chainID: ByteArray, sinceMessageID: ByteArray?, maxHits: Long): List<MessageEntry> {
-        val res = r.query(ctx.conn, "SELECT * FROM findRatatoskMessages(?, ?, ?)", mapListHandler,
+    fun getMessages(ctx: EContext, chainID: ByteArray, sinceMessageID: ByteArray?, maxHits: Int): List<MessageEntry> {
+        val res = r.query(ctx.conn, "SELECT * FROM r4_getMessages(?, ?, ?)", mapListHandler,
                 chainID,
                 sinceMessageID,
                 maxHits)
@@ -32,8 +33,7 @@ fun getMessagesQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue 
             MessageEntry(
                     res[index]["tx_data"] as ByteArray,
                     res[index]["tx_rid"] as ByteArray,
-                    res[index]["op_indexes"] as Array<Int>
-
+                    (res[index]["op_indexes"] as PgArray).getArray() as Array<Int>
             )
         })
     }
