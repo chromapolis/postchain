@@ -18,14 +18,14 @@ class TimeLog {
 
         fun startSum(name: String): Int {
             if (!enabled) return -1
-            var timer = timers.getOrPut(name, {SumTimer()})
+            val timer = timers.getOrPut(name, {SumTimer()})
             timer.start(-1)
             return -1
         }
 
         fun startSumConc(name: String): Int {
             if (!enabled) return -1
-            var timer = timers.getOrPut(name, {SumTimer()})
+            val timer = timers.getOrPut(name, {SumTimer()})
             val n = nonce.getAndIncrement()
 
             timer.start(n)

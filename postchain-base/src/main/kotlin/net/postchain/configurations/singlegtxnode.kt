@@ -45,6 +45,8 @@ class GTXTestOp(u: Unit, opdata: ExtOpData): GTXOperation(opdata) {
     }
 
     override fun apply(ctx: TxEContext): Boolean {
+        if (data.args[1].asString() == "rejectMe")
+            throw UserMistake("You were asking for it")
         r.update(ctx.conn,
                 """INSERT INTO gtx_test_value(tx_iid, value) VALUES (?, ?)""",
                 ctx.txIID, data.args[1].asString())

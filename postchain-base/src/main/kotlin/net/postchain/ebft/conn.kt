@@ -41,6 +41,8 @@ val MAX_PAYLOAD_SIZE = 10000000
 
 */
 
+val MAX_QUEUED_PACKETS = 100
+
 interface AbstractPeerConnection {
     var id: Int
     fun stop()
@@ -57,7 +59,7 @@ class NullPeerConnect(override var id: Int) : AbstractPeerConnection {
 open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArray) -> Unit) : AbstractPeerConnection {
     @Volatile protected var keepGoing: Boolean = true
     @Volatile var socket: Socket? = null
-    private val outboundPackets = LinkedBlockingQueue<ByteArray>()
+    private val outboundPackets = LinkedBlockingQueue<ByteArray>(MAX_QUEUED_PACKETS)
     companion object : KLogging()
 
     protected fun readOnePacket(dataStream: DataInputStream): ByteArray {
@@ -116,6 +118,9 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
 
     override fun sendPacket(b: ByteArray) {
         if (!keepGoing) return
+        if (outboundPackets.size >= MAX_QUEUED_PACKETS) {
+            outboundPackets.poll()
+        }
         outboundPackets.put(b)
     }
 }
@@ -159,9 +164,11 @@ class PassivePeerConnection(
             val err = readPacketsWhilePossible(stream)
             if (err != null) {
                 logger.debug("$myIndex reading packet from ${id} stopped: ${err.message}")
+                stop()
             }
         } catch (e: Exception) {
             logger.error("$myIndex readLoop failed", e)
+            stop()
         }
     }
 }
@@ -194,7 +201,7 @@ class ActivePeerConnection(
                 socket1.close()
             } catch (e: Exception) {
                 logger.debug("$myIndex disconnected from ${id}: ${e.message}")
-                Thread.sleep(100)
+                Thread.sleep(2500)
             }
         }
     }
@@ -211,7 +218,7 @@ class ActivePeerConnection(
                 socket1.close()
             } catch (e: Exception) {
                 logger.debug("$myIndex readLoop for $id failed. Will retry. ${e.message}")
-                Thread.sleep(100)
+                Thread.sleep(2500)
             }
         }
     }
@@ -259,7 +266,7 @@ class PeerConnectionAcceptor(
                 )
             }
         } catch (e: Exception) {
-            logger.debug("${myIndex} exiting accept loop")
+            logger.error ("${myIndex} exiting accept loop")
         }
     }
 
@@ -288,7 +295,7 @@ class CommManager<PT> (val myIndex: Int,
 {
     val connections: Array<AbstractPeerConnection>
     var inboundPackets = mutableListOf<Pair<Int, PT>>()
-    val outboundPackets = LinkedBlockingQueue<OutboundPacket<PT>>()
+    val outboundPackets = LinkedBlockingQueue<OutboundPacket<PT>>(MAX_QUEUED_PACKETS)
     @Volatile private var keepGoing: Boolean = true
     private val encoderThread: Thread
     private val connAcceptor: PeerConnectionAcceptor
