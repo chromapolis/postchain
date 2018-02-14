@@ -19,6 +19,10 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
     init {
         myStatus = nodeStatuses[myIndex]
         myStatus.height = myNextHeight
+        // make sure that after restart status updates are still considered fresh
+        // this works fine as long as we have fewer than 1000 updates per second,
+        // otherwise we are screwed
+        myStatus.serial = System.currentTimeMillis() - 1518000000000
     }
 
     private fun countNodes (state: NodeState, height: Long, blockRID: ByteArray?): Int {
@@ -40,7 +44,11 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
     @Synchronized
     override fun onStatusUpdate(nodeIndex: Int, status: NodeStatus) {
         val existingStatus = nodeStatuses[nodeIndex]
-        if ((status.serial > existingStatus.serial) || (status.height > existingStatus.height)) {
+        if (
+                (status.serial > existingStatus.serial)
+                || (status.height > existingStatus.height)
+                || ((status.height == existingStatus.height) && (status.round > existingStatus.round))
+        ) {
             nodeStatuses[nodeIndex] = status
             recomputeStatus()
         }
@@ -282,6 +290,13 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                 if (!unfetchedNodes.isEmpty()) {
                     intent = FetchCommitSignatureIntent(myStatus.blockRID as ByteArray, unfetchedNodes.toTypedArray())
                     return true
+                } else {
+                    if (intent == DoNothingIntent)
+                        return false
+                    else {
+                        intent = DoNothingIntent
+                        return true
+                    }
                 }
             }
         } else if (myStatus.state == NodeState.WaitBlock) {
