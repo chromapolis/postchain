@@ -46,7 +46,7 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
         conn.close()
     }
 
-    override fun withSavepoint(ctxt: EContext, fn: () -> Unit) {
+    override fun withSavepoint(ctxt: EContext, fn: () -> Unit): Exception? {
         val savepointName = "appendTx${System.nanoTime()}"
         val savepoint = ctxt.conn.setSavepoint(savepointName)
         try {
@@ -55,7 +55,9 @@ class BaseStorage(private val writeDataSource: DataSource, private val readDataS
         } catch (e: Exception) {
             logger.debug("Exception in savepoint $savepointName", e)
             ctxt.conn.rollback(savepoint)
+            return e
         }
+        return null
     }
 
     override fun close() {

@@ -9,6 +9,7 @@ import net.postchain.common.toHex
 import net.postchain.core.*
 import net.postchain.ebft.BlockchainEngine
 import nl.komponents.kovenant.task
+import java.lang.Long.max
 
 val LOG_STATS = true
 
@@ -72,8 +73,8 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
 
         if (LOG_STATS) {
             val nTransactions = block.transactions.size
-            val netRate = (nTransactions * 1000000000L) / (tEnd-tBegin)
-            val grossRate = (nTransactions * 1000000000L) / (tDone-tStart)
+            val netRate = (nTransactions * 1000000000L) / max(tEnd-tBegin, 1)
+            val grossRate = (nTransactions * 1000000000L) / max(tDone-tStart, 1)
             logger.info("""Loaded block (par), ${nTransactions} transactions, \
                 ${ms(tStart, tDone)} ms, ${netRate} net tps, ${grossRate} gross tps"""
             )
@@ -118,10 +119,12 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
 
     override fun buildBlock(): ManagedBlockBuilder {
         TimeLog.startSum("BaseBlockchainEngine.buildBlock().buildBlock")
+        val tStart = System.nanoTime()
 
         val blockBuilder = makeBlockBuilder()
         val abstractBlockBuilder = ((blockBuilder as BaseManagedBlockBuilder).bb as AbstractBlockBuilder)
         blockBuilder.begin()
+        val tBegin = System.nanoTime()
 
         // TODO Potential problem: if the block fails for some reason,
         // the transaction queue is gone. This could potentially happen
@@ -159,17 +162,18 @@ open class BaseBlockchainEngine(private val bc: BlockchainConfiguration,
 
         TimeLog.end("BaseBlockchainEngine.buildBlock().appendtransactions")
 
+        val tEnd = System.nanoTime()
         blockBuilder.finalizeBlock()
+        val tDone = System.nanoTime()
 
         TimeLog.end("BaseBlockchainEngine.buildBlock().buildBlock")
 
         if (LOG_STATS) {
-            val netRate = (nTransactions * 1000000000L) / TimeLog.getLastValue("BaseBlockchainEngine.buildBlock().appendtransactions", true)
-            val grossRate = (nTransactions * 1000000000L) / TimeLog.getLastValue("BaseBlockchainEngine.buildBlock().buildBlock", true)
-            logger.info("""Block is finalized, ${nTransactions} + ${nRejects} transactions,
-                ${TimeLog.getLastValue("BaseBlockchainEngine.buildBlock().buildBlock")} ms, ${netRate} net tps, ${grossRate} gross tps"""
+            val netRate = (nTransactions * 1000000000L) / (tEnd-tBegin)
+            val grossRate = (nTransactions * 1000000000L) / (tDone-tStart)
+            logger.info("""Block is finalized, ${nTransactions} + ${nRejects} transactions, \
+                ${ms(tStart, tDone)} ms, ${netRate} net tps, ${grossRate} gross tps"""
             )
-
         } else {
             logger.info("Block is finalized")
         }

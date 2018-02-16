@@ -49,7 +49,7 @@ class PostchainNode {
                     break
                 }
                 syncManager.update()
-                Thread.sleep(2)
+                Thread.sleep(50)
             }
         }
     }
@@ -131,7 +131,11 @@ class PostchainNode {
         // special Array<PeerInfo> for dynamic ports
         val peerInfos = config.getProperty("testpeerinfos")
         if (peerInfos != null) {
-            return (peerInfos as List<PeerInfo>).toTypedArray()
+            if (peerInfos is PeerInfo) {
+                return arrayOf(peerInfos)
+            } else {
+                return (peerInfos as List<PeerInfo>).toTypedArray()
+            }
         }
 
         var peerCount = 0;

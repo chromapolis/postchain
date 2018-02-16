@@ -65,26 +65,21 @@ class BaseManagedBlockBuilder(
      * @param tx Transaction to be added to the current working block
      * @return exception if error occurs
      */
-    override fun maybeAppendTransaction(tx: Transaction): UserMistake? {
+    override fun maybeAppendTransaction(tx: Transaction): Exception? {
         TimeLog.startSum("BaseManagedBlockBuilder.maybeAppendTransaction().withSavepoint")
-        try {
-            s.withSavepoint(ctxt) {
+        val exception = s.withSavepoint(ctxt) {
                 TimeLog.startSum("BaseManagedBlockBuilder.maybeAppendTransaction().insideSavepoint")
                 try {
                     bb.appendTransaction(tx)
-                } catch (userMistake: UserMistake) {
-                    logger.info("Failed to append transaction ${tx.getRID().toHex()}", userMistake)
-                    throw userMistake
                 } finally {
                     TimeLog.end("BaseManagedBlockBuilder.maybeAppendTransaction().insideSavepoint")
                 }
             }
-        } catch (userMistake: UserMistake) {
-            return userMistake
-        } finally {
-            TimeLog.end("BaseManagedBlockBuilder.maybeAppendTransaction().withSavepoint")
+        TimeLog.end("BaseManagedBlockBuilder.maybeAppendTransaction().withSavepoint")
+        if (exception != null) {
+            logger.info("Failed to append transaction ${tx.getRID().toHex()}", exception)
         }
-        return null
+        return exception
     }
 
     override fun finalizeBlock() {

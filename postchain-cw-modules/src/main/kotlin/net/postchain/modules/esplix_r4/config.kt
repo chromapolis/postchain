@@ -1,4 +1,4 @@
-package net.postchain.modules.esplix
+package net.postchain.modules.esplix_r4
 
 import net.postchain.base.CryptoSystem
 import net.postchain.base.SECP256K1CryptoSystem
@@ -12,7 +12,7 @@ open class EsplixConfig (
 
 fun makeBaseEsplixConfig(config: Configuration): EsplixConfig {
     val blockchainRID = config.getString("blockchainrid").hexStringToByteArray()
-    val esplixConfig = config.subset("gtx.esplix")
+    val esplixConfig = config.subset("gtx.esplix_r4")
 
     val cs = SECP256K1CryptoSystem()
     return EsplixConfig(
