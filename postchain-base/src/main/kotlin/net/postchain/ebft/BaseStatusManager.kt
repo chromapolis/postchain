@@ -189,11 +189,8 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
             resetCommitSignatures()
         }
 
-
         // check if we have enough nodes who can participate in building a block
-        // this is irrelevant if we are in prepared state, then we just keep trying
-        // (might get perma-stuck if number of failures exceeds f)
-        if (myStatus.state !== NodeState.Prepared) {
+        if (true) {
             var sameHeightCount: Int = 0
             var higherHeightCount: Int = 0
             for (ns in nodeStatuses) {
@@ -204,7 +201,11 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                 // cannot build a block
 
                 // worth trying to sync?
-                if (higherHeightCount > 0) {
+                // if we are in prepared state, we fetch block only if there's a supermajority
+                // of nodes with higher height
+                if ((higherHeightCount > 0)
+                    && ((myStatus.state != NodeState.Prepared)
+                                || (higherHeightCount > this.quorum2f))) {
                     val _intent = intent
 
                     if (_intent is FetchBlockAtHeightIntent) {
@@ -214,7 +215,12 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                         return true
                     }
 
-                    if (myStatus.state == NodeState.HaveBlock) {
+                    if (myStatus.state != NodeState.WaitBlock) {
+                        when (myStatus.state) {
+                            NodeState.Prepared -> logger.error("Resetting block in Prepared state !!!")
+                            NodeState.HaveBlock -> logger.warn("Resetting block in HaveBlock state")
+                            else -> Unit
+                        }
                         resetBlock()
                     }
 
@@ -222,7 +228,6 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                     this.intent = FetchBlockAtHeightIntent(myStatus.height)
                     return true
                 }
-                // there is no point in updating state further, but doesn't hurt anyway...
             }
         }
 
@@ -256,7 +261,7 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
         if (myStatus.state === NodeState.HaveBlock) {
             val count = countNodes(NodeState.HaveBlock, myStatus.height, myStatus.blockRID) +
                     countNodes(NodeState.Prepared, myStatus.height, myStatus.blockRID)
-            if (count >= this.quorum2f) {
+            if (count > this.quorum2f) {
                 myStatus.state = NodeState.Prepared
                 myStatus.serial += 1
                 return true

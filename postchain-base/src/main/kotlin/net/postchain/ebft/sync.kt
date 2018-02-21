@@ -66,6 +66,8 @@ private class StatusSender(private val maxStatusInterval: Int, private val statu
     }
 }
 
+val StatusLogInterval = 10000L
+
 class SyncManager(
         val statusManager: StatusManager,
         val blockManager: BlockManager,
@@ -80,6 +82,7 @@ class SyncManager(
     private var currentTimeout = defaultTimeout
     private var processingIntent : BlockIntent = DoNothingIntent
     private var processingIntentDeadline = 0L
+    private var lastStatusLogged = Date().time
 
     companion object : KLogging()
 
@@ -229,6 +232,17 @@ class SyncManager(
         processingIntentDeadline = Date().time + currentTimeout
     }
 
+    fun logStatus() {
+        for ((idx, ns) in statusManager.nodeStatuses.withIndex()) {
+            val blockRID = ns.blockRID
+            val haveSignature = statusManager.commitSignatures[idx] != null
+            logger.info {
+                "Node ${idx} he:${ns.height} ro:${ns.round} st:${ns.state}" +
+                " ${if (ns.revolting) "R" else ""} blockRID=${if (blockRID == null) "null" else blockRID.toHex()}" +
+                " havesig:${haveSignature}"
+            }
+        }
+    }
 
     fun update() {
         // Process all messages from peers, one at a time. Some
@@ -248,9 +262,14 @@ class SyncManager(
         // Typical revolt conditions
         //    * A timeout happens and round has not increased. Round is increased then 2f+1 nodes
         //      are revolting.
-        revoltTracker.update();
+        revoltTracker.update()
 
         // Sends a status message to all peers when my status has changed or after a timeout
-        statusSender.update();
+        statusSender.update()
+
+        if (Date().time - lastStatusLogged >= StatusLogInterval) {
+            logStatus()
+            lastStatusLogged = Date().time
+        }
     }
 }
