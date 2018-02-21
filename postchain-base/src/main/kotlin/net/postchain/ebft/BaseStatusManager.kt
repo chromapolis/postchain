@@ -293,8 +293,13 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                     }
                 }
                 if (!unfetchedNodes.isEmpty()) {
-                    intent = FetchCommitSignatureIntent(myStatus.blockRID as ByteArray, unfetchedNodes.toTypedArray())
-                    return true
+                    val newIntent = FetchCommitSignatureIntent(myStatus.blockRID as ByteArray, unfetchedNodes.toTypedArray())
+                    if (newIntent == intent) {
+                        return false
+                    } else {
+                        intent = newIntent
+                        return true
+                    }
                 } else {
                     if (intent == DoNothingIntent)
                         return false

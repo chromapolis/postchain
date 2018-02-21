@@ -30,10 +30,7 @@ class NodeStatus (var height: Long, var serial: Long) {
     var revolting: Boolean = false // PBFT: VIEW-CHANGE (?)
 
     constructor (): this(0, -1)
-
 }
-
-
 
 interface BlockDatabase {
     fun addBlock(block: BlockDataWithWitness): Promise<Unit, Exception> // add a complete block after the current one
