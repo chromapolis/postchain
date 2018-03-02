@@ -23,7 +23,7 @@
         <dependency>
             <groupId>net.postchain</groupId>
             <artifactId>postchain-base</artifactId>
-            <scope>provided</scope>
+<!--            <scope>provided</scope> -->
         </dependency>
         <dependency>
             <groupId>net.postchain</groupId>
