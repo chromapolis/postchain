@@ -190,7 +190,7 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
         }
 
         // check if we have enough nodes who can participate in building a block
-        if (true) {
+        if (myStatus.state != NodeState.Prepared) {
             var sameHeightCount: Int = 0
             var higherHeightCount: Int = 0
             for (ns in nodeStatuses) {
@@ -203,9 +203,7 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                 // worth trying to sync?
                 // if we are in prepared state, we fetch block only if there's a supermajority
                 // of nodes with higher height
-                if ((higherHeightCount > 0)
-                    && ((myStatus.state != NodeState.Prepared)
-                                || (higherHeightCount > this.quorum2f))) {
+                if (higherHeightCount > 0) {
                     val _intent = intent
 
                     if (_intent is FetchBlockAtHeightIntent) {
@@ -215,12 +213,8 @@ class BaseStatusManager(val nodeCount: Int, val myIndex: Int, myNextHeight: Long
                         return true
                     }
 
-                    if (myStatus.state != NodeState.WaitBlock) {
-                        when (myStatus.state) {
-                            NodeState.Prepared -> logger.error("Resetting block in Prepared state !!!")
-                            NodeState.HaveBlock -> logger.warn("Resetting block in HaveBlock state")
-                            else -> Unit
-                        }
+                    if (myStatus.state == NodeState.HaveBlock) {
+                        logger.warn("Resetting block in HaveBlock state")
                         resetBlock()
                     }
 
