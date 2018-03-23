@@ -12,7 +12,7 @@ class CertificateEntry(val id: String, val name: String, val pubkey: ByteArray,
                        val expires: Long, val authority: ByteArray, val reason: ByteArray)
 
 fun getCertificatesQ(config: CertificateConfig, ctx: EContext, args: GTXValue): GTXValue {
-    val id = args["id"]?.asString()?.hexStringToByteArray()
+    val id = args["id"]?.asString()
     if (id == null) throw UserMistake("Missing id")
 
     val authority = args["authority"]?.asByteArray()
@@ -20,7 +20,7 @@ fun getCertificatesQ(config: CertificateConfig, ctx: EContext, args: GTXValue): 
     val r = QueryRunner()
     val mapListHandler = MapListHandler()
     val result: MutableList<MutableMap<String,Any>>
-    val now = System.currentTimeMillis()
+    val now: Long = System.currentTimeMillis()
 
     if (authority != null) {
         result = r.query(ctx.conn,

@@ -1,6 +1,7 @@
 package net.postchain.modules.certificate
 
 import net.postchain.core.TxEContext
+import net.postchain.core.UserMistake
 import net.postchain.gtx.ExtOpData
 import net.postchain.gtx.GTXOperation
 import org.apache.commons.dbutils.QueryRunner
@@ -25,18 +26,17 @@ class certificate_op (val config: CertificateConfig, data: ExtOpData): GTXOperat
         })
             return false
 
-        if (id == null) return false
-        if (name == null) return false
-        if (pubkey == null || pubkey.size != 33) return false
+        if (pubkey.size != 33) return false
         if (expires < 0) return false
-        if (authority == null || authority.size != 33) return false
         if (authority.size != 33) return false
         return true
     }
 
     override fun apply(ctx: TxEContext): Boolean {
-        r.query(ctx.conn, "INSERT INTO certificate (id, name, pubkey, expires, authority, reason) " +
-                "values(?, ?, ?, ?, ?, ?)", unitHandler, id, name, pubkey, expires, authority, reason)
+        if (ctx.timestamp >= expires)
+            throw UserMistake("Certificate already expired")
+        r.update(ctx.conn, "INSERT INTO certificate (id, name, pubkey, expires, authority, reason) " +
+                "values(?, ?, ?, ?, ?, ?)",  id, name, pubkey, expires, authority, reason)
         return true
     }
 }
