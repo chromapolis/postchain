@@ -20,7 +20,12 @@ fun getMessagesQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue 
     if (chainID == null)
         throw UserMistake("Invalid ChainID")
 
-    val sinceMessageID = args["sinceMessageID"]?.asString()?.hexStringToByteArray()
+    var sinceMessageID : ByteArray? = null
+    args["sinceMessageID"]?.let {
+        if (!it.isNull())
+            sinceMessageID = it.asString().hexStringToByteArray()
+    }
+
     val maxHits = (args["maxHits"]?.asInteger() ?: 100).toInt()
     if (maxHits < 1 || maxHits > 1000) throw UserMistake("Invalid maxHits")
 
