@@ -29,6 +29,12 @@ class TransferData<InputAccountT, OutputAccountT>
 typealias StaticTransferElement = TransferElement<ByteArray>
 typealias StaticTransferData = TransferData<ByteArray, ByteArray>
 
+/**
+ * Extract data related to the transfer to its own data structure, including inputs and outputs
+ *
+ * @param opData operation data containing the arguments from which data is extracted
+ * @return the data structure holding the transfer data
+ */
 fun parseTransferData(opData: ExtOpData): StaticTransferData {
     val args = opData.args
     if (args.size < 2) throw UserMistake("Not enough arguments to transfer")
