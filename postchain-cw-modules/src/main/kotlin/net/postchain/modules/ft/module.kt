@@ -9,6 +9,11 @@ import net.postchain.gtx.GTXSchemaManager
 import net.postchain.gtx.SimpleGTXModule
 import org.apache.commons.configuration2.Configuration
 
+/**
+ * FT Module including valid operations and queries
+ *
+ * @property config configuration for the module
+ */
 class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
         config,
         mapOf(
@@ -23,6 +28,11 @@ class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
         )
 ) {
 
+    /**
+     * Initialize database
+     *
+     * @param ctx contextual information
+     */
     override fun initializeDB(ctx: EContext) {
         GTXSchemaManager.autoUpdateSQLSchema(
                 ctx, 0, javaClass, "/net/postchain/modules/ft/schema.sql", "chromaway.ft"
@@ -30,7 +40,18 @@ class FTModule(val config: FTConfig) : SimpleGTXModule<FTConfig>(
     }
 }
 
+/**
+ * Factory to create module
+ *
+ * @return the module factory
+ */
 class BaseFTModuleFactory : GTXModuleFactory {
+    /**
+     * Create FT module with configuration in [config]
+     *
+     * @param config base configuration for the FT module
+     * @return an instance of the module
+     */
     override fun makeModule(config: Configuration): GTXModule {
         return FTModule(makeBaseFTConfig(config))
     }

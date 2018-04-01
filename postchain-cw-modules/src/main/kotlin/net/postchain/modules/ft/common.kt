@@ -42,6 +42,18 @@ interface AccountResolver {
     fun resolveOutputAccount(ctx: OpEContext, dbops: FTDBOps, accountID: ByteArray): FTOutputAccount
 }
 
+/**
+ * Configuration for the FT module.
+ *
+ * @property issueRules rules for the issuing operation
+ * @property transferRules rules for the transfer operation
+ * @property registerRules rules for the register operation
+ * @property accountFactory factory for creating new input and output accounts
+ * @property accountResolver resolves accounts given their descriptors
+ * @property dbOps database operations
+ * @property cryptoSystem cryptographic operations
+ * @property blockchainRID reference to the blockchain
+ */
 open class FTConfig (
         val issueRules : FTIssueRules,
         val transferRules : FTTransferRules,
