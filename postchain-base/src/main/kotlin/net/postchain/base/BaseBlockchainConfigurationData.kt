@@ -1,8 +1,11 @@
 package net.postchain.base
 
 import net.postchain.core.BlockchainConfigurationData
+import net.postchain.gtx.DictGTXValue
+import net.postchain.gtx.GTXNull
 import net.postchain.gtx.GTXValue
 import net.postchain.gtx.gtx
+import net.postchain.gtx.messages.DictPair
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.MapConfiguration
 import java.util.*
@@ -36,8 +39,13 @@ class BaseBlockchainConfigurationData(
         return data["blockstrategy"]
     }
 
+
+
+
     companion object {
         fun readFromCommonsConfiguration(config: Configuration): BaseBlockchainConfigurationData {
+
+            val gConfig = buildConfigurationDataStructure(config)
             val cryptoSystem = SECP256K1CryptoSystem()
             val signer = cryptoSystem.makeSigner(ByteArray(0), ByteArray(0))
             return BaseBlockchainConfigurationData(
@@ -48,6 +56,29 @@ class BaseBlockchainConfigurationData(
                     signer,
                     ByteArray(0)
             )
+        }
+
+        fun buildConfigurationDataStructure(config: Configuration): GTXValue { // TODO
+
+            val gConfig = mutableMapOf<String, GTXValue>()
+            // Get all elements in the configuration
+            for (key in config.getKeys()) {
+                println(key)
+                val elements = key.split(".")
+//                println(elements)
+                // Per each element, insert it into a dictionary
+                var currentVal = mutableMapOf<String, GTXValue>()
+                for (i in elements.size-1..0) {
+                    println(i) // TODO
+                    if(elements.size-1 == i) currentVal.put(elements[i], gtx(config.getString(key)))
+                    else currentVal.put(elements[i], gtx(currentVal))
+                }
+                println(currentVal)
+                println("--")
+
+            }
+            println(gConfig)
+            return gtx("")
         }
     }
 }

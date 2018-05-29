@@ -2,13 +2,9 @@
 
 package net.postchain
 
-import net.postchain.base.BaseBlockBuildingStrategy
-import net.postchain.base.BaseBlockQueries
-import net.postchain.base.BaseBlockchainEngine
-import net.postchain.base.Storage
+import net.postchain.base.*
 import net.postchain.base.data.BaseStorage
 import net.postchain.base.data.BaseTransactionQueue
-import net.postchain.base.withWriteConnection
 import net.postchain.core.BlockBuildingStrategy
 import net.postchain.core.BlockchainConfiguration
 import net.postchain.core.BlockchainConfigurationFactory
@@ -23,12 +19,14 @@ import org.apache.commons.dbutils.QueryRunner
 import java.io.File
 import javax.sql.DataSource
 
-
 fun getBlockchainConfiguration(config: Configuration, chainId: Long): BlockchainConfiguration {
     val bcfClass = Class.forName(config.getString("configurationfactory"))
     val factory = (bcfClass.newInstance() as BlockchainConfigurationFactory)
 
-    return factory.makeBlockchainConfiguration(chainId, config)
+
+    // TODO: BaseBlockchainConfigurationData is where the config magic happens
+    val baseConfig = BaseBlockchainConfigurationData.readFromCommonsConfiguration(config)
+    return factory.makeBlockchainConfiguration(baseConfig)
 }
 
 class DataLayer(val engine: BlockchainEngine,

@@ -18,21 +18,7 @@ private class SingleNodeBlockBuilder(cryptoSystem: CryptoSystem, eContext: ECont
     : BaseBlockBuilder(cryptoSystem, eContext, store, txFactory, subjects, blockSigner) {
     override fun getRequiredSigCount(): Int {return 1}
 }
-/*
-private class SingleNodeGtxBlockchainConfiguration(chainID: Long, config: Configuration, module: GTXModule): GTXBlockchainConfiguration(chainID, config, module) {
-    override fun createBlockBuilderInstance(cryptoSystem: CryptoSystem, ctx: EContext,
-                                            blockStore: BlockStore, transactionFactory: TransactionFactory,
-                                            signers: Array<ByteArray>, blockSigner: Signer): BlockBuilder {
-        return SingleNodeBlockBuilder(cryptoSystem, ctx, blockStore,
-                getTransactionFactory(), signers, blockSigner)
-    }
-}
 
-class SingleNodeGtxBlockchainConfigurationFactory(): GTXBlockchainConfigurationFactory() {
-    override fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration {
-        return SingleNodeGtxBlockchainConfiguration(chainID, config, createGtxModule(config))
-    }
-}*/
 
 private val r = QueryRunner()
 private val nullableStringReader = ScalarHandler<String?>()

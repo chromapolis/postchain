@@ -45,10 +45,10 @@ open class GTXBlockchainConfiguration(configData: BlockchainConfigurationData, v
 
 open class GTXBlockchainConfigurationFactory() : BlockchainConfigurationFactory {
     override fun makeBlockchainConfiguration(configData: BlockchainConfigurationData): BlockchainConfiguration {
-        return GTXBlockchainConfiguration(configData, createGtxModule(configData.data))
+        return GTXBlockchainConfiguration(configData, createGtxModule(configData.blockchainRID, configData.data))
     }
 
-    open fun createGtxModule(data: GTXValue): GTXModule {
+    open fun createGtxModule(blockchainRID: ByteArray, data: GTXValue): GTXModule {
         val gtxConfig = data["gtx"]!!
         val list = gtxConfig["modules"]!!.asArray().map { it.asString() }
         if (list == null || list.isEmpty()) {
@@ -61,16 +61,7 @@ open class GTXBlockchainConfigurationFactory() : BlockchainConfigurationFactory 
             if (instance is GTXModule) {
                 return instance
             } else if (instance is GTXModuleFactory) {
-                return instance.makeModule(data) //TODO
-
-                /*
-                To put in data =>
-                    - blockchainrid
-                    - gtx.certificate
-                    - gtx.esplix_r4
-                    - gtx.ft
-                    - gtx.sqlmodules
-                 */
+                return instance.makeModule(data, blockchainRID) //TODO
             } else throw UserMistake("Module class not recognized")
         }
 

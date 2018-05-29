@@ -10,12 +10,14 @@ import org.junit.Test
 class SQLModuleTest {
     @Test
     fun testModule() {
-        val config = MapConfiguration(mapOf(
-                "gtx.sqlmodules" to javaClass.getResource("sqlmodule1.sql").file
-        ))
+
+        val moduleFileName = javaClass.getResource("sqlmodule1.sql").file.toString()
+        val config = gtx(
+                "sqlmodules" to gtx(gtx(moduleFileName))
+        )
 
         val mf = SQLGTXModuleFactory()
-        val module = mf.makeModule(config)
+        val module = mf.makeModule(config, testBlockchainRID)
 
         val dataConf = MapConfiguration(mapOf(
                 "database.driverclass" to "org.postgresql.Driver",

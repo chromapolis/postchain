@@ -174,6 +174,7 @@ class PostchainNode {
                         setFileName(configFile).
                         setListDelimiterHandler(DefaultListDelimiterHandler(',')))
         val config = builder.getConfiguration()
+        println(config)
         start(config, nodeIndex)
     }
 
