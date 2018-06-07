@@ -86,7 +86,7 @@ class SyncManager(
         private val txQueue: TransactionQueue,
         val blockchainConfiguration: BlockchainConfiguration
 ) {
-    private val revoltTracker = RevoltTracker(60000, statusManager)
+    private val revoltTracker = RevoltTracker(10000, statusManager)
     private val statusSender = StatusSender(1000, statusManager, commManager)
     private val defaultTimeout = 1000
     private var currentTimeout = defaultTimeout
