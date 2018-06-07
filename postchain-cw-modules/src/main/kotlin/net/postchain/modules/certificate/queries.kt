@@ -17,23 +17,31 @@ fun getCertificatesQ(config: CertificateConfig, ctx: EContext, args: GTXValue): 
     if (id == null && pubkey == null) throw UserMistake("Missing both id and pubkey")
     if (id != null && pubkey != null) throw UserMistake("Can't query id and pubkey at same time")
 
-    val authority = args["authority"]?.asByteArray()
+    val authority = args["authority"]?.asByteArray(true)
 
     val r = QueryRunner()
     val mapListHandler = MapListHandler()
     val result: MutableList<MutableMap<String,Any>>
     val now: Long = System.currentTimeMillis()
 
-    if (authority != null && id != null) {
-        result = r.query(ctx.conn,
-                "SELECT * FROM certificate WHERE id = ? and expires > ? and authority = ?", mapListHandler,
-                id, now, authority)
-    } else if (pubkey != null && authority == null) {
-        result = r.query(ctx.conn,
-                "SELECT * FROM certificate WHERE pubkey = ? and expires > ?", mapListHandler,
-                id, now)
+    if (authority != null) {
+        if (id != null)
+            result = r.query(ctx.conn,
+                    "SELECT * FROM certificate WHERE id = ? and expires > ? and authority = ?", mapListHandler,
+                    id, now, authority);
+        else
+            result = r.query(ctx.conn,
+                    "SELECT * FROM certificate WHERE pubkey = ? and expires > ? and authority = ?", mapListHandler,
+                    pubkey, now, authority);
     } else {
-        throw UserMistake("Query mode not supported")
+        if (id != null)
+            result = r.query(ctx.conn,
+                    "SELECT * FROM certificate WHERE id = ? and expires > ?", mapListHandler,
+                    id, now);
+        else
+            result = r.query(ctx.conn,
+                    "SELECT * FROM certificate WHERE pubkey = ? and expires > ?", mapListHandler,
+                    pubkey, now);
     }
     val list = MutableList<CertificateEntry>(result.size,{ index ->
         CertificateEntry(
