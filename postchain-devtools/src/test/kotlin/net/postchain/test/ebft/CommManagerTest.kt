@@ -2,18 +2,6 @@
 
 package net.postchain.test.ebft
 
-import mu.KLogging
-import net.postchain.base.PeerCommConfiguration
-import net.postchain.test.IntegrationTest
-import net.postchain.core.UserMistake
-import net.postchain.ebft.CommManager
-import net.postchain.ebft.PacketConverter
-import net.postchain.ebft.PeerConnection
-import net.postchain.parseInt
-import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Test
-
 /*
 class CommManagerTest : IntegrationTest() {
     companion object : KLogging()
