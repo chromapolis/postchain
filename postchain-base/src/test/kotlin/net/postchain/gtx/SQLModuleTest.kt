@@ -6,12 +6,14 @@ import org.apache.commons.configuration2.MapConfiguration
 import org.apache.commons.dbutils.QueryRunner
 import org.junit.Assert
 import org.junit.Test
+import java.nio.file.Paths
 
 class SQLModuleTest {
+
     @Test
     fun testModule() {
         val config = MapConfiguration(mapOf(
-                "gtx.sqlmodules" to javaClass.getResource("sqlmodule1.sql").file
+                "gtx.sqlmodules" to Paths.get(javaClass.getResource("sqlmodule1.sql").toURI()).toString()
         ))
 
         val mf = SQLGTXModuleFactory()
@@ -35,7 +37,4 @@ class SQLModuleTest {
             false
         }
     }
-
-
-
 }
