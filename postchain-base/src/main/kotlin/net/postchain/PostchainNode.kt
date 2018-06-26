@@ -66,7 +66,7 @@ class PostchainNode {
         val chainId = config.getLong("activechainids")
         val peerInfos = createPeerInfos(config)
         val privKey = config.getString("messaging.privkey").hexStringToByteArray()
-        val blockchainRID = config.getString("blockchain.0.blockchainRID").hexStringToByteArray() // TODO
+        val blockchainRID = config.getString("blockchain.${chainId}.blockchainrid").hexStringToByteArray() // TODO
         val commConfiguration = BasePeerCommConfiguration(peerInfos, blockchainRID, nodeIndex, SECP256K1CryptoSystem(), privKey)
 
         connManager = makeConnManager(commConfiguration)
