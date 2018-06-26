@@ -356,6 +356,10 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
         encoderThread.interrupt()
     }
 
+    fun registerBlockchain(blockchainRID: ByteArray, comm: CommManager<PT>) {
+        blockchains[ByteArrayKey(blockchainRID)] = comm
+    }
+
     init {
         encoderThread = thread(name = "encoderLoop") { encoderLoop() }
 
@@ -363,8 +367,13 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
             info: IdentPacketInfo, conn: PeerConnection ->
 
             val commManager = blockchains[ByteArrayKey(info.blockchainRID)]
-            commManager!!.getPacketHandler(info.peerID)
-            // { conn -> logger.info("$myIndex Registering ${conn.id} $conn");connections[conn.id] = conn }
+            if (commManager != null) {
+                logger.info("Registering incoming connection ")
+                commManager.getPacketHandler(info.peerID)
+            } else {
+                logger.warn("Got packet with unknown blockchainRID:${info.blockchainRID.toHex()}, skipping")
+                throw Error("Blockchain not found")
+            }
         }
 
         connAcceptor = PeerConnectionAcceptor(
@@ -376,6 +385,7 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
 }
 
 class CommManager<PT>(val myIndex: Int,
+                      val blockchainRID: ByteArray,
                       val peers: Array<PeerInfo>,
                       val packetConverter: PacketConverter<PT>,
                       val connManager: PeerConnectionManager<PT>
@@ -396,7 +406,7 @@ class CommManager<PT>(val myIndex: Int,
     }
 
     fun getPacketHandler(peerPubKey: ByteArray): (ByteArray) -> Unit {
-        val peerIndex = peers.indexOfFirst { it.pubKey.equals(peerPubKey) }
+        val peerIndex = peers.indexOfFirst {  it.pubKey.contentEquals(peerPubKey) }
         if (peerIndex > -1) {
             return { decodeAndEnqueue(peerIndex, it) }
         } else {
@@ -429,6 +439,7 @@ class CommManager<PT>(val myIndex: Int,
 
 
     init {
+        connManager.registerBlockchain(blockchainRID, this)
         val connlist = mutableListOf<AbstractPeerConnection>()
         for ((index, peer) in peers.withIndex()) {
             if (index < myIndex) {
@@ -456,8 +467,8 @@ fun makeConnManager(pc: PeerCommConfiguration): PeerConnectionManager<EbftMessag
     val verifier = pc.getVerifier()
 
     val packetConverter = object : PacketConverter<EbftMessage> {
-        override fun makeIdentPacket(peerID: ByteArray): ByteArray {
-            val bytes = Identification(peerID, pc.blockchainRID, System.currentTimeMillis()).encode()
+        override fun makeIdentPacket(forPeer: ByteArray): ByteArray {
+            val bytes = Identification(forPeer, pc.blockchainRID, System.currentTimeMillis()).encode()
             val signature = signer(bytes)
             return SignedMessage(bytes, peerInfo[pc.myIndex].pubKey, signature.data).encode()
         }
@@ -491,6 +502,7 @@ fun makeConnManager(pc: PeerCommConfiguration): PeerConnectionManager<EbftMessag
 fun makeCommManager(pc: PeerCommConfiguration, connManager: PeerConnectionManager<EbftMessage>): CommManager<EbftMessage> {
     return CommManager<EbftMessage>(
             pc.myIndex,
+            pc.blockchainRID,
             pc.peerInfo,
             connManager.packetConverter, connManager
     )

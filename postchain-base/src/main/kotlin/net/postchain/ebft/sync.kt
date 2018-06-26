@@ -103,6 +103,7 @@ class SyncManager(
         for (packet in commManager.getPackets()) {
             val nodeIndex = packet.first
             val message = packet.second
+            logger.debug { "Received message type ${message.getBackingInstance().choiceID} from ${nodeIndex}" }
             try {
                 when (message) {
                     is Status -> {
