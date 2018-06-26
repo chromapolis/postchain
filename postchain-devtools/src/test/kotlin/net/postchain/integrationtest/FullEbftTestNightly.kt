@@ -6,8 +6,8 @@ import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import mu.KLogging
 import net.postchain.PostchainNode
-import net.postchain.test.OnDemandBlockBuildingStrategy
 import net.postchain.test.EbftIntegrationTest
+import net.postchain.test.OnDemandBlockBuildingStrategy
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -18,7 +18,7 @@ class FullEbftTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
 
     fun strat(node: PostchainNode): OnDemandBlockBuildingStrategy {
-        return node.blockStrategy as OnDemandBlockBuildingStrategy
+        return node.getModel().blockStrategy as OnDemandBlockBuildingStrategy
     }
 
     @Test
@@ -34,19 +34,19 @@ class FullEbftTestNightly : EbftIntegrationTest() {
         createEbftNodes(nodeCount)
 
         var txId = 0
-        var statusManager = ebftNodes[0].statusManager
+        var statusManager = ebftNodes[0].getModel().statusManager
         for (i in 0 until blockCount) {
             for (tx in 0 until txPerBlock) {
-                ebftNodes[statusManager.primaryIndex()].txQueue.enqueue(TestTransaction(txId++))
+                ebftNodes[statusManager.primaryIndex()].getModel().txQueue.enqueue(TestTransaction(txId++))
             }
             strat(ebftNodes[statusManager.primaryIndex()]).triggerBlock()
             ebftNodes.forEach { strat(it).awaitCommitted(i) }
         }
 
-        val queries0 = ebftNodes[0].blockQueries
+        val queries0 = ebftNodes[0].getModel().blockQueries
         val referenceHeight = queries0.getBestHeight().get()
         ebftNodes.forEach { node ->
-            val queries = node.blockQueries
+            val queries = node.getModel().blockQueries
             assertEquals(referenceHeight, queries.getBestHeight().get())
             for (height in 0..referenceHeight) {
                 val rids = queries.getBlockRids(height).get()

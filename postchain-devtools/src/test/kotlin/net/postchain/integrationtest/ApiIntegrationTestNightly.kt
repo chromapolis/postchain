@@ -2,24 +2,20 @@
 
 package net.postchain.integrationtest
 
+import com.google.gson.*
+import com.google.gson.reflect.TypeToken
+import net.postchain.base.BaseBlockHeader
+import net.postchain.base.MerklePath
+import net.postchain.base.MerklePathItem
+import net.postchain.base.Side
 import net.postchain.common.RestTools
 import net.postchain.common.TestResponse
-import net.postchain.base.*
-import net.postchain.core.Signature
-import net.postchain.core.Transaction
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonElement
-import com.google.gson.JsonPrimitive
-import com.google.gson.JsonSerializationContext
-import com.google.gson.JsonSerializer
-import com.google.gson.reflect.TypeToken
 import net.postchain.common.hexStringToByteArray
 import net.postchain.common.toHex
+import net.postchain.core.Signature
+import net.postchain.core.Transaction
 import net.postchain.test.EbftIntegrationTest
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
+import org.junit.Assert.*
 import org.junit.Test
 import java.lang.reflect.Type
 
@@ -107,7 +103,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
                     path.add(MerklePathItem(s, pathItemHash))
                 }
 
-                val header = ebftNodes[0].blockchainConfiguration.decodeBlockHeader(blockHeader) as BaseBlockHeader
+                val header = ebftNodes[0].getModel().blockchainConfiguration.decodeBlockHeader(blockHeader) as BaseBlockHeader
                 val txHash = TestTransaction(txId).getHash()
                 assertArrayEquals(txHash, hash)
                 assertTrue(header.validateMerklePath(path, txHash))
@@ -118,7 +114,7 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     }
 
     private fun awaitConfirmed(tx: Transaction) {
-        restTools.awaitConfirmed(ebftNodes[0].restApi!!.actualPort(), tx.getRID().toHex())
+        restTools.awaitConfirmed(ebftNodes[0].getModel().restApi!!.actualPort(), tx.getRID().toHex())
     }
 
     private fun testStatusGet(path: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
@@ -131,13 +127,13 @@ class ApiIntegrationTestNightly : EbftIntegrationTest() {
     }
 
     private fun testStatusPost(toIndex: Int, path: String, body: String, expectedStatus: Int, extraChecks: (res: TestResponse) -> Unit = {}) {
-        val response = restTools.post(ebftNodes[toIndex].restApi!!.actualPort(), path, body)
+        val response = restTools.post(ebftNodes[toIndex].getModel().restApi!!.actualPort(), path, body)
         assertEquals(expectedStatus, response.code)
         extraChecks(response)
     }
 
     private fun get(path: String): TestResponse? {
-        return restTools.get(ebftNodes[0].restApi!!.actualPort(), path)
+        return restTools.get(ebftNodes[0].getModel().restApi!!.actualPort(), path)
     }
 
 }

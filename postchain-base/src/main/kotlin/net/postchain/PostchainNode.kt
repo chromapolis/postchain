@@ -2,15 +2,12 @@
 
 package net.postchain
 
-import net.postchain.api.rest.Model
-import net.postchain.api.rest.PostchainModel
-import net.postchain.api.rest.RestApi
 import net.postchain.base.*
-import net.postchain.base.data.BaseBlockchainConfiguration
 import net.postchain.common.hexStringToByteArray
 import net.postchain.common.toHex
-import net.postchain.core.*
-import net.postchain.ebft.*
+import net.postchain.ebft.BlockchainInstanceModel
+import net.postchain.ebft.EBFTBlockchainInstance
+import net.postchain.ebft.makeConnManager
 import net.postchain.ebft.message.EbftMessage
 import net.postchain.network.PeerConnectionManager
 import org.apache.commons.configuration2.Configuration
@@ -18,10 +15,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
 import org.apache.commons.configuration2.builder.fluent.Parameters
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.concurrent.thread
 import kotlin.system.exitProcess
-
 
 /**
  * A postchain node
@@ -54,6 +48,10 @@ class PostchainNode {
     fun stop() {
         connManager.stop()
         blockchainInstance.stop()
+    }
+
+    fun getModel(): BlockchainInstanceModel {
+        return blockchainInstance.getModel()
     }
 
     /**

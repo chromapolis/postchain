@@ -1,11 +1,11 @@
 package net.postchain.ebft
 
-import net.postchain.api.rest.Model
 import net.postchain.api.rest.PostchainModel
 import net.postchain.api.rest.RestApi
-import net.postchain.base.*
-import net.postchain.base.data.BaseBlockchainConfiguration
-import net.postchain.common.hexStringToByteArray
+import net.postchain.base.BaseBlockQueries
+import net.postchain.base.NetworkAwareTxQueue
+import net.postchain.base.PeerCommConfiguration
+import net.postchain.base.Storage
 import net.postchain.core.BlockBuildingStrategy
 import net.postchain.core.BlockQueries
 import net.postchain.core.BlockchainConfiguration
@@ -24,7 +24,7 @@ class EBFTBlockchainInstance(
         val peerCommConfiguration: PeerCommConfiguration,
         val connManager: PeerConnectionManager<EbftMessage>) {
 
-    private var worker: EBFTBlockchainInstanceWorker
+    var worker: EBFTBlockchainInstanceWorker
 
     private fun buildWorker(): EBFTBlockchainInstanceWorker {
         return EBFTBlockchainInstanceWorker(
@@ -40,9 +40,33 @@ class EBFTBlockchainInstance(
         worker.stop()
     }
 
+    fun getModel(): BlockchainInstanceModel {
+        return worker
+    }
+
     init {
         worker = buildWorker()
     }
+}
+
+
+
+interface BlockchainInstanceModel {
+    val blockchainConfiguration: BlockchainConfiguration
+    val storage: Storage
+    val blockQueries: BlockQueries
+    val statusManager: BaseStatusManager
+    val commManager: CommManager<EbftMessage>
+
+    val txQueue: TransactionQueue
+    val txForwardingQueue: TransactionQueue
+    val blockStrategy: BlockBuildingStrategy
+    val engine: BlockchainEngine
+    val blockDatabase: BaseBlockDatabase
+    val blockManager: BlockManager
+    val syncManager: SyncManager
+    val restApi: RestApi?
+    val apiModel: PostchainModel?
 }
 
 
@@ -51,47 +75,29 @@ class EBFTBlockchainInstanceWorker(
         config: Configuration,
         nodeIndex: Int,
         peerCommConfiguration: PeerCommConfiguration,
-        connManager: PeerConnectionManager<EbftMessage>) {
+        connManager: PeerConnectionManager<EbftMessage>)
+
+    : BlockchainInstanceModel
+{
 
     lateinit var updateLoop: Thread
     val stopMe = AtomicBoolean(false)
 
-    lateinit var blockchainConfiguration: BlockchainConfiguration
-    lateinit var storage: Storage
-    lateinit var blockQueries: BlockQueries
-    //val peerInfos: Array<PeerInfo>
-    val statusManager: BaseStatusManager
-    val commManager: CommManager<EbftMessage>
+    override val blockchainConfiguration: BlockchainConfiguration
+    override val storage: Storage
+    override val blockQueries: BlockQueries
+    override val statusManager: BaseStatusManager
+    override val commManager: CommManager<EbftMessage>
+    override val txQueue: TransactionQueue
+    override val txForwardingQueue: TransactionQueue
+    override val blockStrategy: BlockBuildingStrategy
+    override val engine: BlockchainEngine
+    override val blockDatabase: BaseBlockDatabase
+    override val blockManager: BlockManager
+    override val syncManager: SyncManager
+    override val restApi: RestApi?
+    override val apiModel: PostchainModel?
 
-    lateinit var txQueue: TransactionQueue
-    lateinit var txForwardingQueue: TransactionQueue
-    lateinit var blockStrategy: BlockBuildingStrategy
-    lateinit var engine: BlockchainEngine
-    lateinit var blockDatabase: BaseBlockDatabase
-    lateinit var blockManager: BlockManager
-    lateinit var model: Model
-    lateinit var syncManager: SyncManager
-
-    val restApi: RestApi?
-
-
-    /**
-     * Create a data layer including relevant subsystems necessary for the postchain node, including
-     * storage, transaction queue, block building strategy and engine.
-     *
-     * @param config node configuration
-     * @param chainId chain identifier
-     * @param nodeIndex index of the local node
-     */
-    private fun setupDataLayer(config: Configuration, chainId: Long, nodeIndex: Int) {
-        val dataLayer = createDataLayer(config, chainId, nodeIndex)
-        blockchainConfiguration = dataLayer.blockchainConfiguration
-        storage = dataLayer.storage
-        blockQueries = dataLayer.blockQueries
-        txQueue = dataLayer.txQueue
-        blockStrategy = dataLayer.blockBuildingStrategy
-        engine = dataLayer.engine
-    }
 
     /**
      * Create and run the [updateLoop] thread until [stopMe] is set.
@@ -127,7 +133,13 @@ class EBFTBlockchainInstanceWorker(
     }
 
     init {
-        setupDataLayer(config, chainId, nodeIndex)
+        val dataLayer = createDataLayer(config, chainId, nodeIndex)
+        blockchainConfiguration = dataLayer.blockchainConfiguration
+        storage = dataLayer.storage
+        blockQueries = dataLayer.blockQueries
+        txQueue = dataLayer.txQueue
+        blockStrategy = dataLayer.blockBuildingStrategy
+        engine = dataLayer.engine
 
         val bestHeight = blockQueries.getBestHeight().get()
         statusManager = BaseStatusManager(peerCommConfiguration.peerInfo.size, nodeIndex, bestHeight+1)
@@ -144,12 +156,14 @@ class EBFTBlockchainInstanceWorker(
 
         val port = config.getInt("api.port", 7740)
         if (port != -1) {
-            model = PostchainModel(txForwardingQueue, blockchainConfiguration.getTransactionFactory(),
+            val model = PostchainModel(txForwardingQueue, blockchainConfiguration.getTransactionFactory(),
                     blockQueries as BaseBlockQueries)
+            apiModel = model
             val basePath = config.getString("api.basepath", "")
             restApi = RestApi(model, port, basePath)
         } else {
             restApi = null
+            apiModel = null
         }
 
         // Give the SyncManager the BaseTransactionQueue and not the network-aware one,

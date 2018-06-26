@@ -5,12 +5,7 @@ package net.postchain.integrationtest
 import net.postchain.PostchainNode
 import net.postchain.api.rest.ApiTx
 import net.postchain.common.toHex
-import net.postchain.core.BlockBuilder
-import net.postchain.core.BlockBuildingStrategy
-import net.postchain.core.BlockData
-import net.postchain.core.BlockQueries
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.TransactionQueue
+import net.postchain.core.*
 import net.postchain.test.EbftIntegrationTest
 import org.apache.commons.configuration2.Configuration
 import org.junit.Assert
@@ -20,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue
 class TxForwardingTest: EbftIntegrationTest() {
 
     fun strat(node: PostchainNode): ThreeTxStrategy {
-        return node.blockStrategy as ThreeTxStrategy
+        return node.getModel().blockStrategy as ThreeTxStrategy
     }
 
     fun tx(id: Int): ApiTx {
@@ -62,22 +57,22 @@ class TxForwardingTest: EbftIntegrationTest() {
         configOverrides.setProperty("blockchain.1.blockstrategy", ThreeTxStrategy::class.java.name)
         createEbftNodes(3)
 
-        ebftNodes[0].model.postTransaction(tx(0))
-        ebftNodes[1].model.postTransaction(tx(1))
-        ebftNodes[2].model.postTransaction(tx(2))
+        ebftNodes[0].getModel().apiModel!!.postTransaction(tx(0))
+        ebftNodes[1].getModel().apiModel!!.postTransaction(tx(1))
+        ebftNodes[2].getModel().apiModel!!.postTransaction(tx(2))
         strat(ebftNodes[2]).awaitCommitted(0)
 
-        ebftNodes[0].model.postTransaction(tx(3))
-        ebftNodes[1].model.postTransaction(tx(4))
-        ebftNodes[2].model.postTransaction(tx(5))
+        ebftNodes[0].getModel().apiModel!!.postTransaction(tx(3))
+        ebftNodes[1].getModel().apiModel!!.postTransaction(tx(4))
+        ebftNodes[2].getModel().apiModel!!.postTransaction(tx(5))
         strat(ebftNodes[2]).awaitCommitted(1)
 
-        ebftNodes[0].model.postTransaction(tx(6))
-        ebftNodes[1].model.postTransaction(tx(7))
-        ebftNodes[2].model.postTransaction(tx(8))
+        ebftNodes[0].getModel().apiModel!!.postTransaction(tx(6))
+        ebftNodes[1].getModel().apiModel!!.postTransaction(tx(7))
+        ebftNodes[2].getModel().apiModel!!.postTransaction(tx(8))
         strat(ebftNodes[2]).awaitCommitted(2)
 
-        val q0 = ebftNodes[2].blockQueries
+        val q0 = ebftNodes[2].getModel().blockQueries
         for (i in 0..2) {
             val b0 = q0.getBlockAtHeight(i.toLong()).get()
             Assert.assertEquals(3, b0.transactions.size)

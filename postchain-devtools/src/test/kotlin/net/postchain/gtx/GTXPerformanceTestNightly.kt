@@ -20,7 +20,7 @@ class GTXPerformanceTestNightly : EbftIntegrationTest() {
     companion object : KLogging()
 
     fun strat(node: PostchainNode): OnDemandBlockBuildingStrategy {
-        return node.blockStrategy as OnDemandBlockBuildingStrategy
+        return node.getModel().blockStrategy as OnDemandBlockBuildingStrategy
     }
 
     fun makeTestTx(id: Long, value: String): ByteArray {
@@ -112,11 +112,11 @@ class GTXPerformanceTestNightly : EbftIntegrationTest() {
         createEbftNodes(nodeCount)
 
         var txId = 0
-        val statusManager = ebftNodes[0].statusManager
+        val statusManager = ebftNodes[0].getModel().statusManager
         for (i in 0 until blockCount) {
             for (tx in 0 until txPerBlock) {
-                val txf = ebftNodes[statusManager.primaryIndex()].blockchainConfiguration.getTransactionFactory()
-                ebftNodes[statusManager.primaryIndex()].txQueue.enqueue(
+                val txf = ebftNodes[statusManager.primaryIndex()].getModel().blockchainConfiguration.getTransactionFactory()
+                ebftNodes[statusManager.primaryIndex()].getModel().txQueue.enqueue(
                         txf.decodeTransaction(makeTestTx(1, (txId++).toString()))
                 )
             }
