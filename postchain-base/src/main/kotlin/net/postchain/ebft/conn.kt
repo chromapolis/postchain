@@ -12,6 +12,7 @@ import net.postchain.ebft.message.EbftMessage
 import net.postchain.ebft.message.Identification
 import net.postchain.ebft.message.SignedMessage
 import mu.KLogging
+import net.postchain.core.ByteArrayKey
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.ServerSocket
@@ -44,23 +45,30 @@ val MAX_PAYLOAD_SIZE = 10000000
 val MAX_QUEUED_PACKETS = 100
 
 interface AbstractPeerConnection {
-    var id: Int
     fun stop()
     fun sendPacket(b: ByteArray)
 }
 
-class NullPeerConnect(override var id: Int) : AbstractPeerConnection {
+class NullPeerConnect() : AbstractPeerConnection {
     companion object : KLogging()
 
-    override  fun stop() {/*logger.info("")*/}
-    override fun sendPacket(b: ByteArray)  {/*logger.info(String(b))*/}
+    override fun stop() {/*logger.info("")*/
+    }
+
+    override fun sendPacket(b: ByteArray) {/*logger.info(String(b))*/
+    }
 }
 
-open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArray) -> Unit) : AbstractPeerConnection {
-    @Volatile protected var keepGoing: Boolean = true
-    @Volatile var socket: Socket? = null
+abstract class PeerConnection : AbstractPeerConnection {
+    @Volatile
+    protected var keepGoing: Boolean = true
+    @Volatile
+    var socket: Socket? = null
     private val outboundPackets = LinkedBlockingQueue<ByteArray>(MAX_QUEUED_PACKETS)
+
     companion object : KLogging()
+
+    abstract fun handlePacket(pkt: ByteArray)
 
     protected fun readOnePacket(dataStream: DataInputStream): ByteArray {
         val packetSize = dataStream.readInt()
@@ -81,7 +89,7 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
                     // ignore
                     continue
                 }
-                packetHandler(id, bytes)
+                handlePacket(bytes)
             }
         } catch (e: Exception) {
             outboundPackets.put(byteArrayOf())
@@ -128,14 +136,18 @@ open class PeerConnection(override var id: Int, val packetHandler: (Int, ByteArr
 class PassivePeerConnection(
         val packetConverter: InitPacketConverter,
         inSocket: Socket,
-        packetHandler: (Int, ByteArray) -> Unit,
-        val registerConn: (PeerConnection) -> Unit,
-        val myIndex: Int
-) : PeerConnection(-1, packetHandler) {
+        val registerConn: (info: InitPacketInfo, PeerConnection) -> (ByteArray) -> Unit
+) : PeerConnection() {
+
+    lateinit var packetHandler: (ByteArray) -> Unit
+
+    override fun handlePacket(pkt: ByteArray) {
+        packetHandler(pkt)
+    }
 
     init {
         socket = inSocket
-        thread(name="$myIndex-PassiveReadLoop-PeerId-TBA") { readLoop(inSocket) }
+        thread(name = "PassiveReadLoop-PeerId-TBA") { readLoop(inSocket) }
     }
 
     private fun writeLoop(socket1: Socket) {
@@ -143,11 +155,11 @@ class PassivePeerConnection(
             val stream = DataOutputStream(socket1.getOutputStream())
             val err = writePacketsWhilePossible(stream)
             if (err != null) {
-                logger.debug("$myIndex closing socket to $id: ${err.message}")
+                logger.debug("closing socket to: ${err.message}")
             }
             socket1.close()
         } catch (e: Exception) {
-            logger.error("$myIndex failed to cleanly close connection to $id", e)
+            logger.error("failed to cleanly close connection to", e)
         }
     }
 
@@ -155,33 +167,35 @@ class PassivePeerConnection(
         try {
             val stream = DataInputStream(socket1.getInputStream())
 
-            id = packetConverter.parseInitPacket(readOnePacket(stream))
-            Thread.currentThread().name = "$myIndex-PassiveReadLoop-PeerId-$id"
-            registerConn(this)
+            val info = packetConverter.parseInitPacket(readOnePacket(stream))
+            Thread.currentThread().name = "PassiveReadLoop-PeerId"
+            packetHandler = registerConn(info, this)
 
-            thread(name="$myIndex-PassiveWriteLoop-PeerId-$id") { writeLoop(socket1) }
+            thread(name = "PassiveWriteLoop-PeerId") { writeLoop(socket1) }
 
             val err = readPacketsWhilePossible(stream)
             if (err != null) {
-                logger.debug("$myIndex reading packet from ${id} stopped: ${err.message}")
+                logger.debug("reading packet from stopped: ${err.message}")
                 stop()
             }
         } catch (e: Exception) {
-            logger.error("$myIndex readLoop failed", e)
+            logger.error("readLoop failed", e)
             stop()
         }
     }
 }
 
 class ActivePeerConnection(
-        id: Int,
         val peer: PeerInfo,
         val packetConverter: InitPacketConverter,
-        packetHandler: (Int, ByteArray) -> Unit,
-        val myIndex: Int
-) : PeerConnection(id, packetHandler) {
+        val packetHandler: (ByteArray) -> Unit
+) : PeerConnection() {
 
     val connAvail = CyclicBarrier(2)
+
+    override fun handlePacket(pkt: ByteArray) {
+        packetHandler(pkt)
+    }
 
     private fun writeLoop() {
         while (keepGoing) {
@@ -193,14 +207,14 @@ class ActivePeerConnection(
                 connAvail.await()
                 val socket1 = socket ?: throw Exception("No connection")
                 val stream = DataOutputStream(socket1.getOutputStream())
-                writeOnePacket(stream, packetConverter.makeInitPacket(id)) // write init packet
+                writeOnePacket(stream, packetConverter.makeInitPacket(0)) // write init packet
                 val err = writePacketsWhilePossible(stream)
                 if (err != null) {
-                    logger.debug("$myIndex sending packet to ${id} failed: ${err.message}")
+                    logger.debug(" sending packet to  failed: ${err.message}")
                 }
                 socket1.close()
             } catch (e: Exception) {
-                logger.debug("$myIndex disconnected from ${id}: ${e.message}")
+                logger.debug(" disconnected from : ${e.message}")
                 Thread.sleep(2500)
             }
         }
@@ -213,32 +227,32 @@ class ActivePeerConnection(
                 val socket1 = socket ?: throw Exception("No connection")
                 val err = readPacketsWhilePossible(DataInputStream(socket1.getInputStream()))
                 if (err != null) {
-                    logger.debug("$myIndex reading packet from ${id} failed: ${err.message}")
+                    logger.debug("reading packet from ${id} failed: ${err.message}")
                 }
                 socket1.close()
             } catch (e: Exception) {
-                logger.debug("$myIndex readLoop for $id failed. Will retry. ${e.message}")
+                logger.debug("readLoop for failed. Will retry. ${e.message}")
                 Thread.sleep(2500)
             }
         }
     }
 
     fun start() {
-        thread(name="$myIndex-ActiveWriteLoop-PeerId-$id") { writeLoop() }
-        thread(name="$myIndex-ActiveReadLoop-PeerId-$id") { readLoop() }
+        thread(name = "-ActiveWriteLoop-PeerId-") { writeLoop() }
+        thread(name = "-ActiveReadLoop-PeerId-") { readLoop() }
     }
 }
 
 class PeerConnectionAcceptor(
         peer: PeerInfo,
         val initPacketConverter: InitPacketConverter,
-        val packetHandler: (Int, ByteArray) -> Unit,
-        val registerConn: (PeerConnection)->Unit,
-        val myIndex: Int
+        val registerConn: (InitPacketInfo, PeerConnection) -> (ByteArray) -> Unit
 
 ) {
     val serverSocket: ServerSocket
-    @Volatile var keepGoing = true
+    @Volatile
+    var keepGoing = true
+
     companion object : KLogging()
 
     init {
@@ -249,24 +263,22 @@ class PeerConnectionAcceptor(
             serverSocket = ServerSocket(peer.port)
         }
         logger.info("Starting server on port ${peer.port} done")
-        thread(name="$myIndex-acceptLoop") { acceptLoop() }
+        thread(name = "-acceptLoop") { acceptLoop() }
     }
 
     private fun acceptLoop() {
         try {
             while (keepGoing) {
                 val socket = serverSocket.accept()
-                logger.info("${myIndex} accept socket")
+                logger.info("accept socket")
                 PassivePeerConnection(
                         initPacketConverter,
                         socket,
-                        packetHandler,
-                        registerConn,
-                        myIndex
+                        registerConn
                 )
             }
         } catch (e: Exception) {
-            logger.error ("${myIndex} exiting accept loop")
+            logger.error("exiting accept loop")
         }
     }
 
@@ -277,37 +289,118 @@ class PeerConnectionAcceptor(
 
 }
 
-data class OutboundPacket<PT>(val packet: PT, val recipients: Set<Int>)
+typealias PeerID = ByteArray
+
+data class OutboundPacket<PT>(val packet: PT, val recipients: List<AbstractPeerConnection>)
+data class InitPacketInfo(val peerID: PeerID, val blockchainRID: ByteArray)
 
 interface InitPacketConverter {
-    fun makeInitPacket(index: Int): ByteArray
-    fun parseInitPacket(bytes: ByteArray): Int
+    fun makeInitPacket(forPeer: PeerID): ByteArray
+    fun parseInitPacket(bytes: ByteArray): InitPacketInfo
 }
 
-interface PacketConverter<PT>: InitPacketConverter {
-    fun decodePacket(index: Int, bytes: ByteArray): PT
+interface PacketConverter<PT> : InitPacketConverter {
+    fun decodePacket(pubKey: ByteArray, bytes: ByteArray): PT
     fun encodePacket(packet: PT): ByteArray
 }
 
-class CommManager<PT> (val myIndex: Int,
-                       peers: Array<PeerInfo>,
-                       val packetConverter: PacketConverter<PT>)
-{
-    val connections: Array<AbstractPeerConnection>
-    var inboundPackets = mutableListOf<Pair<Int, PT>>()
-    val outboundPackets = LinkedBlockingQueue<OutboundPacket<PT>>(MAX_QUEUED_PACKETS)
+class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: PacketConverter<PT>) {
+    val connections = mutableListOf<AbstractPeerConnection>()
     @Volatile private var keepGoing: Boolean = true
     private val encoderThread: Thread
     private val connAcceptor: PeerConnectionAcceptor
+
+    private val blockchains = mutableMapOf<ByteArrayKey, CommManager<PT>>()
+
+    val outboundPackets = LinkedBlockingQueue<OutboundPacket<PT>>(MAX_QUEUED_PACKETS)
+
+    companion object : KLogging()
+
+    private fun encoderLoop() {
+        while (keepGoing) {
+            try {
+                val pkt = outboundPackets.take()
+                if (!keepGoing) return
+                val data = packetConverter.encodePacket(pkt.packet)
+
+                for (r in pkt.recipients) {
+                    r.sendPacket(data)
+                }
+            } catch (e: InterruptedException) {
+                logger.debug { "interrupted while taking next outbound packet" }
+            } catch (e: Exception) {
+                logger.debug("Exception in encoderLoop", e)
+            }
+        }
+    }
+
+    fun sendPacket(packet: OutboundPacket<PT>) {
+        outboundPackets.add(packet)
+    }
+
+    fun connectPeer(peer: PeerInfo, packetConverter: InitPacketConverter, packetHandler: (ByteArray) -> Unit): AbstractPeerConnection {
+        val conn = ActivePeerConnection(peer,
+                packetConverter,
+                packetHandler
+        )
+        conn.start()
+        connections.add(conn)
+        return conn
+    }
+
+    fun stop() {
+        keepGoing = false
+        connAcceptor.stop()
+        for (c in connections) c.stop()
+        encoderThread.interrupt()
+    }
+
+    init {
+        encoderThread = thread(name = "encoderLoop") { encoderLoop() }
+
+        val registerConn = {
+            info: InitPacketInfo, conn: PeerConnection ->
+
+            val commManager = blockchains[ByteArrayKey(info.blockchainRID)]
+            commManager!!.getPacketHandler(info.peerID)
+            // { conn -> logger.info("$myIndex Registering ${conn.id} $conn");connections[conn.id] = conn }
+        }
+
+        connAcceptor = PeerConnectionAcceptor(
+                myPeerInfo,
+                packetConverter, registerConn
+        )
+    }
+
+}
+
+class CommManager<PT>(val myIndex: Int,
+                      val peers: Array<PeerInfo>,
+                      val packetConverter: PacketConverter<PT>,
+                      val connManager: PeerConnectionManager<PT>
+) {
+    val connections: Array<AbstractPeerConnection>
+    var inboundPackets = mutableListOf<Pair<Int, PT>>()
+
     companion object : KLogging()
 
     private fun decodeAndEnqueue(peerIndex: Int, packet: ByteArray) {
         // packet decoding should not be synchronized so we can make
         // use of parallel processing in different threads
-        val decodedPacket = packetConverter.decodePacket(peerIndex, packet)
+        val decodedPacket = packetConverter.decodePacket(peers[peerIndex].pubKey, packet)
         logger.trace("Receiving $peerIndex -> ${myIndex}: $decodedPacket")
         synchronized(this) {
             inboundPackets.add(Pair(peerIndex, decodedPacket))
+        }
+    }
+
+    fun getPacketHandler(peerPubKey: ByteArray): (ByteArray) -> Unit {
+        val peerIndex = peers.indexOfFirst { it.pubKey.equals(peerPubKey) }
+        if (peerIndex > -1) {
+            return { decodeAndEnqueue(peerIndex, it) }
+        } else {
+            TODO("Handle read-only peer?")
+            //throw UserMistake("Got connection from unknown peer")
         }
     }
 
@@ -319,7 +412,7 @@ class CommManager<PT> (val myIndex: Int,
     }
 
     fun broadcastPacket(packet: PT) {
-        outboundPackets.put(OutboundPacket(packet, emptySet()))
+        connManager.sendPacket(OutboundPacket(packet, connections.toList()))
     }
 
     fun sendPacket(packet: PT, recipients: Set<Int>) {
@@ -330,83 +423,47 @@ class CommManager<PT> (val myIndex: Int,
             throw ProgrammerMistake("Cannot send to no recipients. If you want to broadcast, please use broadcastPacket() instead")
         }
         logger.trace("Sending $myIndex -> $recipients: $packet")
-        outboundPackets.put(OutboundPacket(packet, recipients))
+        connManager.sendPacket(OutboundPacket(packet, recipients.map { connections[it]}))
     }
 
-    private fun encoderLoop() {
-        while (keepGoing) {
-            try {
-                val pkt = outboundPackets.take()
-                if (!keepGoing) return
-                val data = packetConverter.encodePacket(pkt.packet)
-                if (pkt.recipients.isEmpty()) {
-                    // Don't mind avoiding myIndex, just send to NullCommChannel. It's fine
-                    connections.forEach { it.sendPacket(data) }
-                } else {
-                    for (idx in pkt.recipients) {
-                        connections[idx].sendPacket(data)
-                    }
-                }
-            } catch (e: InterruptedException) {
-                logger.debug { "${myIndex} interrupted while taking next outbound packet" }
-            } catch (e: Exception) {
-                logger.debug("${myIndex} Exception in encoderLoop", e)
-            }
-        }
-    }
 
     init {
         val connlist = mutableListOf<AbstractPeerConnection>()
         for ((index, peer) in peers.withIndex()) {
             if (index < myIndex) {
-                val conn = ActivePeerConnection(index, peer,
-                        packetConverter,
-                        { idx, packet -> decodeAndEnqueue(idx, packet) },
-                        myIndex)
-                conn.start()
-                connlist.add(conn)
+               connlist.add(connManager.connectPeer(peer, packetConverter,
+                       { decodeAndEnqueue(index, it)}))
             } else {
-                connlist.add(NullPeerConnect(index))
+                connlist.add(NullPeerConnect())
             }
         }
         connections = connlist.toTypedArray()
-        encoderThread = thread(name="$myIndex-encoderLoop") { encoderLoop() }
-        connAcceptor = PeerConnectionAcceptor(
-                peers[myIndex],
-                packetConverter,
-                { idx, packet -> decodeAndEnqueue(idx, packet) },
-                { conn -> logger.info("$myIndex Registering ${conn.id} $conn");connections[conn.id] = conn },
-                myIndex
-        )
     }
-
-    fun stop () {
-        keepGoing = false
-        connAcceptor.stop()
-        for (c in connections) c.stop()
-        encoderThread.interrupt()
-    }
-
 }
+
+/*
+val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubKey) }
+            if (peerIndex == -1) {
+                throw UserMistake("I don't know pubkey ${signedMessage.pubKey.toHex()}")
+            }
+ */
 
 fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
     val peerInfo = pc.peerInfo
     val signer = pc.getSigner()
     val verifier = pc.getVerifier()
 
-    val packetConverter = object: PacketConverter<EbftMessage> {
-        override fun makeInitPacket(index: Int): ByteArray {
-            val bytes = Identification(peerInfo[index].pubKey, System.currentTimeMillis()).encode()
+    val packetConverter = object : PacketConverter<EbftMessage> {
+        override fun makeInitPacket(peerID: ByteArray): ByteArray {
+            val bytes = Identification(peerID, System.currentTimeMillis()).encode()
             val signature = signer(bytes)
             return SignedMessage(bytes, peerInfo[pc.myIndex].pubKey, signature.data).encode()
         }
-        override fun parseInitPacket(bytes: ByteArray): Int {
+
+        override fun parseInitPacket(bytes: ByteArray): ByteArray {
             val signedMessage = decodeSignedMessage(bytes)
-            val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubKey) }
-            if (peerIndex == -1) {
-                throw UserMistake("I don't know pubkey ${signedMessage.pubKey.toHex()}")
-            }
-            val message = decodeAndVerify(bytes, peerInfo[peerIndex].pubKey, verifier)
+
+            val message = decodeAndVerify(bytes, signedMessage.pubKey, verifier)
 
             if (message !is Identification) {
                 throw UserMistake("Packet was not an Identification. Got ${message::class}")
@@ -415,11 +472,13 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
             if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
                 throw UserMistake("'yourPubKey' ${message.yourPubKey.toHex()} of Identification is not mine")
             }
-            return peerIndex
+            return signedMessage.pubKey
         }
-        override fun decodePacket(index: Int, bytes: ByteArray): EbftMessage {
-            return decodeAndVerify(bytes, peerInfo[index].pubKey, verifier)
+
+        override fun decodePacket(pubKey: ByteArray, bytes: ByteArray): EbftMessage {
+            return decodeAndVerify(bytes, pubKey, verifier)
         }
+
         override fun encodePacket(packet: EbftMessage): ByteArray {
             return encodeAndSign(packet, signer)
         }

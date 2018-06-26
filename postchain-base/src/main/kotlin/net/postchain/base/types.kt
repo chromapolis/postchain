@@ -34,7 +34,12 @@ typealias Signer = (ByteArray) -> Signature
  * */
 typealias Verifier = (ByteArray, Signature) -> Boolean
 
-interface PeerCommConfiguration {
+interface PeerResolver {
+    fun resolvePeer(peerID: ByteArray): PeerInfo?
+}
+
+
+interface PeerCommConfiguration: PeerResolver {
     val peerInfo: Array<PeerInfo>
     val myIndex: Int
     fun getSigner(): Signer
