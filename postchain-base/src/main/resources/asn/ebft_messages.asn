@@ -39,6 +39,7 @@ BlockData ::= SEQUENCE {
 
 Identification ::= SEQUENCE {
     timestamp INTEGER,
+    blockchainRID OCTET STRING,
     yourPubKey OCTET STRING
 }
 
