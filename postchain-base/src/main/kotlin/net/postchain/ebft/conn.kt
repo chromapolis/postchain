@@ -134,9 +134,9 @@ abstract class PeerConnection : AbstractPeerConnection {
 }
 
 class PassivePeerConnection(
-        val packetConverter: InitPacketConverter,
+        val packetConverter: IdentPacketConverter,
         inSocket: Socket,
-        val registerConn: (info: InitPacketInfo, PeerConnection) -> (ByteArray) -> Unit
+        val registerConn: (info: IdentPacketInfo, PeerConnection) -> (ByteArray) -> Unit
 ) : PeerConnection() {
 
     lateinit var packetHandler: (ByteArray) -> Unit
@@ -167,7 +167,7 @@ class PassivePeerConnection(
         try {
             val stream = DataInputStream(socket1.getInputStream())
 
-            val info = packetConverter.parseInitPacket(readOnePacket(stream))
+            val info = packetConverter.parseIdentPacket(readOnePacket(stream))
             Thread.currentThread().name = "PassiveReadLoop-PeerId"
             packetHandler = registerConn(info, this)
 
@@ -187,7 +187,7 @@ class PassivePeerConnection(
 
 class ActivePeerConnection(
         val peer: PeerInfo,
-        val packetConverter: InitPacketConverter,
+        val packetConverter: IdentPacketConverter,
         val packetHandler: (ByteArray) -> Unit
 ) : PeerConnection() {
 
@@ -207,7 +207,8 @@ class ActivePeerConnection(
                 connAvail.await()
                 val socket1 = socket ?: throw Exception("No connection")
                 val stream = DataOutputStream(socket1.getOutputStream())
-                writeOnePacket(stream, packetConverter.makeInitPacket(0)) // write init packet
+                TODO("add peer id")
+                writeOnePacket(stream, packetConverter.makeIdentPacket(ByteArray(0))) // write Ident packet
                 val err = writePacketsWhilePossible(stream)
                 if (err != null) {
                     logger.debug(" sending packet to  failed: ${err.message}")
@@ -227,7 +228,7 @@ class ActivePeerConnection(
                 val socket1 = socket ?: throw Exception("No connection")
                 val err = readPacketsWhilePossible(DataInputStream(socket1.getInputStream()))
                 if (err != null) {
-                    logger.debug("reading packet from ${id} failed: ${err.message}")
+                    logger.debug("reading packet from  failed: ${err.message}")
                 }
                 socket1.close()
             } catch (e: Exception) {
@@ -245,8 +246,8 @@ class ActivePeerConnection(
 
 class PeerConnectionAcceptor(
         peer: PeerInfo,
-        val initPacketConverter: InitPacketConverter,
-        val registerConn: (InitPacketInfo, PeerConnection) -> (ByteArray) -> Unit
+        val IdentPacketConverter: IdentPacketConverter,
+        val registerConn: (IdentPacketInfo, PeerConnection) -> (ByteArray) -> Unit
 
 ) {
     val serverSocket: ServerSocket
@@ -272,7 +273,7 @@ class PeerConnectionAcceptor(
                 val socket = serverSocket.accept()
                 logger.info("accept socket")
                 PassivePeerConnection(
-                        initPacketConverter,
+                        IdentPacketConverter,
                         socket,
                         registerConn
                 )
@@ -292,14 +293,14 @@ class PeerConnectionAcceptor(
 typealias PeerID = ByteArray
 
 data class OutboundPacket<PT>(val packet: PT, val recipients: List<AbstractPeerConnection>)
-data class InitPacketInfo(val peerID: PeerID, val blockchainRID: ByteArray)
+data class IdentPacketInfo(val peerID: PeerID, val blockchainRID: ByteArray)
 
-interface InitPacketConverter {
-    fun makeInitPacket(forPeer: PeerID): ByteArray
-    fun parseInitPacket(bytes: ByteArray): InitPacketInfo
+interface IdentPacketConverter {
+    fun makeIdentPacket(forPeer: PeerID): ByteArray
+    fun parseIdentPacket(bytes: ByteArray): IdentPacketInfo
 }
 
-interface PacketConverter<PT> : InitPacketConverter {
+interface PacketConverter<PT> : IdentPacketConverter {
     fun decodePacket(pubKey: ByteArray, bytes: ByteArray): PT
     fun encodePacket(packet: PT): ByteArray
 }
@@ -338,7 +339,7 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
         outboundPackets.add(packet)
     }
 
-    fun connectPeer(peer: PeerInfo, packetConverter: InitPacketConverter, packetHandler: (ByteArray) -> Unit): AbstractPeerConnection {
+    fun connectPeer(peer: PeerInfo, packetConverter: IdentPacketConverter, packetHandler: (ByteArray) -> Unit): AbstractPeerConnection {
         val conn = ActivePeerConnection(peer,
                 packetConverter,
                 packetHandler
@@ -359,7 +360,7 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
         encoderThread = thread(name = "encoderLoop") { encoderLoop() }
 
         val registerConn = {
-            info: InitPacketInfo, conn: PeerConnection ->
+            info: IdentPacketInfo, conn: PeerConnection ->
 
             val commManager = blockchains[ByteArrayKey(info.blockchainRID)]
             commManager!!.getPacketHandler(info.peerID)
@@ -454,13 +455,13 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
     val verifier = pc.getVerifier()
 
     val packetConverter = object : PacketConverter<EbftMessage> {
-        override fun makeInitPacket(peerID: ByteArray): ByteArray {
+        override fun makeIdentPacket(peerID: ByteArray): ByteArray {
             val bytes = Identification(peerID, System.currentTimeMillis()).encode()
             val signature = signer(bytes)
             return SignedMessage(bytes, peerInfo[pc.myIndex].pubKey, signature.data).encode()
         }
 
-        override fun parseInitPacket(bytes: ByteArray): ByteArray {
+        override fun parseIdentPacket(bytes: ByteArray): IdentPacketInfo {
             val signedMessage = decodeSignedMessage(bytes)
 
             val message = decodeAndVerify(bytes, signedMessage.pubKey, verifier)
@@ -472,7 +473,7 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
             if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
                 throw UserMistake("'yourPubKey' ${message.yourPubKey.toHex()} of Identification is not mine")
             }
-            return signedMessage.pubKey
+            return IdentPacketInfo(signedMessage.pubKey, ByteArray(0))
         }
 
         override fun decodePacket(pubKey: ByteArray, bytes: ByteArray): EbftMessage {
@@ -483,10 +484,11 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
             return encodeAndSign(packet, signer)
         }
     }
+    val connManager = PeerConnectionManager<EbftMessage>(peerInfo[pc.myIndex], packetConverter)
     return CommManager<EbftMessage>(
             pc.myIndex,
             peerInfo,
-            packetConverter
+            packetConverter, connManager
     )
 
 }
