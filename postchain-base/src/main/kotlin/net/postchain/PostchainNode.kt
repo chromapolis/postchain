@@ -120,7 +120,7 @@ class PostchainNode {
 
         val blockchainRID = (blockchainConfiguration as BaseBlockchainConfiguration).blockchainRID
         val commConfiguration = BasePeerCommConfiguration(peerInfos, blockchainRID, nodeIndex, SECP256K1CryptoSystem(), privKey)
-        val connManager = makeConnManager(commConfiguration)
+        connManager = makeConnManager(commConfiguration)
         commManager = makeCommManager(commConfiguration, connManager)
 
         txForwardingQueue = NetworkAwareTxQueue(

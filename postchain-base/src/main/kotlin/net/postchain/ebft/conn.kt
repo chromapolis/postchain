@@ -17,6 +17,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.ServerSocket
 import java.net.Socket
+import java.util.Collections.synchronizedMap
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.LinkedBlockingQueue
 import javax.swing.border.EmptyBorder
@@ -292,7 +293,7 @@ class PeerConnectionAcceptor(
 
 typealias PeerID = ByteArray
 
-data class OutboundPacket<PT>(val packet: PT, val recipients: List<AbstractPeerConnection>)
+data class OutboundPacket<PT>(val packet: PT, val recipients: List<ByteArrayKey>)
 data class IdentPacketInfo(val peerID: PeerID, val blockchainRID: ByteArray)
 
 interface IdentPacketConverter {
@@ -307,6 +308,7 @@ interface PacketConverter<PT> : IdentPacketConverter {
 
 class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: PacketConverter<PT>) {
     val connections = mutableListOf<AbstractPeerConnection>()
+    val peerConnections = synchronizedMap(mutableMapOf<ByteArrayKey, AbstractPeerConnection>()) // connection for peerID
     @Volatile private var keepGoing: Boolean = true
     private val encoderThread: Thread
     private val connAcceptor: PeerConnectionAcceptor
@@ -325,7 +327,10 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
                 val data = packetConverter.encodePacket(pkt.packet)
 
                 for (r in pkt.recipients) {
-                    r.sendPacket(data)
+                    val conn = peerConnections[r]
+                    if (conn != null) {
+                        conn.sendPacket(data)
+                    }
                 }
             } catch (e: InterruptedException) {
                 logger.debug { "interrupted while taking next outbound packet" }
@@ -346,6 +351,7 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
         )
         conn.start()
         connections.add(conn)
+        peerConnections[ByteArrayKey(peer.pubKey)] = conn
         return conn
     }
 
@@ -368,6 +374,8 @@ class PeerConnectionManager<PT>(val myPeerInfo: PeerInfo, val packetConverter: P
 
             val commManager = blockchains[ByteArrayKey(info.blockchainRID)]
             if (commManager != null) {
+                connections.add(conn)
+                peerConnections[ByteArrayKey(info.peerID)] = conn
                 logger.info("Registering incoming connection ")
                 commManager.getPacketHandler(info.peerID)
             } else {
@@ -390,8 +398,8 @@ class CommManager<PT>(val myIndex: Int,
                       val packetConverter: PacketConverter<PT>,
                       val connManager: PeerConnectionManager<PT>
 ) {
-    val connections: Array<AbstractPeerConnection>
     var inboundPackets = mutableListOf<Pair<Int, PT>>()
+    val peerIDs = peers.map { ByteArrayKey(it.pubKey) }
 
     companion object : KLogging()
 
@@ -423,7 +431,7 @@ class CommManager<PT>(val myIndex: Int,
     }
 
     fun broadcastPacket(packet: PT) {
-        connManager.sendPacket(OutboundPacket(packet, connections.toList()))
+        connManager.sendPacket(OutboundPacket(packet, peerIDs ))
     }
 
     fun sendPacket(packet: PT, recipients: Set<Int>) {
@@ -434,32 +442,20 @@ class CommManager<PT>(val myIndex: Int,
             throw ProgrammerMistake("Cannot send to no recipients. If you want to broadcast, please use broadcastPacket() instead")
         }
         logger.trace("Sending $myIndex -> $recipients: $packet")
-        connManager.sendPacket(OutboundPacket(packet, recipients.map { connections[it]}))
+        connManager.sendPacket(OutboundPacket(packet, recipients.map { peerIDs[it]}))
     }
 
 
     init {
         connManager.registerBlockchain(blockchainRID, this)
-        val connlist = mutableListOf<AbstractPeerConnection>()
         for ((index, peer) in peers.withIndex()) {
             if (index < myIndex) {
-               connlist.add(connManager.connectPeer(peer, packetConverter,
-                       { decodeAndEnqueue(index, it)}))
-            } else {
-                connlist.add(NullPeerConnect())
+               connManager.connectPeer(peer, packetConverter,
+                       { decodeAndEnqueue(index, it)})
             }
         }
-        connections = connlist.toTypedArray()
     }
 }
-
-/*
-val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pubKey) }
-            if (peerIndex == -1) {
-                throw UserMistake("I don't know pubkey ${signedMessage.pubKey.toHex()}")
-            }
- */
-
 
 fun makeConnManager(pc: PeerCommConfiguration): PeerConnectionManager<EbftMessage> {
     val peerInfo = pc.peerInfo
