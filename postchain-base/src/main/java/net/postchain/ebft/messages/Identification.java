@@ -19,6 +19,9 @@ public class Identification {
 	public Long timestamp;
 
 	@Component(1)
+	public byte[] blockchainRID;
+
+	@Component(2)
 	public byte[] yourPubKey;
 
 
@@ -45,8 +48,9 @@ public class Identification {
 	static {
 		CONV = new AnnotationCompositeConverter(Identification.class);
 		AsnConverter timestampConverter = LongConverter.INSTANCE;
+		AsnConverter blockchainRIDConverter = OctetStringConverter.INSTANCE;
 		AsnConverter yourPubKeyConverter = OctetStringConverter.INSTANCE;
-		CONV.setComponentConverters(new AsnConverter[] { timestampConverter, yourPubKeyConverter });
+		CONV.setComponentConverters(new AsnConverter[] { timestampConverter, blockchainRIDConverter, yourPubKeyConverter });
 	}
 
 
