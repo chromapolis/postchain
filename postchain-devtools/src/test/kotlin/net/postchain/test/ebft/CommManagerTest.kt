@@ -14,7 +14,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-
+/*
 class CommManagerTest : IntegrationTest() {
     companion object : KLogging()
 //
@@ -146,3 +146,5 @@ class CommManagerTest : IntegrationTest() {
     }
 
 }
+
+*/

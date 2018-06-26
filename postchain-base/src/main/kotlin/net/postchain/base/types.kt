@@ -42,6 +42,7 @@ interface PeerResolver {
 interface PeerCommConfiguration: PeerResolver {
     val peerInfo: Array<PeerInfo>
     val myIndex: Int
+    val blockchainRID: ByteArray
     fun getSigner(): Signer
     fun getVerifier(): Verifier
 }

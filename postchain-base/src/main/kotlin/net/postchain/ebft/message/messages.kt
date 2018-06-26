@@ -44,7 +44,8 @@ sealed class EbftMessage {
             val message = net.postchain.ebft.messages.Message.der_decode(bytes.inputStream())
             return when (message.choiceID) {
                 net.postchain.ebft.messages.Message.getBlockAtHeightChosen -> GetBlockAtHeight(message.getBlockAtHeight.height)
-                net.postchain.ebft.messages.Message.identificationChosen -> Identification(message.identification.yourPubKey, message.identification.timestamp)
+                net.postchain.ebft.messages.Message.identificationChosen ->
+                    Identification(message.identification.yourPubKey, message.identification.blockchainRID, message.identification.timestamp)
                 net.postchain.ebft.messages.Message.statusChosen -> {
                     val s = message.status
                     net.postchain.ebft.message.Status(s.blockRID, s.height, s.revolting, s.round, s.serial, s.state.toInt())
@@ -123,10 +124,11 @@ class GetUnfinishedBlock(val blockRID: ByteArray) : EbftMessage() {
     }
 }
 
-class Identification(val yourPubKey: ByteArray, val timestamp: Long) : EbftMessage() {
+class Identification(val yourPubKey: ByteArray, val blockchainRID: ByteArray, val timestamp: Long) : EbftMessage() {
     override fun getBackingInstance(): net.postchain.ebft.messages.Message {
         val result = net.postchain.ebft.messages.Identification()
         result.yourPubKey = yourPubKey
+        result.blockchainRID = blockchainRID;
         result.timestamp = timestamp
         return net.postchain.ebft.messages.Message.identification(result)
     }

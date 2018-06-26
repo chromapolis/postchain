@@ -232,13 +232,13 @@ open class IntegrationTest {
         return dataLayer
     }
 
-
+/*
     protected fun createBasePeerCommConfiguration(nodeCount: Int, myIndex: Int): BasePeerCommConfiguration {
         val peerInfos = createPeerInfos(nodeCount)
         val privKey = privKey(myIndex)
         return BasePeerCommConfiguration(peerInfos, myIndex, SECP256K1CryptoSystem(), privKey)
     }
-
+*/
     fun createPeerInfos(nodeCount: Int): Array<PeerInfo> {
         if (peerInfos == null) {
             val pubKeysToUse = Array<ByteArray>(nodeCount, { pubKey(it) })
@@ -246,11 +246,11 @@ open class IntegrationTest {
         }
         return peerInfos!!
     }
-
+/*
     protected fun arrayOfBasePeerCommConfigurations(count: Int): Array<BasePeerCommConfiguration> {
         return Array(count, { createBasePeerCommConfiguration(count, it) })
     }
-
+*/
     protected fun buildBlockAndCommit(node: DataLayer) {
         buildBlockAndCommit(node.engine)
     }

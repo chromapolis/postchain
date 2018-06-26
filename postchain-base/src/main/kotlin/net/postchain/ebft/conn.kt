@@ -19,6 +19,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.LinkedBlockingQueue
+import javax.swing.border.EmptyBorder
 import kotlin.concurrent.thread
 
 val MAX_PAYLOAD_SIZE = 10000000
@@ -207,8 +208,7 @@ class ActivePeerConnection(
                 connAvail.await()
                 val socket1 = socket ?: throw Exception("No connection")
                 val stream = DataOutputStream(socket1.getOutputStream())
-                TODO("add peer id")
-                writeOnePacket(stream, packetConverter.makeIdentPacket(ByteArray(0))) // write Ident packet
+                writeOnePacket(stream, packetConverter.makeIdentPacket(peer.pubKey)) // write Ident packet
                 val err = writePacketsWhilePossible(stream)
                 if (err != null) {
                     logger.debug(" sending packet to  failed: ${err.message}")
@@ -449,14 +449,15 @@ val peerIndex = peerInfo.indexOfFirst { it.pubKey.contentEquals(signedMessage.pu
             }
  */
 
-fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
+
+fun makeConnManager(pc: PeerCommConfiguration): PeerConnectionManager<EbftMessage> {
     val peerInfo = pc.peerInfo
     val signer = pc.getSigner()
     val verifier = pc.getVerifier()
 
     val packetConverter = object : PacketConverter<EbftMessage> {
         override fun makeIdentPacket(peerID: ByteArray): ByteArray {
-            val bytes = Identification(peerID, System.currentTimeMillis()).encode()
+            val bytes = Identification(peerID, pc.blockchainRID, System.currentTimeMillis()).encode()
             val signature = signer(bytes)
             return SignedMessage(bytes, peerInfo[pc.myIndex].pubKey, signature.data).encode()
         }
@@ -473,7 +474,7 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
             if (!peerInfo[pc.myIndex].pubKey.contentEquals(message.yourPubKey)) {
                 throw UserMistake("'yourPubKey' ${message.yourPubKey.toHex()} of Identification is not mine")
             }
-            return IdentPacketInfo(signedMessage.pubKey, ByteArray(0))
+            return IdentPacketInfo(signedMessage.pubKey, message.blockchainRID)
         }
 
         override fun decodePacket(pubKey: ByteArray, bytes: ByteArray): EbftMessage {
@@ -484,11 +485,13 @@ fun makeCommManager(pc: PeerCommConfiguration): CommManager<EbftMessage> {
             return encodeAndSign(packet, signer)
         }
     }
-    val connManager = PeerConnectionManager<EbftMessage>(peerInfo[pc.myIndex], packetConverter)
+    return PeerConnectionManager<EbftMessage>(peerInfo[pc.myIndex], packetConverter)
+}
+
+fun makeCommManager(pc: PeerCommConfiguration, connManager: PeerConnectionManager<EbftMessage>): CommManager<EbftMessage> {
     return CommManager<EbftMessage>(
             pc.myIndex,
-            peerInfo,
-            packetConverter, connManager
+            pc.peerInfo,
+            connManager.packetConverter, connManager
     )
-
 }

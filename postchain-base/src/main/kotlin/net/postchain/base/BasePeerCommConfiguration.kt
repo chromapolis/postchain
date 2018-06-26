@@ -2,7 +2,9 @@
 
 package net.postchain.base
 
-class BasePeerCommConfiguration(override val peerInfo: Array<PeerInfo>, override val myIndex: Int,
+class BasePeerCommConfiguration(override val peerInfo: Array<PeerInfo>,
+                                override val blockchainRID: ByteArray,
+                                override val myIndex: Int,
                                 private val cryptoSystem: CryptoSystem, private val privKey: ByteArray) : PeerCommConfiguration {
 
 

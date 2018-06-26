@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 import net.postchain.base.CryptoSystem
+import net.postchain.base.data.BaseBlockchainConfiguration
 import net.postchain.common.toHex
 
 
@@ -55,6 +56,7 @@ class PostchainNode {
     lateinit var peerInfos: Array<PeerInfo>
     lateinit var statusManager: BaseStatusManager
     lateinit var commManager: CommManager<EbftMessage>
+    lateinit var connManager: PeerConnectionManager<EbftMessage>
     lateinit var network: Network
     lateinit var txQueue: TransactionQueue
     lateinit var txForwardingQueue: TransactionQueue
@@ -93,7 +95,7 @@ class PostchainNode {
         // 2. Close the data sources so that new blocks cant be started
         storage.close()
         // 3. Close the listening port and all TCP connections
-        commManager.stop()
+        connManager.stop()
         // 4. Stop any in-progress blocks
         blockDatabase.stop()
     }
@@ -116,8 +118,10 @@ class PostchainNode {
 
         val privKey = config.getString("messaging.privkey").hexStringToByteArray()
 
-        val commConfiguration = BasePeerCommConfiguration(peerInfos, nodeIndex, SECP256K1CryptoSystem(), privKey)
-        commManager = makeCommManager(commConfiguration)
+        val blockchainRID = (blockchainConfiguration as BaseBlockchainConfiguration).blockchainRID
+        val commConfiguration = BasePeerCommConfiguration(peerInfos, blockchainRID, nodeIndex, SECP256K1CryptoSystem(), privKey)
+        val connManager = makeConnManager(commConfiguration)
+        commManager = makeCommManager(commConfiguration, connManager)
 
         txForwardingQueue = NetworkAwareTxQueue(
                 txQueue,
