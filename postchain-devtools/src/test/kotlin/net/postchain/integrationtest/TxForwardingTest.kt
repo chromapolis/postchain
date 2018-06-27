@@ -4,6 +4,7 @@ package net.postchain.integrationtest
 
 import net.postchain.PostchainNode
 import net.postchain.api.rest.ApiTx
+import net.postchain.base.BaseBlockchainConfigurationData
 import net.postchain.common.toHex
 import net.postchain.core.BlockBuilder
 import net.postchain.core.BlockBuildingStrategy
@@ -28,12 +29,12 @@ class TxForwardingTest: EbftIntegrationTest() {
     }
 
     var nodeIndex = 0
-    class ThreeTxStrategy(val config: Configuration,
+    class ThreeTxStrategy(val configData: BaseBlockchainConfigurationData,
                           val blockchainConfiguration: BlockchainConfiguration,
                           blockQueries: BlockQueries, private val txQueue: TransactionQueue): BlockBuildingStrategy {
         val blocks = LinkedBlockingQueue<BlockData>()
         var committedHeight = -1
-        val index = config.getInteger("testmyindex", -1)
+        val index = -1
         override fun shouldBuildBlock(): Boolean {
             logger.debug { "Node $index shouldBuildBlock? ${txQueue.getTransactionQueueSize()}" }
             return txQueue.getTransactionQueueSize() >= 3

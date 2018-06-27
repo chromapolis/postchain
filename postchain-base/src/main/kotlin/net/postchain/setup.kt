@@ -19,13 +19,14 @@ import org.apache.commons.dbutils.QueryRunner
 import java.io.File
 import javax.sql.DataSource
 
-fun getBlockchainConfiguration(config: Configuration, chainId: Long): BlockchainConfiguration {
+fun getBlockchainConfiguration(config: Configuration, chainId: Long, nodeIndex: Int): BlockchainConfiguration {
     val bcfClass = Class.forName(config.getString("configurationfactory"))
     val factory = (bcfClass.newInstance() as BlockchainConfigurationFactory)
 
-
     // TODO: BaseBlockchainConfigurationData is where the config magic happens
-    val baseConfig = BaseBlockchainConfigurationData.readFromCommonsConfiguration(config)
+    val baseConfig = BaseBlockchainConfigurationData.readFromCommonsConfiguration(
+            config, chainId, nodeIndex
+    )
     return factory.makeBlockchainConfiguration(baseConfig)
 }
 
@@ -42,7 +43,7 @@ fun createDataLayer(config: Configuration, chainId: Long, nodeIndex: Int): DataL
 
 
     val blockchainSubset = config.subset("blockchain.$chainId")
-    val blockchainConfiguration = getBlockchainConfiguration(blockchainSubset, chainId)
+    val blockchainConfiguration = getBlockchainConfiguration(blockchainSubset, chainId, nodeIndex)
     val storage = baseStorage(config, nodeIndex)
     withWriteConnection(storage, chainId, { blockchainConfiguration.initializeDB(it); true })
 

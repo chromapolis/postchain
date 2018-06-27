@@ -1,5 +1,6 @@
 package net.postchain.base
 
+import net.postchain.common.hexStringToByteArray
 import net.postchain.core.BlockchainConfigurationData
 import net.postchain.gtx.DictGTXValue
 import net.postchain.gtx.GTXNull
@@ -39,49 +40,54 @@ class BaseBlockchainConfigurationData(
         return data["blockstrategy"]
     }
 
-
-
-
     companion object {
-        fun readFromCommonsConfiguration(config: Configuration): BaseBlockchainConfigurationData {
-
-            val gConfig = buildConfigurationDataStructure(config)
+        fun readFromCommonsConfiguration(config: Configuration, chainID: Long, nodeID: Int): BaseBlockchainConfigurationData {
+            val gConfig = convertConfigToGTXValue(config)
             val cryptoSystem = SECP256K1CryptoSystem()
-            val signer = cryptoSystem.makeSigner(ByteArray(0), ByteArray(0))
+            val privKey = gConfig["blocksigningprivkey"]!!.asByteArray()
+            val pubKey = secp256k1_derivePubKey(privKey)
+            val signer = cryptoSystem.makeSigner(
+                pubKey, privKey // TODO: maybe take it from somewhere?
+            )
             return BaseBlockchainConfigurationData(
-                    gtx(1),
-                    ByteArray(0),
-                    0,
-                    0,
+                    gConfig,
+                    gConfig["blockchainRID"]!!.asByteArray(),
+                    chainID,
+                    nodeID,
                     signer,
-                    ByteArray(0)
+                    pubKey
             )
         }
 
-        fun buildConfigurationDataStructure(config: Configuration): GTXValue { // TODO
+        private fun convertGTXConfigToGTXValue(config: Configuration): GTXValue {
+            return gtx(
+                    "modules" to gtx(
+                            config.getStringArray("gtx.modules").map { gtx(it) }
+                    )
+            )
+        }
 
-            val gConfig = mutableMapOf<String, GTXValue>()
-            // Get all elements in the configuration
-            for (key in config.getKeys()) {
-                println(key)
-                val elements = key.split(".")
-//                println(elements)
-                // Per each element, insert it into a dictionary
-                var currentVal = mutableMapOf<String, GTXValue>()
-                for (i in elements.size-1..0) {
-                    println(i) // TODO
-                    if(elements.size-1 == i) currentVal.put(elements[i], gtx(config.getString(key)))
-                    else currentVal.put(elements[i], gtx(currentVal))
-                }
-                println(currentVal)
-                println("--")
+        private fun convertConfigToGTXValue(config: Configuration): GTXValue {
 
+            fun blockStrategy(config: Configuration): GTXValue {
+                return gtx(
+                        "name" to gtx(config.getString("blockstrategy"))
+                )
             }
-            println(gConfig)
-            return gtx("")
+
+            val properties = mutableListOf(
+                    "blockstrategy" to blockStrategy(config),
+                    "blockchainRID" to gtx(config.getString("blockchainrid").hexStringToByteArray()),
+                    "configurationfactory" to gtx(config.getString("configurationfactory")),
+                    "signers" to gtx(config.getStringArray("signers").map { gtx(it.hexStringToByteArray())}),
+                    "blocksigningprivkey" to gtx(config.getString("blocksigningprivkey").hexStringToByteArray())
+            )
+
+            if (config.containsKey("gtx.modules")) {
+                properties.add(Pair("gtx", convertGTXConfigToGTXValue(config)))
+            }
+
+            return gtx(*properties.toTypedArray())
         }
     }
 }
-
-val DummyBaseBlockchainConfigurationData =
-        BaseBlockchainConfigurationData.readFromCommonsConfiguration(MapConfiguration(Properties()))

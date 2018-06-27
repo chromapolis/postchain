@@ -65,8 +65,12 @@ open class BaseBlockchainConfiguration(val configData: BaseBlockchainConfigurati
             return BaseBlockBuildingStrategy(configData, this, blockQueries, transactionQueue)
         }
         val strategyClass = Class.forName(strategyClassName)
-        val ctor = strategyClass.getConstructor(Configuration::class.java,
-                BlockchainConfiguration::class.java, BlockQueries::class.java, TransactionQueue::class.java)
+
+        val ctor = strategyClass.getConstructor(
+                BaseBlockchainConfigurationData::class.java,
+                BlockchainConfiguration::class.java,
+                BlockQueries::class.java,
+                TransactionQueue::class.java)
         return ctor.newInstance(configData, this, blockQueries, transactionQueue) as BlockBuildingStrategy
     }
 }
