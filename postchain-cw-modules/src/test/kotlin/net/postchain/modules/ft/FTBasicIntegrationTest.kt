@@ -28,8 +28,6 @@ class FTBasicIntegrationTest: FTIntegrationTest() {
 
         val node = createDataLayer(0)
 
-
-
         val validTxs = mutableListOf<Transaction>()
         var currentBlockHeight = -1L
 

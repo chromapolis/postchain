@@ -60,12 +60,40 @@ class BaseBlockchainConfigurationData(
         }
 
         private fun convertGTXConfigToGTXValue(config: Configuration): GTXValue {
-            return gtx(
+            val properties = mutableListOf(
                     "modules" to gtx(
                             config.getStringArray("gtx.modules").map { gtx(it) }
                     )
             )
+
+            if (config.containsKey("gtx.ft.assets")) {
+                val ftProps = mutableListOf<Pair<String, GTXValue>>()
+                val assets = config.getStringArray("gtx.ft.assets")
+
+                ftProps.add("assets" to gtx(*assets.map {
+                    assetName ->
+                    val issuers = gtx(
+                            *config.getStringArray("gtx.ft.asset.${assetName}.issuers").map(
+                                    { gtx(it.hexStringToByteArray()) }
+                            ).toTypedArray())
+
+                    gtx(
+                            "name" to gtx(assetName),
+                            "issuers" to issuers
+                    )
+                }.toTypedArray()))
+                properties.add("ft" to gtx(*ftProps.toTypedArray()))
+            }
+
+            if (config.containsKey("gtx.sqlmodules"))
+                properties.add("sqlmodules" to gtx(*
+                        config.getStringArray("gtx.sqlmodules").map {gtx(it)}.toTypedArray()
+                ))
+
+            return gtx(*properties.toTypedArray())
         }
+
+
 
         private fun convertConfigToGTXValue(config: Configuration): GTXValue {
 

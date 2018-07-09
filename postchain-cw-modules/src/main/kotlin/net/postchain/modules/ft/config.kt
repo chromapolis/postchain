@@ -31,7 +31,7 @@ fun makeFTIssueRules(ac: AccountUtil, config: GTXValue): FTIssueRules {
             issuerMap[key] = pubKey
             issuerAccountDescriptors[key] = descriptor
         }
-        assetIssuerMap[asset.asString()] = issuerMap.toMap()
+        assetIssuerMap[asset["name"]!!.asString()] = issuerMap.toMap()
     }
 
     /**
@@ -131,7 +131,6 @@ fun makeFTAccountFactory(config: GTXValue, blockchainRID: ByteArray): AccountFac
 fun makeBaseFTConfig(config: GTXValue, blockchainRID: ByteArray): FTConfig {
     val blockchainRID = blockchainRID
     val ftConfig = config["gtx"]!!["ft"]?: throw Exception("No ft module") // MARK
-
 
     val cs = SECP256K1CryptoSystem()
     val ac = AccountUtil(blockchainRID, cs)
