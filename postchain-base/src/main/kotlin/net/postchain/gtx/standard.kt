@@ -5,6 +5,7 @@ package net.postchain.gtx
 import net.postchain.base.data.SQLDatabaseAccess
 import net.postchain.core.EContext
 import net.postchain.core.TxEContext
+import org.apache.commons.dbutils.handlers.ScalarHandler
 
 /**
  * nop operation can be useful as nonce or identifier which has no meaning on consensus level
@@ -58,11 +59,25 @@ fun lastBlockInfoQuery(config: Unit, ctx: EContext, args: GTXValue): GTXValue {
     )
 }
 
+fun txConfirmationTime(config: Unit, ctx: EContext, args: GTXValue): GTXValue {
+    val dba = SQLDatabaseAccess()
+    val txRID = args["txRID"]!!.asByteArray(true)
+    val info = dba.getBlockInfo(ctx, txRID)
+    val res = dba.r.query("SELECT timestamp FROM blocks WHERE block_iid = ?",
+            ScalarHandler<Long>(), info.blockIid);
+    return gtx(
+            "timestamp" to gtx(res)
+    )
+}
+
+
 class StandardOpsGTXModule : SimpleGTXModule<Unit>(Unit, mapOf(
         "nop" to ::GTX_nop,
         "timeb" to ::GTX_timeb
 ), mapOf(
-        "last_block_info" to ::lastBlockInfoQuery)
+        "last_block_info" to ::lastBlockInfoQuery,
+        "tx_confirmation_time" to ::txConfirmationTime
+        )
 ) {
     override fun initializeDB(ctx: EContext) {}
 }
