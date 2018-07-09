@@ -13,7 +13,7 @@ class SQLModuleTest {
 
         val moduleFileName = javaClass.getResource("sqlmodule1.sql").file.toString()
         val config = gtx(
-                "sqlmodules" to gtx(gtx(moduleFileName))
+                "gtx" to gtx("sqlmodules" to gtx(gtx(moduleFileName)))
         )
 
         val mf = SQLGTXModuleFactory()
