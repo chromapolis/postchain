@@ -107,9 +107,10 @@ interface BlockBuildingStrategy {
     fun shouldStopBuildingBlock(bb: BlockBuilder): Boolean
 }
 
-// BlockchainConfiguration is a stateless objects which describes
-// an individual blockchain instance within Postchain system
-
+/**
+ * BlockchainConfiguration is a stateless objects which describes
+ * an individual blockchain instance within Postchain system
+ */
 interface BlockchainConfiguration {
     val chainID: Long
     val traits: Set<String>

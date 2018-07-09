@@ -20,25 +20,8 @@ import kotlin.system.exitProcess
 /**
  * A postchain node
  *
- * @property updateLoop the main thread
- * @property stopMe boolean, which when set, will stop the thread [updateLoop]
- * @property restApi contains information on the rest API, such as network parameters and available queries
- * @property blockchainConfiguration stateless object which describes an individual blockchain instance
- * @property storage handles back-end database connection and storage
- * @property blockQueries a collection of methods for various blockchain related queries
- * @property peerInfos information relating to our peers
- * @property statusManager manages the status of the consensus protocol
- * @property commManager peer communication manager
- *
- * @property txQueue transaction queue for transactions received from peers. Will not be forwarded to other peers
- * @property txForwardingQueue transaction queue for transactions added locally via the REST API
- * @property blockStrategy strategy configurations for how to create new blocks
- * @property engine blockchain engine used for building and adding new blocks
- * @property blockDatabase wrapper class for the [engine] and [blockQueries], starting new threads when running
- * operations and handling exceptions
- * @property blockManager manages intents and acts as a wrapper for [blockDatabase] and [statusManager]
- * @property model
- * @property syncManager
+ * @property connManager instance of [PeerConnectionManager]
+ * @property blockchainInstance instance of [EBFTBlockchainInstance]
  */
 class PostchainNode {
 
@@ -70,12 +53,12 @@ class PostchainNode {
         val commConfiguration = BasePeerCommConfiguration(peerInfos, blockchainRID, nodeIndex, SECP256K1CryptoSystem(), privKey)
 
         connManager = makeConnManager(commConfiguration)
-        blockchainInstance = EBFTBlockchainInstance(chainId,
+        blockchainInstance = EBFTBlockchainInstance(
+                chainId,
                 config,
                 nodeIndex,
                 commConfiguration,
-                connManager
-                )
+                connManager)
     }
 
     /**
@@ -98,7 +81,7 @@ class PostchainNode {
 
         var peerCount = 0;
         config.getKeys("node").forEach { peerCount++ }
-        peerCount = peerCount/4
+        peerCount = peerCount / 4
         return Array(peerCount, {
             val port = config.getInt("node.$it.port")
             val host = config.getString("node.$it.host")
@@ -121,10 +104,7 @@ class PostchainNode {
      */
     fun start(configFile: String, nodeIndex: Int) {
         val params = Parameters();
-        val builder = FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration::class.java).
-                configure(params.properties().
-                        setFileName(configFile).
-                        setListDelimiterHandler(DefaultListDelimiterHandler(',')))
+        val builder = FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration::class.java).configure(params.properties().setFileName(configFile).setListDelimiterHandler(DefaultListDelimiterHandler(',')))
         val config = builder.getConfiguration()
         start(config, nodeIndex)
     }

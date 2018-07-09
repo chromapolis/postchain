@@ -90,7 +90,7 @@ class SyncManager(
     private val statusSender = StatusSender(1000, statusManager, commManager)
     private val defaultTimeout = 1000
     private var currentTimeout = defaultTimeout
-    private var processingIntent : BlockIntent = DoNothingIntent
+    private var processingIntent: BlockIntent = DoNothingIntent
     private var processingIntentDeadline = 0L
     private var lastStatusLogged = Date().time
 
@@ -122,7 +122,7 @@ class SyncManager(
                         } else if (!smBlockRID.contentEquals(message.blockRID)) {
                             logger.info("Receive signature for a different block")
                         } else if (this.blockDatabase.verifyBlockSignature(signature)) {
-                                this.statusManager.onCommitSignature(nodeIndex, message.blockRID, signature)
+                            this.statusManager.onCommitSignature(nodeIndex, message.blockRID, signature)
                         }
                     }
                     is CompleteBlock -> {
@@ -303,8 +303,8 @@ class SyncManager(
             val haveSignature = statusManager.commitSignatures[idx] != null
             logger.info {
                 "Node ${idx} he:${ns.height} ro:${ns.round} st:${ns.state}" +
-                " ${if (ns.revolting) "R" else ""} blockRID=${if (blockRID == null) "null" else blockRID.toHex()}" +
-                " havesig:${haveSignature}"
+                        " ${if (ns.revolting) "R" else ""} blockRID=${if (blockRID == null) "null" else blockRID.toHex()}" +
+                        " havesig:${haveSignature}"
             }
         }
     }
@@ -317,7 +317,7 @@ class SyncManager(
         // Process all messages from peers, one at a time. Some
         // messages may trigger asynchronous code which will
         // send replies at a later time, others will send replies
-        // immeiately
+        // immediately
         dispatchMessages()
 
         // An intent is something that we want to do with our current block.

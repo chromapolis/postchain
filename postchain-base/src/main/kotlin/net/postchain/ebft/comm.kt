@@ -18,6 +18,7 @@ class CommManager<PT>(val myIndex: Int,
                       val packetConverter: PacketConverter<PT>,
                       val connManager: PeerConnectionManager<PT>
 ) : BlockchainDataHandler {
+
     var inboundPackets = mutableListOf<Pair<Int, PT>>()
     val peerIDs = peers.map { ByteArrayKey(it.pubKey) }
 
@@ -34,7 +35,7 @@ class CommManager<PT>(val myIndex: Int,
     }
 
     override fun getPacketHandler(peerPubKey: ByteArray): (ByteArray) -> Unit {
-        val peerIndex = peers.indexOfFirst {  it.pubKey.contentEquals(peerPubKey) }
+        val peerIndex = peers.indexOfFirst { it.pubKey.contentEquals(peerPubKey) }
         if (peerIndex > -1) {
             return { decodeAndEnqueue(peerIndex, it) }
         } else {
@@ -71,7 +72,7 @@ class CommManager<PT>(val myIndex: Int,
         for ((index, peer) in peers.withIndex()) {
             if (index < myIndex) {
                 connManager.connectPeer(peer, packetConverter,
-                        { decodeAndEnqueue(index, it)})
+                        { decodeAndEnqueue(index, it) })
             }
         }
     }

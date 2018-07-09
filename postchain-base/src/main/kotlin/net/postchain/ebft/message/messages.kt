@@ -3,20 +3,9 @@
 package net.postchain.ebft.message
 
 import net.postchain.core.ProgrammerMistake
-import net.postchain.ebft.messages.BlockData
-import net.postchain.ebft.messages.BlockSignature
-import net.postchain.ebft.messages.CompleteBlock
-import net.postchain.ebft.messages.Message
-import net.postchain.ebft.messages.GetBlockAtHeight
-import net.postchain.ebft.messages.GetBlockSignature
-import net.postchain.ebft.messages.GetUnfinishedBlock
-import net.postchain.ebft.messages.Identification
-import net.postchain.ebft.messages.Signature
-import net.postchain.ebft.messages.SignedMessage
-import net.postchain.ebft.messages.Status
-import net.postchain.ebft.messages.Transaction
+import net.postchain.core.Signature
 import java.io.ByteArrayOutputStream
-import java.util.Vector
+import java.util.*
 
 
 class SignedMessage(val message: ByteArray, val pubKey: ByteArray, val signature: ByteArray) {
@@ -50,12 +39,12 @@ sealed class EbftMessage {
                     val s = message.status
                     net.postchain.ebft.message.Status(s.blockRID, s.height, s.revolting, s.round, s.serial, s.state.toInt())
                 }
-                net.postchain.ebft.messages.Message.getUnfinishedBlockChosen -> net.postchain.ebft.message.GetUnfinishedBlock(message.getUnfinishedBlock.blockRID)
-                net.postchain.ebft.messages.Message.unfinishedBlockChosen -> net.postchain.ebft.message.UnfinishedBlock(message.unfinishedBlock.header, message.unfinishedBlock.transactions)
-                net.postchain.ebft.messages.Message.getBlockSignatureChosen -> net.postchain.ebft.message.GetBlockSignature(message.getBlockSignature.blockRID)
-                net.postchain.ebft.messages.Message.blockSignatureChosen -> net.postchain.ebft.message.BlockSignature(message.blockSignature.blockRID, net.postchain.core.Signature(message.blockSignature.signature.subjectID, message.blockSignature.signature.data))
-                net.postchain.ebft.messages.Message.completeBlockChosen -> net.postchain.ebft.message.CompleteBlock(message.completeBlock.blockData.header, message.completeBlock.blockData.transactions, message.completeBlock.height, message.completeBlock.witness)
-                net.postchain.ebft.messages.Message.transactionChosen -> net.postchain.ebft.message.Transaction(message.transaction.data)
+                net.postchain.ebft.messages.Message.getUnfinishedBlockChosen -> GetUnfinishedBlock(message.getUnfinishedBlock.blockRID)
+                net.postchain.ebft.messages.Message.unfinishedBlockChosen -> UnfinishedBlock(message.unfinishedBlock.header, message.unfinishedBlock.transactions)
+                net.postchain.ebft.messages.Message.getBlockSignatureChosen -> GetBlockSignature(message.getBlockSignature.blockRID)
+                net.postchain.ebft.messages.Message.blockSignatureChosen -> BlockSignature(message.blockSignature.blockRID, Signature(message.blockSignature.signature.subjectID, message.blockSignature.signature.data))
+                net.postchain.ebft.messages.Message.completeBlockChosen -> CompleteBlock(message.completeBlock.blockData.header, message.completeBlock.blockData.transactions, message.completeBlock.height, message.completeBlock.witness)
+                net.postchain.ebft.messages.Message.transactionChosen -> Transaction(message.transaction.data)
                 else -> throw ProgrammerMistake("Message type ${message.choiceID} is not handeled")
             }
 
@@ -75,7 +64,7 @@ sealed class EbftMessage {
     }
 }
 
-class BlockSignature(val blockRID: ByteArray, val signature: net.postchain.core.Signature): EbftMessage() {
+class BlockSignature(val blockRID: ByteArray, val signature: net.postchain.core.Signature) : EbftMessage() {
     override fun getBackingInstance(): net.postchain.ebft.messages.Message {
         val result = net.postchain.ebft.messages.BlockSignature()
         result.blockRID = blockRID
@@ -87,7 +76,7 @@ class BlockSignature(val blockRID: ByteArray, val signature: net.postchain.core.
     }
 }
 
-class CompleteBlock(val header: ByteArray, val transactions: List<ByteArray>, val height: Long, val witness: ByteArray): EbftMessage() {
+class CompleteBlock(val header: ByteArray, val transactions: List<ByteArray>, val height: Long, val witness: ByteArray) : EbftMessage() {
     override fun getBackingInstance(): net.postchain.ebft.messages.Message {
         val result = net.postchain.ebft.messages.CompleteBlock()
         result.blockData = net.postchain.ebft.messages.BlockData()
@@ -100,7 +89,7 @@ class CompleteBlock(val header: ByteArray, val transactions: List<ByteArray>, va
 }
 
 
-class GetBlockAtHeight(val height: Long): EbftMessage() {
+class GetBlockAtHeight(val height: Long) : EbftMessage() {
     override fun getBackingInstance(): net.postchain.ebft.messages.Message {
         val result = net.postchain.ebft.messages.GetBlockAtHeight()
         result.height = height
@@ -157,7 +146,7 @@ class UnfinishedBlock(val header: ByteArray, val transactions: List<ByteArray>) 
     }
 }
 
-class Transaction(val data: ByteArray): EbftMessage() {
+class Transaction(val data: ByteArray) : EbftMessage() {
     override fun getBackingInstance(): net.postchain.ebft.messages.Message {
         val result = net.postchain.ebft.messages.Transaction()
         result.data = data;

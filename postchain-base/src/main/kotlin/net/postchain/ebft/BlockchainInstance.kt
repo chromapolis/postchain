@@ -50,7 +50,27 @@ class EBFTBlockchainInstance(
 }
 
 
-
+/**
+ * A blockchain instance model
+ *
+ * @property blockchainConfiguration stateless object which describes an individual blockchain instance
+ * @property storage handles back-end database connection and storage
+ * @property blockQueries a collection of methods for various blockchain related queries
+ * @property statusManager manages the status of the consensus protocol
+ * @property commManager peer communication manager
+ *
+ * @property txQueue transaction queue for transactions received from peers. Will not be forwarded to other peers
+ * @property txForwardingQueue transaction queue for transactions added locally via the REST API
+ * @property blockStrategy strategy configurations for how to create new blocks
+ * @property engine blockchain engine used for building and adding new blocks
+ * @property blockDatabase wrapper class for the [engine] and [blockQueries], starting new threads when running
+ * operations and handling exceptions
+ * @property blockManager manages intents and acts as a wrapper for [blockDatabase] and [statusManager]
+ * @property syncManager
+ *
+ * @property restApi contains information on the rest API, such as network parameters and available queries
+ * @property apiModel
+ */
 interface BlockchainInstanceModel {
     val blockchainConfiguration: BlockchainConfiguration
     val storage: Storage
@@ -65,20 +85,26 @@ interface BlockchainInstanceModel {
     val blockDatabase: BaseBlockDatabase
     val blockManager: BlockManager
     val syncManager: SyncManager
+
     val restApi: RestApi?
     val apiModel: PostchainModel?
 }
 
 
+/**
+ * A blockchain instance worker
+ *
+ * @property updateLoop the main thread
+ * @property stopMe boolean, which when set, will stop the thread [updateLoop]
+ * @property peerInfos information relating to our peers
+ */
 class EBFTBlockchainInstanceWorker(
         chainId: Long,
         config: Configuration,
         nodeIndex: Int,
         peerCommConfiguration: PeerCommConfiguration,
-        connManager: PeerConnectionManager<EbftMessage>)
-
-    : BlockchainInstanceModel
-{
+        connManager: PeerConnectionManager<EbftMessage>
+) : BlockchainInstanceModel {
 
     lateinit var updateLoop: Thread
     val stopMe = AtomicBoolean(false)
@@ -97,7 +123,6 @@ class EBFTBlockchainInstanceWorker(
     override val syncManager: SyncManager
     override val restApi: RestApi?
     override val apiModel: PostchainModel?
-
 
     /**
      * Create and run the [updateLoop] thread until [stopMe] is set.
@@ -142,7 +167,7 @@ class EBFTBlockchainInstanceWorker(
         engine = dataLayer.engine
 
         val bestHeight = blockQueries.getBestHeight().get()
-        statusManager = BaseStatusManager(peerCommConfiguration.peerInfo.size, nodeIndex, bestHeight+1)
+        statusManager = BaseStatusManager(peerCommConfiguration.peerInfo.size, nodeIndex, bestHeight + 1)
         commManager = makeCommManager(peerCommConfiguration, connManager)
 
         txForwardingQueue = NetworkAwareTxQueue(

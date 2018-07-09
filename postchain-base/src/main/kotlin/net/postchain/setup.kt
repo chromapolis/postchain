@@ -34,7 +34,10 @@ fun getBlockchainConfiguration(config: Configuration, chainId: Long): Blockchain
 class DataLayer(val engine: BlockchainEngine,
                 val txQueue: TransactionQueue,
                 val blockchainConfiguration: BlockchainConfiguration,
-                val storage: Storage, val blockQueries: BaseBlockQueries, val blockBuildingStrategy: BlockBuildingStrategy) {
+                val storage: Storage,
+                val blockQueries: BaseBlockQueries,
+                val blockBuildingStrategy: BlockBuildingStrategy) {
+
     fun close() {
         storage.close()
     }
