@@ -5,16 +5,17 @@ package net.postchain.base
 import net.postchain.core.*
 import org.apache.commons.configuration2.Configuration
 
-class BaseBlockBuildingStrategy(val config: Configuration,
+class BaseBlockBuildingStrategy(val configData: BaseBlockchainConfigurationData,
                                 val blockchainConfiguration: BlockchainConfiguration,
                                 blockQueries: BlockQueries,
                                 private val txQueue: TransactionQueue): BlockBuildingStrategy {
     private var lastBlockTime: Long
     private var lastTxTime = System.currentTimeMillis()
     private var lastTxSize = 0
-    private val maxBlockTime = config.getLong("basestrategy.maxblocktime", 30000)
-    private val blockDelay = config.getLong("basestrategy.blockdelay", 100)
-    private val maxBlockTransactions = config.getLong("basestrategy.maxblocktransactions", 100)
+    private val strategyData = configData.getBlockBuildingStrategy()
+    private val maxBlockTime = strategyData?.get("maxblocktime")?.asInteger() ?: 30000
+    private val blockDelay = strategyData?.get("blockdelay")?.asInteger() ?: 100
+    private val maxBlockTransactions = strategyData?.get("maxblocktransactions")?.asInteger() ?: 100
 
     init {
         val height = blockQueries.getBestHeight().get()

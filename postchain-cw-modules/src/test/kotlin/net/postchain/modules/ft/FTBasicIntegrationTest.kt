@@ -25,9 +25,8 @@ class FTBasicIntegrationTest: FTIntegrationTest() {
                 issuerPubKeys[0].toHex())
         configOverrides.setProperty("blockchain.1.gtx.ft.openRegistration", true)
 
+
         val node = createDataLayer(0)
-
-
 
         val validTxs = mutableListOf<Transaction>()
         var currentBlockHeight = -1L

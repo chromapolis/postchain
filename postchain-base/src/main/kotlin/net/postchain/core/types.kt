@@ -9,6 +9,7 @@ import org.apache.commons.configuration2.Configuration
 import java.sql.Connection
 import java.util.*
 import java.util.stream.Stream
+import net.postchain.gtx.GTXValue
 
 /*
 1. Manager reads JSON and finds BlockchainConfigurationFactory class name.
@@ -124,8 +125,15 @@ interface BlockchainConfiguration {
     fun getBlockBuildingStrategy(blockQueries: BlockQueries, transactionQueue: TransactionQueue): BlockBuildingStrategy
 }
 
+interface BlockchainConfigurationData {
+    val data: GTXValue
+    val blockchainRID: ByteArray
+    val nodeID: Int
+    val chainID: Long
+}
+
 interface BlockchainConfigurationFactory {
-    fun makeBlockchainConfiguration(chainID: Long, config: Configuration): BlockchainConfiguration
+    fun makeBlockchainConfiguration(configData: BlockchainConfigurationData): BlockchainConfiguration
 }
 
 interface TransactionFactory {

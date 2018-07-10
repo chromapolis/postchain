@@ -4,22 +4,10 @@ package net.postchain.test
 
 import mu.KLogging
 import net.postchain.DataLayer
-import net.postchain.base.BasePeerCommConfiguration
-import net.postchain.base.DynamicPortPeerInfo
-import net.postchain.base.PeerInfo
-import net.postchain.base.SECP256K1CryptoSystem
+import net.postchain.base.*
 import net.postchain.base.data.BaseBlockchainConfiguration
-import net.postchain.base.secp256k1_derivePubKey
 import net.postchain.common.toHex
-import net.postchain.core.BlockBuilder
-import net.postchain.core.BlockWitness
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.BlockchainConfigurationFactory
-import net.postchain.core.MultiSigBlockWitnessBuilder
-import net.postchain.core.Transaction
-import net.postchain.core.TransactionFactory
-import net.postchain.core.TxEContext
-import net.postchain.core.UserMistake
+import net.postchain.core.*
 import net.postchain.createDataLayer
 import net.postchain.ebft.BlockchainEngine
 import org.apache.commons.configuration2.CompositeConfiguration
@@ -68,7 +56,7 @@ open class IntegrationTest {
         return pubKey(index).toHex()
     }
 
-    open class TestBlockchainConfiguration(chainID: Long, config: Configuration) : BaseBlockchainConfiguration(chainID, config) {
+    open class TestBlockchainConfiguration(configData: BaseBlockchainConfigurationData) : BaseBlockchainConfiguration(configData) {
         val transactionFactory = TestTransactionFactory()
 
         override fun getTransactionFactory(): TransactionFactory {
@@ -289,8 +277,8 @@ open class IntegrationTest {
 
 class TestBlockchainConfigurationFactory : BlockchainConfigurationFactory {
 
-    override fun makeBlockchainConfiguration(chainID: Long, config: Configuration):
+    override fun makeBlockchainConfiguration(configData: BlockchainConfigurationData):
             BlockchainConfiguration {
-        return IntegrationTest.TestBlockchainConfiguration(chainID, config)
+        return IntegrationTest.TestBlockchainConfiguration(configData as BaseBlockchainConfigurationData)
     }
 }

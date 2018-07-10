@@ -3,9 +3,8 @@
 package net.postchain.modules.ft
 
 import net.postchain.base.SECP256K1CryptoSystem
-import net.postchain.common.hexStringToByteArray
 import net.postchain.core.ByteArrayKey
-import org.apache.commons.configuration2.Configuration
+import net.postchain.gtx.GTXValue
 
 /**
  * Create rules to be checked when verifying and applying [FT_issue_op]. Retrieve assets and allowed issuers from the
@@ -15,21 +14,21 @@ import org.apache.commons.configuration2.Configuration
  * @param config configuration options
  * @return rules for the issue operation
  */
-fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
+fun makeFTIssueRules(ac: AccountUtil, config: GTXValue): FTIssueRules {
     val assetIssuerMap: MutableMap<String, Map<ByteArrayKey, ByteArray>> = mutableMapOf()
     val issuerAccountDescriptors: MutableMap<ByteArrayKey, ByteArray> = mutableMapOf()
-    val assets = config.getStringArray("assets")
-    for (assetName in assets) {
+    val assets = config["assets"]!!
+    for (asset in assets.asArray()) {
         val issuerMap = mutableMapOf<ByteArrayKey, ByteArray>()
-        for (issuer in config.getStringArray("asset.${assetName}.issuers")) {
-            val pubKey = issuer.hexStringToByteArray()
+        for (issuer in asset["issuers"]!!.asArray()) {
+            val pubKey = issuer.asByteArray()
             val descriptor = ac.issuerAccountDesc(pubKey)
             val issuerID = ac.makeAccountID(descriptor)
             val key = ByteArrayKey(issuerID)
             issuerMap[key] = pubKey
             issuerAccountDescriptors[key] = descriptor
         }
-        assetIssuerMap[assetName] = issuerMap.toMap()
+        assetIssuerMap[asset["name"]!!.asString()] = issuerMap.toMap()
     }
 
     /**
@@ -80,18 +79,19 @@ fun makeFTIssueRules(ac: AccountUtil, config: Configuration): FTIssueRules {
  * @param config configuration options
  * @return rules for the register operation
  */
-fun makeFTRegisterRules(config: Configuration): FTRegisterRules {
-    if (config.getBoolean("openRegistration")) {
-        return FTRegisterRules(arrayOf(), arrayOf())
-    } else {
-        val registrators = config.getStringArray("registrators").map { it.hexStringToByteArray() }
-        fun checkRegistration(data: FTRegisterData): Boolean {
-            return data.opData.signers.any { signer ->
-                registrators.any { it.contentEquals(signer) }
-            }
-        }
-        return FTRegisterRules(arrayOf(::checkRegistration), arrayOf())
-    }
+fun makeFTRegisterRules(config: GTXValue): FTRegisterRules {
+//    if (config.getBoolean("openRegistration")) { // TODO //FIX //TOFIX
+//        return FTRegisterRules(arrayOf(), arrayOf())
+//    } else {
+//        val registrators = config.getStringArray("registrators").map { it.hexStringToByteArray() }
+//        fun checkRegistration(data: FTRegisterData): Boolean {
+//            return data.opData.signers.any { signer ->
+//                registrators.any { it.contentEquals(signer) }
+//            }
+//        }
+//        return FTRegisterRules(arrayOf(::checkRegistration), arrayOf())
+//    }
+    return FTRegisterRules(arrayOf(), arrayOf())
 }
 
 /**
@@ -99,7 +99,7 @@ fun makeFTRegisterRules(config: Configuration): FTRegisterRules {
  *
  * @param config configuration options
  */
-fun makeFTTransferRules(config: Configuration): FTTransferRules {
+fun makeFTTransferRules(config: GTXValue): FTTransferRules {
     return FTTransferRules(arrayOf(), arrayOf(), false)
 }
 
@@ -109,7 +109,7 @@ fun makeFTTransferRules(config: Configuration): FTTransferRules {
  * @param config configuration options
  * @return account factory
  */
-fun makeFTAccountFactory(config: Configuration): AccountFactory {
+fun makeFTAccountFactory(config: GTXValue, blockchainRID: ByteArray): AccountFactory {
 
     return BaseAccountFactory(
             mapOf(
@@ -125,13 +125,13 @@ fun makeFTAccountFactory(config: Configuration): AccountFactory {
  * @param config the base configuration options
  * @return the FT module configuration
  */
-fun makeBaseFTConfig(config: Configuration): FTConfig {
-    val blockchainRID = config.getString("blockchainrid").hexStringToByteArray()
-    val ftConfig = config.subset("gtx.ft")
+fun makeBaseFTConfig(config: GTXValue, blockchainRID: ByteArray): FTConfig {
+    val blockchainRID = blockchainRID
+    val ftConfig = config["gtx"]!!["ft"] ?: throw Exception("No ft module") // MARK
 
     val cs = SECP256K1CryptoSystem()
     val ac = AccountUtil(blockchainRID, cs)
-    val accFactory = makeFTAccountFactory(config)
+    val accFactory = makeFTAccountFactory(config, blockchainRID)
     return FTConfig(
             makeFTIssueRules(ac, ftConfig),
             makeFTTransferRules(ftConfig),

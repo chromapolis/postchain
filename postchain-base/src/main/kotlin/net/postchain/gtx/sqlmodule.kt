@@ -243,7 +243,7 @@ class SQLGTXModule(private val moduleFiles: Array<String>): GTXModule
 }
 
 class SQLGTXModuleFactory: GTXModuleFactory {
-    override fun makeModule(config: Configuration): GTXModule {
-        return SQLGTXModule(config.getStringArray("gtx.sqlmodules"))
+    override fun makeModule(data: GTXValue, blockchainRID: ByteArray): GTXModule {
+        return SQLGTXModule(data["gtx"]!!["sqlmodules"]?.asArray()?.map { it.asString() }!!.toTypedArray())
     }
 }

@@ -1,10 +1,8 @@
 package net.postchain.modules.certificate
 
+import net.postchain.api.rest.TxRID
 import net.postchain.core.EContext
-import net.postchain.gtx.GTXModule
-import net.postchain.gtx.GTXModuleFactory
-import net.postchain.gtx.GTXSchemaManager
-import net.postchain.gtx.SimpleGTXModule
+import net.postchain.gtx.*
 import org.apache.commons.configuration2.Configuration
 
 class CertificateModule(val config: CertificateConfig) : SimpleGTXModule<CertificateConfig>(
@@ -25,7 +23,7 @@ class CertificateModule(val config: CertificateConfig) : SimpleGTXModule<Certifi
 }
 
 class BaseCertificateModuleFactory : GTXModuleFactory {
-    override fun makeModule(config: Configuration): GTXModule {
-        return CertificateModule(makeBaseCertificateConfig(config))
+    override fun makeModule(data: GTXValue, blockchianRID: ByteArray): GTXModule {
+        return CertificateModule(makeBaseCertificateConfig(data, blockchianRID))
     }
 }

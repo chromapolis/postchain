@@ -57,6 +57,7 @@ fun gtx(i: Long): GTXValue { return IntegerGTXValue(i) }
 fun gtx(s: String): GTXValue { return StringGTXValue(s) }
 fun gtx(ba: ByteArray): GTXValue { return ByteArrayGTXValue(ba) }
 fun gtx(vararg a: GTXValue): GTXValue { return ArrayGTXValue(a) }
+fun gtx(a: List<GTXValue>): GTXValue { return ArrayGTXValue(a.toTypedArray())}
 fun gtx(vararg pairs: Pair<String, GTXValue>): GTXValue { return DictGTXValue(mapOf(*pairs)) }
 fun gtx(dict: Map<String, GTXValue>): GTXValue { return DictGTXValue(dict) }
 

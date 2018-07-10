@@ -1,5 +1,6 @@
 package net.postchain.test
 
+import net.postchain.base.BaseBlockchainConfigurationData
 import net.postchain.core.BlockBuilder
 import net.postchain.core.BlockBuildingStrategy
 import net.postchain.core.BlockData
@@ -11,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("UNUSED_PARAMETER")
-class OnDemandBlockBuildingStrategy(config: Configuration,
+class OnDemandBlockBuildingStrategy(configData: BaseBlockchainConfigurationData,
                                     val blockchainConfiguration: BlockchainConfiguration,
                                     blockQueries: BlockQueries, val txQueue: TransactionQueue)
     : BlockBuildingStrategy {
