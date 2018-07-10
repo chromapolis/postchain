@@ -7,10 +7,20 @@ import net.postchain.gtx.GTXValue
 import net.postchain.gtx.gtx
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.handlers.MapListHandler
+import org.apache.commons.dbutils.handlers.ScalarHandler
 import org.postgresql.jdbc.PgArray
 
 class MessageEntry(val txData: ByteArray, val txRID: ByteArray, val opIndexes: Array<Int>)
 
+fun getTxRIDQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue {
+    val r = QueryRunner()
+
+    val messageID = args["messageID"]!!.asByteArray(true)
+    val res = r.query(ctx.conn, "SELECT tx_rid FROM r4_messages m " +
+            "INNER JOIN transactions t ON m.tx_iid = t.tx_iid " +
+            "WHERE m.message_id = ?", ScalarHandler<ByteArray>(), messageID)
+    return gtx("txRID" to gtx(res))
+}
 
 fun getMessagesQ(config: EsplixConfig, ctx: EContext, args: GTXValue): GTXValue {
     val r = QueryRunner()

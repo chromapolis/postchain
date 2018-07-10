@@ -14,7 +14,8 @@ class EsplixModule(val config: EsplixConfig) : SimpleGTXModule<EsplixConfig>(
                 "R4postMessage" to ::post_message_op
         ),
         mapOf(
-                "R4getMessages" to ::getMessagesQ
+                "R4getMessages" to ::getMessagesQ,
+                "R4getTxRID" to ::getTxRIDQ
         )
 ) {
 
