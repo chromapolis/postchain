@@ -27,11 +27,18 @@ class RevoltTracker(private val revoltTimeout: Int, private val statusManager: S
     var prevHeight = statusManager.myStatus.height
     var prevRound = statusManager.myStatus.round
 
+    /**
+     * Set new deadline for the revolt tracker
+     *
+     * @return the time at which the deadline is passed
+     */
     private fun newDeadLine(): Long {
         return Date().time + revoltTimeout
     }
 
-    // Starts a revolt if certain conditions are met.
+    /**
+     * Starts a revolt if certain conditions are met.
+     */
     fun update() {
         val current = statusManager.myStatus
         if (current.height > prevHeight ||
@@ -68,6 +75,9 @@ private class StatusSender(private val maxStatusInterval: Int, private val statu
 
 val StatusLogInterval = 10000L
 
+/**
+ * The SyncManager handles communications with our peers.
+ */
 class SyncManager(
         val statusManager: StatusManager,
         val blockManager: BlockManager,
@@ -76,7 +86,7 @@ class SyncManager(
         private val txQueue: TransactionQueue,
         val blockchainConfiguration: BlockchainConfiguration
 ) {
-    private val revoltTracker = RevoltTracker(60000, statusManager)
+    private val revoltTracker = RevoltTracker(10000, statusManager)
     private val statusSender = StatusSender(1000, statusManager, commManager)
     private val defaultTimeout = 1000
     private var currentTimeout = defaultTimeout
@@ -86,6 +96,9 @@ class SyncManager(
 
     companion object : KLogging()
 
+    /**
+     * Handle incoming messages
+     */
     fun dispatchMessages() {
         for (packet in commManager.getPackets()) {
             val nodeIndex = packet.first
@@ -132,6 +145,12 @@ class SyncManager(
         }
     }
 
+    /**
+     * Handle transaction received from peer
+     *
+     * @param index
+     * @param message message including the transaction
+     */
     private fun handleTransaction(index: Int, message: Transaction) {
         val tx = blockchainConfiguration.getTransactionFactory().decodeTransaction(message.data)
         if (!tx.isCorrect()) {
@@ -140,6 +159,12 @@ class SyncManager(
         txQueue.enqueue(tx)
     }
 
+    /**
+     * Send message to peer with our commit signature
+     *
+     * @param nodeIndex node index of receiving peer
+     * @param blockRID block identifier
+     */
     private fun sendBlockSignature(nodeIndex: Int, blockRID: ByteArray) {
         val currentBlock = this.blockManager.currentBlock
         if (currentBlock != null && currentBlock.header.blockRID.contentEquals(blockRID)) {
@@ -159,6 +184,12 @@ class SyncManager(
         }
     }
 
+    /**
+     * Send message to node including the block at [height]. This is a response to the [fetchBlockAtHeight] request.
+     *
+     * @param nodeIndex index of receiving node
+     * @param height requested block height
+     */
     private fun sendBlockAtHeight(nodeIndex: Int, height: Long) {
         val blockAtHeight = blockDatabase.getBlockAtHeight(height)
         blockAtHeight success {
@@ -168,6 +199,11 @@ class SyncManager(
         } fail { logger.debug("Error sending CompleteBlock", it) }
     }
 
+    /**
+     * Send message to node with the current unfinished block.
+     *
+     * @param nodeIndex index of node to send block to
+     */
     private fun sendUnfinishedBlock(nodeIndex: Int) {
         val currentBlock = blockManager.currentBlock
         if (currentBlock != null) {
@@ -175,6 +211,12 @@ class SyncManager(
         }
     }
 
+    /**
+     * Pick a random node from all nodes matching certain conditions
+     *
+     * @param match function that checks whether a node matches our selection conditions
+     * @return index of selected node
+     */
     private fun selectRandomNode(match: (NodeStatus) -> Boolean): Int? {
         val matchingIndexes = mutableListOf<Int>()
         statusManager.nodeStatuses.forEachIndexed({ index, status ->
@@ -185,18 +227,34 @@ class SyncManager(
         return matchingIndexes[Math.floor(Math.random() * matchingIndexes.size).toInt()]
     }
 
+    /**
+     * Send message to random peer to retrieve the block at [height]
+     *
+     * @param height the height at which we want the block
+     */
     private fun fetchBlockAtHeight(height: Long) {
         val nodeIndex = selectRandomNode { it.height > height } ?: return
         logger.debug("Fetching block at height ${height} from node ${nodeIndex}")
         commManager.sendPacket(GetBlockAtHeight(height), setOf(nodeIndex))
     }
 
+    /**
+     * Send message to fetch commit signatures from [nodes]
+     *
+     * @param blockRID identifier of the block to fetch signatures for
+     * @param nodes list of nodes we want commit signatures from
+     */
     private fun fetchCommitSignatures(blockRID: ByteArray, nodes: Array<Int>) {
         val message = GetBlockSignature(blockRID)
         logger.debug("Fetching commit signature for block with RID ${blockRID.toHex()} from nodes ${Arrays.toString(nodes)}")
         commManager.sendPacket(message, nodes.toSet())
     }
 
+    /**
+     * Send message to random peer for fetching latest unfinished block at the same height as us
+     *
+     * @param blockRID identifier of the unfinished block
+     */
     private fun fetchUnfinishedBlock(blockRID: ByteArray) {
         val height = statusManager.myStatus.height
         val nodeIndex = selectRandomNode {
@@ -209,6 +267,9 @@ class SyncManager(
         commManager.sendPacket(GetUnfinishedBlock(blockRID), setOf(nodeIndex))
     }
 
+    /**
+     * Process our intent latest intent
+     */
     fun processIntent() {
         val intent = blockManager.getBlockIntent()
         if (intent == processingIntent) {
@@ -232,6 +293,9 @@ class SyncManager(
         processingIntentDeadline = Date().time + currentTimeout
     }
 
+    /**
+     * Log status of all nodes including their latest block RID and if they have the signature or not
+     */
     fun logStatus() {
         for ((idx, ns) in statusManager.nodeStatuses.withIndex()) {
             val blockRID = ns.blockRID
@@ -244,6 +308,10 @@ class SyncManager(
         }
     }
 
+    /**
+     * Process peer messages, how we should proceed with the current block, updating the revolt tracker and
+     * notify peers of our current status.
+     */
     fun update() {
         // Process all messages from peers, one at a time. Some
         // messages may trigger asynchronous code which will

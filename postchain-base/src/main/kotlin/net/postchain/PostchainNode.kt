@@ -22,6 +22,29 @@ import net.postchain.base.CryptoSystem
 import net.postchain.common.toHex
 
 
+/**
+ * A postchain node
+ *
+ * @property updateLoop the main thread
+ * @property stopMe boolean, which when set, will stop the thread [updateLoop]
+ * @property restApi contains information on the rest API, such as network parameters and available queries
+ * @property blockchainConfiguration stateless object which describes an individual blockchain instance
+ * @property storage handles back-end database connection and storage
+ * @property blockQueries a collection of methods for various blockchain related queries
+ * @property peerInfos information relating to our peers
+ * @property statusManager manages the status of the consensus protocol
+ * @property commManager peer communication manager
+ *
+ * @property txQueue transaction queue for transactions received from peers. Will not be forwarded to other peers
+ * @property txForwardingQueue transaction queue for transactions added locally via the REST API
+ * @property blockStrategy strategy configurations for how to create new blocks
+ * @property engine blockchain engine used for building and adding new blocks
+ * @property blockDatabase wrapper class for the [engine] and [blockQueries], starting new threads when running
+ * operations and handling exceptions
+ * @property blockManager manages intents and acts as a wrapper for [blockDatabase] and [statusManager]
+ * @property model
+ * @property syncManager
+ */
 class PostchainNode {
     lateinit var updateLoop: Thread
     val stopMe = AtomicBoolean(false)
@@ -42,6 +65,11 @@ class PostchainNode {
     lateinit var model: Model
     lateinit var syncManager: SyncManager
 
+    /**
+     * Create and run the [updateLoop] thread until [stopMe] is set.
+     *
+     * @param syncManager the syncronization manager
+     */
     protected fun startUpdateLoop(syncManager: SyncManager) {
         updateLoop = thread(name = "updateLoop") {
             while (true) {
@@ -54,6 +82,9 @@ class PostchainNode {
         }
     }
 
+    /**
+     * Stop the postchain node
+     */
     fun stop() {
         // Ordering is important.
         // 1. Stop acceptin API calls
@@ -67,6 +98,12 @@ class PostchainNode {
         blockDatabase.stop()
     }
 
+    /**
+     * Start the postchain node by setting up everything and finally starting the updateLoop thread
+     *
+     * @param config configuration settings for the node
+     * @param nodeIndex the index of the node
+     */
     fun start(config: Configuration, nodeIndex: Int) {
         // This will eventually become a list of chain ids.
         // But for now it's just a single integer.
@@ -106,6 +143,14 @@ class PostchainNode {
         startUpdateLoop(syncManager)
     }
 
+    /**
+     * Create a data layer including relevant subsystems necessary for the postchain node, including
+     * storage, transaction queue, block building strategy and engine.
+     *
+     * @param config node configuration
+     * @param chainId chain identifier
+     * @param nodeIndex index of the local node
+     */
     private fun setupDataLayer(config: Configuration, chainId: Long, nodeIndex: Int) {
         val dataLayer = createDataLayer(config, chainId, nodeIndex)
         blockchainConfiguration = dataLayer.blockchainConfiguration
@@ -116,6 +161,12 @@ class PostchainNode {
         engine = dataLayer.engine
     }
 
+    /**
+     * Pre-start function used to process the configuration file before calling the final [start] function
+     *
+     * @param configFile configuration file to parse
+     * @param nodeIndex index of the local node
+     */
     fun start(configFile: String, nodeIndex: Int) {
         val params = Parameters();
         val builder = FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration::class.java).
@@ -126,6 +177,12 @@ class PostchainNode {
         start(config, nodeIndex)
     }
 
+    /**
+     * Retrieve peer information from config, including networking info and public keys
+     *
+     * @param config configuration
+     * @return peer information
+     */
     fun createPeerInfos(config: Configuration): Array<PeerInfo> {
         // this is for testing only. We can prepare the configuration with a
         // special Array<PeerInfo> for dynamic ports
@@ -156,6 +213,9 @@ class PostchainNode {
     }
 }
 
+/**
+ * Cryptographic key generator. Will generate a pair of public and private keys and print to stdout.
+ */
 fun keygen() {
     val cs = SECP256K1CryptoSystem()
     // check that privkey is between 1 - 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140 to be valid?
@@ -166,7 +226,9 @@ fun keygen() {
 }
 
 /**
- * args: [ { --nodeIndex | -i } <index> ] [ { --config | -c } <configFile> ] [ {--keygen | -k } ]
+ * Main function, everything starts here
+ *
+ * @param args [ { --nodeIndex | -i } <index> ] [ { --config | -c } <configFile> ] [ {--keygen | -k } ]
  */
 fun main(args: Array<String>) {
     var i = 0

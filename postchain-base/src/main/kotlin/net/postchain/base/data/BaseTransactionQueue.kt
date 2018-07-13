@@ -79,7 +79,7 @@ class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
                 rejectTransaction(tx, null)
             }
         } catch (e: UserMistake) {
-            logger.debug("Tx ${rid} didn't pass the check")
+            logger.debug("Tx ${rid} didn't pass the check: ${e.message}")
             rejectTransaction(tx, e)
         }
         return false

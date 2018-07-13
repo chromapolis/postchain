@@ -96,7 +96,7 @@ class FTBasicIntegrationTest: FTIntegrationTest() {
                 """{"type"="ft_account_exists",
                     "account_id"="${invalidAccountID.toHex()}"
                    }""")
-        Assert.assertEquals("0", existence.get())
+        Assert.assertEquals("""{"exists":0}""", existence.get())
         val history = node.blockQueries.query(
                 """{"type"="ft_get_history",
                     "account_id"="${aliceAccountID.toHex()}",

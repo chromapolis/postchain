@@ -29,6 +29,12 @@ class TransferData<InputAccountT, OutputAccountT>
 typealias StaticTransferElement = TransferElement<ByteArray>
 typealias StaticTransferData = TransferData<ByteArray, ByteArray>
 
+/**
+ * Extract data related to the transfer to its own data structure, including inputs and outputs
+ *
+ * @param opData operation data containing the arguments from which data is extracted
+ * @return the data structure holding the transfer data
+ */
 fun parseTransferData(opData: ExtOpData): StaticTransferData {
     val args = opData.args
     if (args.size < 2) throw UserMistake("Not enough arguments to transfer")
@@ -97,13 +103,31 @@ open class FTTransferRules(staticRules: Array<StaticTransferRule>, val completeR
 
 }
 
+/**
+ * Transfer operation used when transferring tokens between accounts.
+ *
+ * @param config configuration options for the FT module
+ * @param data information relating to the operation
+ * @property transferData static data relating to the transfer operation
+ */
 class FT_transfer_op (val config: FTConfig, data: ExtOpData): GTXOperation(data) {
     val transferData = parseTransferData(data)
 
+    /**
+     * Checks if operation is correct
+     *
+     * @return status of blockchain compatability
+     */
     override fun isCorrect(): Boolean {
         return config.transferRules.applyStaticRules(transferData)
     }
 
+    /**
+     * Operation is applied to the database, given that certain rules are followed
+     *
+     * @param ctx contextual information
+     * @return if operation was properly applied or not
+     */
     override fun apply(ctx: TxEContext): Boolean {
         val opCtx = OpEContext(ctx, data.opIndex)
         val dbOps = config.dbOps
@@ -124,15 +148,15 @@ class FT_transfer_op (val config: FTConfig, data: ExtOpData): GTXOperation(data)
                     it.amount,
                     it.extra)
         }).toTypedArray()
-        val competeTransferData = CompleteTransferData(data, inputs, outputs, transferData.extra)
+        val completeTransferData = CompleteTransferData(data, inputs, outputs, transferData.extra)
 
         // 2. verify inputs and outputs (custom)
 
         for ((idx, input) in inputs.withIndex())
-            if (!input.account.verifyInput(opCtx, dbOps, idx, competeTransferData))
+            if (!input.account.verifyInput(opCtx, dbOps, idx, completeTransferData))
                 return false;
         for ((idx, output) in outputs.withIndex())
-            if (!output.account.verifyOutput(opCtx, dbOps, idx, competeTransferData))
+            if (!output.account.verifyOutput(opCtx, dbOps, idx, completeTransferData))
                 return false;
 
         // 3. apply deltas
@@ -150,15 +174,15 @@ class FT_transfer_op (val config: FTConfig, data: ExtOpData): GTXOperation(data)
 
         // 4. apply custom rules (global)
 
-        if (!config.transferRules.applyCompleteRules(opCtx, config.dbOps, competeTransferData)) return false
+        if (!config.transferRules.applyCompleteRules(opCtx, config.dbOps, completeTransferData)) return false
 
         // 5. apply custom rules per account
 
         for ((idx, input) in inputs.withIndex())
-            if (!input.account.applyInput(opCtx, dbOps, idx, competeTransferData))
+            if (!input.account.applyInput(opCtx, dbOps, idx, completeTransferData))
                 return false;
         for ((idx, output) in outputs.withIndex())
-            if (!output.account.applyOutput(opCtx, dbOps, idx, competeTransferData))
+            if (!output.account.applyOutput(opCtx, dbOps, idx, completeTransferData))
                 return false;
         return true
     }

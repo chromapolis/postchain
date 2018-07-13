@@ -49,7 +49,13 @@ open class BaseBlockBuilder(val cryptoSystem: CryptoSystem, eContext: EContext, 
      * @return Block header
      */
     override fun makeBlockHeader(): BlockHeader {
-        return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(), System.currentTimeMillis())
+        var timestamp = System.currentTimeMillis()
+        if (timestamp <= iBlockData.timestamp) {
+            // if our time is behind the timestamp of most recent block, do a minimal increment
+            timestamp = iBlockData.timestamp + 1
+        }
+
+        return BaseBlockHeader.make(cryptoSystem, iBlockData, computeRootHash(), timestamp)
     }
 
     /**

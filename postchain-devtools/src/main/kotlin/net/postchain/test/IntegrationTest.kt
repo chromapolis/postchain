@@ -35,6 +35,12 @@ import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
+import org.apache.commons.configuration2.PropertiesConfiguration
+import org.apache.commons.configuration2.io.ClasspathLocationStrategy
+import org.spongycastle.asn1.ua.DSTU4145NamedCurves.params
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
+import org.apache.commons.configuration2.builder.fluent.Parameters
+
 
 open class IntegrationTest {
     protected val nodes = mutableListOf<DataLayer>()
@@ -161,7 +167,13 @@ open class IntegrationTest {
         assertTrue(bestHeight >= expectAtLeastHeight)
         for (height in 0..bestHeight) {
             val txRidsAtHeight = getTxRidsAtHeight(node, height)
-            assertArrayEquals(expectedSuccessRids.get(height)!!.toTypedArray(), txRidsAtHeight)
+
+            val expectedRidsAtHeight = expectedSuccessRids.get(height)
+            if (expectedRidsAtHeight == null) {
+                assertArrayEquals(arrayOf(), txRidsAtHeight)
+            } else {
+                assertArrayEquals(expectedRidsAtHeight.toTypedArray(), txRidsAtHeight)
+            }
         }
     }
 
@@ -180,8 +192,14 @@ open class IntegrationTest {
     }
 
     protected fun createConfig(nodeIndex: Int, nodeCount: Int = 1): Configuration {
-        val configs = Configurations()
-        val baseConfig = configs.properties(File("config.properties"))
+        val propertiesFile = File("config.properties")
+        val params = Parameters()
+        // Read first file directly via the builder
+        val builder = FileBasedConfigurationBuilder(PropertiesConfiguration::class.java)
+                .configure(params.fileBased().setLocationStrategy(ClasspathLocationStrategy())
+                        .setFile(propertiesFile))
+        val baseConfig = builder.configuration
+
         baseConfig.listDelimiterHandler = DefaultListDelimiterHandler(',')
         val chainId = baseConfig.getLong("activechainids")
         baseConfig.setProperty("blockchain.$chainId.signers", Array(nodeCount, { pubKeyHex(it) }).reduce({ acc, value -> "$acc,$value" }))

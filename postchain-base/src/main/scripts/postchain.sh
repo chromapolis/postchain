@@ -28,7 +28,7 @@ case $key in
     shift # past value
     ;;
     -k)
-    java -cp $scriptdir/${project.artifactId}-${project.version}-${executable-classifier}.jar net.postchain.PostchainNodeKt -k
+    java -cp $scriptdir/${project.artifactId}-${project.version}-${executable-classifier}.jar ${main-class} -k
     exit 0
     ;;
     -h)

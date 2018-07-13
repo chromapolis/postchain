@@ -48,31 +48,12 @@ abstract class SimpleGTXModule<ConfT>(
     }
 }
 
-class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean): GTXModule {
+class CompositeGTXModule (val modules: Array<GTXModule>, val allowOverrides: Boolean): GTXModule {
 
-    val opmap: Map<String, GTXModule>
-    val qmap: Map<String, GTXModule>
-    val ops: Set<String>
-    val _queries: Set<String>
-
-    init {
-        val _opmap = mutableMapOf<String, GTXModule>()
-        val _qmap = mutableMapOf<String, GTXModule>()
-        for (m in modules) {
-            for (op in m.getOperations()) {
-                if (!allowOverrides && op in _opmap) throw UserMistake("Duplicated operation")
-                _opmap[op] = m
-            }
-            for (q in m.getQueries()) {
-                if (!allowOverrides && q in _qmap) throw UserMistake("Duplicated operation")
-                _qmap[q] = m
-            }
-        }
-        opmap = _opmap.toMap()
-        qmap = _qmap.toMap()
-        ops = opmap.keys
-        _queries = qmap.keys
-    }
+    lateinit var opmap: Map<String, GTXModule>
+    lateinit var qmap: Map<String, GTXModule>
+    lateinit var ops: Set<String>
+    lateinit var _queries: Set<String>
 
     override fun makeTransactor(opData: ExtOpData): Transactor {
         if (opData.opName in opmap) {
@@ -102,6 +83,22 @@ class CompositeGTXModule (val modules: Array<GTXModule>, allowOverrides: Boolean
         for (module in modules) {
             module.initializeDB(ctx)
         }
+        val _opmap = mutableMapOf<String, GTXModule>()
+        val _qmap = mutableMapOf<String, GTXModule>()
+        for (m in modules) {
+            for (op in m.getOperations()) {
+                if (!allowOverrides && op in _opmap) throw UserMistake("Duplicated operation")
+                _opmap[op] = m
+            }
+            for (q in m.getQueries()) {
+                if (!allowOverrides && q in _qmap) throw UserMistake("Duplicated operation")
+                _qmap[q] = m
+            }
+        }
+        opmap = _opmap.toMap()
+        qmap = _qmap.toMap()
+        ops = opmap.keys
+        _queries = qmap.keys
     }
 
 }
