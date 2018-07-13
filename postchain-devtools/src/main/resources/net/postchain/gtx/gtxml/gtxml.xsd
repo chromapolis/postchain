@@ -62,6 +62,8 @@
 
     <!-- GTX XML Transaction -->
 
+    <xs:element name="transaction" type="transactionType"/>
+
     <xs:complexType name="transactionType">
         <xs:sequence>
             <xs:element name="signers" type="signersType" minOccurs="0"/>

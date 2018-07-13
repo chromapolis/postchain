@@ -24,7 +24,7 @@ object GTXMLValueParser {
             isScalar(gtxValueTypeOf(qname)) -> parseScalarGTXMLValue(jaxbElement)
             ARRAY == gtxValueTypeOf(qname) -> parseArrayGTXMLValue(value as ArrayType)
             DICT == gtxValueTypeOf(qname) -> parseDictGTXMLValue(value as DictType)
-            else -> throw Exception("Can't parse GTXMLValue")
+            else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
         }
     }
 
@@ -36,7 +36,7 @@ object GTXMLValueParser {
             STRING -> StringGTXValue(value as String)
             INTEGER -> IntegerGTXValue((value as BigInteger).longValueExact())
             BYTEARRAY -> ByteArrayGTXValue(value as ByteArray)
-            else -> throw IllegalArgumentException()
+            else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
         }
     }
 

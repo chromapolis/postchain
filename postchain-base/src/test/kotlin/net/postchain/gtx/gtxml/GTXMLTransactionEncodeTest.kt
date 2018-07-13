@@ -9,13 +9,11 @@ import net.postchain.gtx.OpData
 import net.postchain.gtx.StringGTXValue
 import org.junit.Test
 
-class GTXMLTransactionParserTest {
+class GTXMLTransactionEncodeTest {
 
     @Test
-    fun parseGTXMLTransaction_successfully() {
-        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_full.xml").readText()
-
-        val expected = GTXData(
+    fun encodeXMLGTXTransaction_successfully() {
+        val gtxData = GTXData(
                 "23213213".hexStringToByteArray(),
                 arrayOf(
                         byteArrayOf(0x12, 0x38, 0x71, 0x23),
@@ -42,16 +40,16 @@ class GTXMLTransactionParserTest {
                 )
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val expected = javaClass.getResource("/net/postchain/gtx/gtxml/encode/tx_full.xml").readText()
+                .replace("\r\n", "\n").trim()
+        val actual = GTXMLTransactionEncoder.encodeXMLGTXTransaction(gtxData)
 
-        assert(actual).isEqualTo(expected)
+        assert(actual.trim()).isEqualTo(expected)
     }
 
     @Test
-    fun parseGTXMLTransaction_with_empty_signers_and_signatures_successfully() {
-        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_empty_signers_and_signatures.xml").readText()
-
-        val expected = GTXData(
+    fun encodeXMLGTXTransaction_with_empty_signers_and_signatures_successfully() {
+        val gtxData = GTXData(
                 "23213213".hexStringToByteArray(),
                 arrayOf(),
                 arrayOf(),
@@ -72,16 +70,16 @@ class GTXMLTransactionParserTest {
                 )
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val expected = javaClass.getResource("/net/postchain/gtx/gtxml/encode/tx_empty_signers_and_signatures.xml").readText()
+                .replace("\r\n", "\n").trim()
+        val actual = GTXMLTransactionEncoder.encodeXMLGTXTransaction(gtxData)
 
-        assert(actual).isEqualTo(expected)
+        assert(actual.trim()).isEqualTo(expected)
     }
 
     @Test
-    fun parseGTXMLTransaction_with_empty_operations_successfully() {
-        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_empty_operations.xml").readText()
-
-        val expected = GTXData(
+    fun encodeXMLGTXTransaction_with_empty_operations_successfully() {
+        val gtxData = GTXData(
                 "23213213".hexStringToByteArray(),
                 arrayOf(
                         byteArrayOf(0x12, 0x38, 0x71, 0x23),
@@ -94,16 +92,16 @@ class GTXMLTransactionParserTest {
                 arrayOf()
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val expected = javaClass.getResource("/net/postchain/gtx/gtxml/encode/tx_empty_operations.xml").readText()
+                .replace("\r\n", "\n").trim()
+        val actual = GTXMLTransactionEncoder.encodeXMLGTXTransaction(gtxData)
 
-        assert(actual).isEqualTo(expected)
+        assert(actual.trim()).isEqualTo(expected)
     }
 
     @Test
-    fun parseGTXMLTransaction_with_empty_operation_parameters_successfully() {
-        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_empty_operation_parameters.xml").readText()
-
-        val expected = GTXData(
+    fun encodeXMLGTXTransaction_with_empty_operation_parameters_successfully() {
+        val gtxData = GTXData(
                 "23213213".hexStringToByteArray(),
                 arrayOf(
                         byteArrayOf(0x12, 0x38, 0x71, 0x23),
@@ -113,11 +111,16 @@ class GTXMLTransactionParserTest {
                         byteArrayOf(0x34, 0x56, 0x78, 0x54),
                         byteArrayOf(0x34, 0x56, 0x78, 0x55)
                 ),
-                arrayOf(OpData("ft_transfer", arrayOf()))
+                arrayOf(
+                        OpData("ft_transfer", arrayOf()),
+                        OpData("ft_transfer", arrayOf())
+                )
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val expected = javaClass.getResource("/net/postchain/gtx/gtxml/encode/tx_empty_operation_parameters.xml").readText()
+                .replace("\r\n", "\n").trim()
+        val actual = GTXMLTransactionEncoder.encodeXMLGTXTransaction(gtxData)
 
-        assert(actual).isEqualTo(expected)
+        assert(actual.trim()).isEqualTo(expected)
     }
 }
