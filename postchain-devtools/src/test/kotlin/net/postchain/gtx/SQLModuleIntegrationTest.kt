@@ -7,6 +7,7 @@ import net.postchain.test.IntegrationTest
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Paths
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -32,7 +33,7 @@ class SQLModuleIntegrationTest: IntegrationTest() {
         configOverrides.setProperty("blockchain.1.gtx.modules",
                 listOf(SQLGTXModuleFactory::class.qualifiedName))
         configOverrides.setProperty("blockchain.1.gtx.sqlmodules",
-                listOf(javaClass.getResource("sqlmodule1.sql").file))
+                listOf(Paths.get(javaClass.getResource("sqlmodule1.sql").toURI()).toString()))
         val node = createDataLayer(0)
 
         enqueueTx(node, makeTx(0, "k", "v"), 0)

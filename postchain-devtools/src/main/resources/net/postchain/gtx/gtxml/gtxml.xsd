@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           jaxb:version="2.1"
+           xmlns:jaxb="http://java.sun.com/xml/ns/jaxb">
+
+    <!-- GTX XML Data -->
+
+    <xs:element name="null"/>
+    <xs:element name="string" type="xs:string"/>
+    <xs:element name="int" type="xs:integer"/>
+    <xs:element name="bytea" type="xs:hexBinary"/>
+    <xs:element name="array" type="arrayType"/>
+    <xs:element name="dict" type="dictType"/>
+    <xs:element name="param" type="paramType"/>
+
+    <xs:complexType name="arrayType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:annotation>
+                <xs:appinfo>
+                    <jaxb:property name="elements"/>
+                </xs:appinfo>
+            </xs:annotation>
+            <xs:element ref="null"/>
+            <xs:element ref="string"/>
+            <xs:element ref="int"/>
+            <xs:element ref="bytea"/>
+            <xs:element ref="array"/>
+            <xs:element ref="dict"/>
+            <xs:element ref="param"/>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="dictType">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="entry" type="entryType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="entryType">
+        <xs:choice>
+            <xs:annotation>
+                <xs:appinfo>
+                    <jaxb:property name="value"/>
+                </xs:appinfo>
+            </xs:annotation>
+            <xs:element ref="null"/>
+            <xs:element ref="string"/>
+            <xs:element ref="int"/>
+            <xs:element ref="bytea"/>
+            <xs:element ref="array"/>
+            <xs:element ref="dict"/>
+            <xs:element ref="param"/>
+        </xs:choice>
+        <xs:attribute name="key" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="paramType">
+        <xs:attribute name="type"/>
+        <xs:attribute name="key"/>
+    </xs:complexType>
+
+
+    <!-- GTX XML Transaction -->
+
+    <xs:complexType name="transactionType">
+        <xs:sequence>
+            <xs:element name="signers" type="signersType" minOccurs="0"/>
+            <xs:element name="operations" type="operationsType" minOccurs="0"/>
+            <xs:element name="signatures" type="signaturesType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="blockchainRID"/>
+        <xs:attribute name="failure" type="xs:boolean" default="false"/>
+    </xs:complexType>
+
+    <xs:complexType name="signersType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:annotation>
+                <xs:appinfo>
+                    <jaxb:property name="signers"/>
+                </xs:appinfo>
+            </xs:annotation>
+            <xs:element ref="bytea"/>
+            <xs:element ref="param"/>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="operationsType">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="operation" type="operationType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="operationType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:annotation>
+                <xs:appinfo>
+                    <jaxb:property name="parameters"/>
+                </xs:appinfo>
+            </xs:annotation>
+            <xs:element ref="null"/>
+            <xs:element ref="string"/>
+            <xs:element ref="int"/>
+            <xs:element ref="bytea"/>
+            <xs:element ref="array"/>
+            <xs:element ref="dict"/>
+            <xs:element ref="param"/>
+        </xs:choice>
+        <xs:attribute name="name"/>
+    </xs:complexType>
+
+    <xs:complexType name="signaturesType">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element ref="bytea"/>
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <!-- GTX XML Test -->
+
+    <xs:element name="tests">
+        <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="test" type="testType"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="testType">
+        <xs:sequence maxOccurs="unbounded">
+            <xs:element name="block" type="blockType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="blockType">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="transaction" type="transactionType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+</xs:schema>

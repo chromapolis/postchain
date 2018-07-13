@@ -19,7 +19,7 @@ class Tester : IntegrationTest() {
                 test.block.forEach { block ->
                     block.transaction.forEach { tx ->
                         val chainRID = tx.blockchainRID?.hexStringToByteArray()
-                        val fail = tx.failure
+                        val fail = false /*tx.failure*/
                         val signature = tx.signatures
                         val signers = tx.signers
                         tx.operations.operation.forEach { op ->

@@ -14,7 +14,27 @@ import net.postchain.gtx.messages.GTXOperation as RawGTXOperation
 import net.postchain.gtx.messages.GTXTransaction as RawGTXTransaction
 import net.postchain.gtx.messages.GTXValue as RawGTXValue
 
-class OpData(val opName: String, val args: Array<GTXValue>)
+data class OpData(val opName: String, val args: Array<GTXValue>) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as OpData
+
+        if (opName != other.opName) return false
+        if (!Arrays.equals(args, other.args)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = opName.hashCode()
+        result = 31 * result + Arrays.hashCode(args)
+        return result
+    }
+}
+
 class ExtOpData(val opName: String,
                 val opIndex: Int,
                 val blockchainRID: ByteArray,
@@ -23,27 +43,27 @@ class ExtOpData(val opName: String,
 
 val EMPTY_SIGNATURE: ByteArray = ByteArray(0)
 
-class GTXData(val blockchainRID: ByteArray,
-              val signers: Array<ByteArray>,
-              val signatures: Array<ByteArray>,
-              val operations: Array<OpData>) {
+data class GTXData(
+        val blockchainRID: ByteArray,
+        val signers: Array<ByteArray>,
+        val signatures: Array<ByteArray>,
+        val operations: Array<OpData>) {
 
     fun getExtOpData(): Array<ExtOpData> {
-        return operations.mapIndexed({
-            idx, op ->
-            ExtOpData(op.opName, idx, blockchainRID, signers, op.args)
-        }).toTypedArray()
+        return operations.mapIndexed {
+            idx, op -> ExtOpData(op.opName, idx, blockchainRID, signers, op.args)
+        }.toTypedArray()
     }
 
     fun serialize(): ByteArray {
         val rtx = RawGTXTransaction()
         rtx.blockchainRID = blockchainRID
-        rtx.operations = Vector<RawGTXOperation>(operations.map({
+        rtx.operations = Vector<RawGTXOperation>(operations.map {
             val rop = RawGTXOperation()
             rop.opName = it.opName
-            rop.args = Vector<RawGTXValue>(it.args.map({ it.getRawGTXValue() }))
+            rop.args = Vector<RawGTXValue>(it.args.map { it.getRawGTXValue() })
             rop
-        }))
+        })
         rtx.signatures = Vector<ByteArray>(signatures.toMutableList())
         rtx.signers = Vector<ByteArray>(signers.toMutableList())
         val outs = ByteArrayOutputStream()
@@ -63,17 +83,38 @@ class GTXData(val blockchainRID: ByteArray,
         return crypto.digest(serializeWithoutSignatures())
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as GTXData
+
+        if (!Arrays.equals(blockchainRID, other.blockchainRID)) return false
+        if (!Arrays.deepEquals(signers, other.signers)) return false
+        if (!Arrays.deepEquals(signatures, other.signatures)) return false
+        if (!Arrays.equals(operations, other.operations)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = Arrays.hashCode(blockchainRID)
+        result = 31 * result + Arrays.hashCode(signers)
+        result = 31 * result + Arrays.hashCode(signatures)
+        result = 31 * result + Arrays.hashCode(operations)
+        return result
+    }
 }
 
 
 fun decodeGTXData(_rawData: ByteArray): GTXData {
     val rawGTX = RawGTXTransaction.der_decode(ByteArrayInputStream(_rawData))
     val signers: Array<ByteArray> = rawGTX.signers.toArray(arrayOf())
-    val ops = rawGTX.operations.map({
+    val ops = rawGTX.operations.map {
         OpData(
                 it.opName,
                 it.args.map(::wrapValue).toTypedArray())
-    }).toTypedArray()
+    }.toTypedArray()
 
     return GTXData(
             rawGTX.blockchainRID,
@@ -102,8 +143,6 @@ class GTXDataBuilder(val blockchainRID: ByteArray,
                     Array(signers.size, { EMPTY_SIGNATURE }),
                     mutableListOf<OpData>(),
                     false)
-    {
-    }
 
     companion object {
         fun decode(bytes: ByteArray, crypto: CryptoSystem, finished: Boolean = true): GTXDataBuilder {
@@ -177,5 +216,4 @@ class GTXDataBuilder(val blockchainRID: ByteArray,
     fun serialize(): ByteArray {
         return getGTXData().serialize()
     }
-
 }

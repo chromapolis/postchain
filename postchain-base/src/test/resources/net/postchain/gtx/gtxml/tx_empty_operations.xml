@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transaction blockchainRID="23213213" failure="true">
+    <signers>
+        <bytea>12387123</bytea>
+        <bytea>12387124</bytea>
+    </signers>
+    <operations>
+    </operations>
+    <signatures>
+        <bytea>34567854</bytea>
+        <bytea>34567855</bytea>
+    </signatures>
+</transaction>

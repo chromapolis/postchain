@@ -10,7 +10,10 @@ import java.io.ByteArrayOutputStream
 import java.util.*
 import net.postchain.gtx.messages.GTXValue as RawGTXValue
 
-// Note: order is same as in ASN.1, thus we can use same integer ids.
+/**
+ * Enum class of GTXML types
+ * Note: order is same as in ASN.1, thus we can use same integer ids.
+ */
 enum class GTXValueType {
     NULL, BYTEARRAY, STRING, INTEGER, DICT, ARRAY
 }
@@ -53,17 +56,35 @@ fun encodeGTXValue(v: GTXValue): ByteArray {
 }
 
 // helper methods:
-fun gtx(i: Long): GTXValue { return IntegerGTXValue(i) }
-fun gtx(s: String): GTXValue { return StringGTXValue(s) }
-fun gtx(ba: ByteArray): GTXValue { return ByteArrayGTXValue(ba) }
-fun gtx(vararg a: GTXValue): GTXValue { return ArrayGTXValue(a) }
-fun gtx(vararg pairs: Pair<String, GTXValue>): GTXValue { return DictGTXValue(mapOf(*pairs)) }
-fun gtx(dict: Map<String, GTXValue>): GTXValue { return DictGTXValue(dict) }
+fun gtx(i: Long): GTXValue {
+    return IntegerGTXValue(i)
+}
+
+fun gtx(s: String): GTXValue {
+    return StringGTXValue(s)
+}
+
+fun gtx(ba: ByteArray): GTXValue {
+    return ByteArrayGTXValue(ba)
+}
+
+fun gtx(vararg a: GTXValue): GTXValue {
+    return ArrayGTXValue(a)
+}
+
+fun gtx(vararg pairs: Pair<String, GTXValue>): GTXValue {
+    return DictGTXValue(mapOf(*pairs))
+}
+
+fun gtx(dict: Map<String, GTXValue>): GTXValue {
+    return DictGTXValue(dict)
+}
 
 // example:
 // gtx("arg1" to gtx(5), "arg2" to GTX_NULL)
 
-abstract class AbstractGTXValue: GTXValue {
+abstract class AbstractGTXValue : GTXValue {
+
     override operator fun get(i: Int): GTXValue {
         throw UserMistake("Type error: array expected")
     }
@@ -101,7 +122,8 @@ abstract class AbstractGTXValue: GTXValue {
     }
 }
 
-class ArrayGTXValue(val array: Array<out GTXValue>): AbstractGTXValue() {
+data class ArrayGTXValue(val array: Array<out GTXValue>) : AbstractGTXValue() {
+
     override val type = GTXValueType.ARRAY
 
     override operator fun get(i: Int): GTXValue {
@@ -125,16 +147,35 @@ class ArrayGTXValue(val array: Array<out GTXValue>): AbstractGTXValue() {
     override fun asPrimitive(): Any? {
         return array.map({ it.asPrimitive() }).toTypedArray()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ArrayGTXValue
+
+        if (!Arrays.equals(array, other.array)) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = Arrays.hashCode(array)
+        result = 31 * result + type.hashCode()
+        return result
+    }
 }
 
-fun makeDictPair (name: String, value: RawGTXValue): net.postchain.gtx.messages.DictPair {
+fun makeDictPair(name: String, value: RawGTXValue): net.postchain.gtx.messages.DictPair {
     val dp = net.postchain.gtx.messages.DictPair()
     dp.name = name
     dp.value = value
     return dp
 }
 
-class DictGTXValue(val dict: Map<String, GTXValue>): AbstractGTXValue() {
+data class DictGTXValue(val dict: Map<String, GTXValue>) : AbstractGTXValue() {
+
     override val type = GTXValueType.DICT
 
     override operator fun get(s: String): GTXValue? {
@@ -148,7 +189,7 @@ class DictGTXValue(val dict: Map<String, GTXValue>): AbstractGTXValue() {
     override fun getRawGTXValue(): net.postchain.gtx.messages.GTXValue {
         return RawGTXValue.dict(
                 Vector<net.postchain.gtx.messages.DictPair>(
-                    dict.entries.map { makeDictPair(it.key, it.value.getRawGTXValue()) }
+                        dict.entries.map { makeDictPair(it.key, it.value.getRawGTXValue()) }
                 ))
     }
 
@@ -159,8 +200,10 @@ class DictGTXValue(val dict: Map<String, GTXValue>): AbstractGTXValue() {
     }
 }
 
-object GTXNull: AbstractGTXValue() {
+object GTXNull : AbstractGTXValue() {
+
     override val type: GTXValueType = GTXValueType.NULL
+
     override fun isNull(): Boolean {
         return true
     }
@@ -174,8 +217,10 @@ object GTXNull: AbstractGTXValue() {
     }
 }
 
-class IntegerGTXValue(val integer: Long): AbstractGTXValue() {
+data class IntegerGTXValue(val integer: Long) : AbstractGTXValue() {
+
     override val type: GTXValueType = GTXValueType.INTEGER
+
     override fun asInteger(): Long {
         return integer
     }
@@ -189,8 +234,10 @@ class IntegerGTXValue(val integer: Long): AbstractGTXValue() {
     }
 }
 
-class StringGTXValue(val string: String): AbstractGTXValue() {
+data class StringGTXValue(val string: String) : AbstractGTXValue() {
+
     override val type: GTXValueType = GTXValueType.STRING
+
     override fun asString(): String {
         return string
     }
@@ -212,19 +259,39 @@ class StringGTXValue(val string: String): AbstractGTXValue() {
     override fun asPrimitive(): Any? {
         return string
     }
-
 }
 
-class ByteArrayGTXValue(val bytearray: ByteArray): AbstractGTXValue() {
+data class ByteArrayGTXValue(val bytearray: ByteArray) : AbstractGTXValue() {
+
     override val type: GTXValueType = GTXValueType.BYTEARRAY
+
     override fun asByteArray(convert: Boolean): ByteArray {
         return bytearray
     }
+
     override fun getRawGTXValue(): RawGTXValue {
         return RawGTXValue.byteArray(bytearray)
     }
 
     override fun asPrimitive(): Any? {
         return bytearray
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ByteArrayGTXValue
+
+        if (!Arrays.equals(bytearray, other.bytearray)) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = Arrays.hashCode(bytearray)
+        result = 31 * result + type.hashCode()
+        return result
     }
 }
