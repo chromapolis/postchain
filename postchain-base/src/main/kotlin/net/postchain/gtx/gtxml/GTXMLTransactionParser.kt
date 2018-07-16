@@ -3,10 +3,7 @@
 package net.postchain.gtx.gtxml
 
 import net.postchain.base.Signer
-import net.postchain.base.gtxml.OperationsType
-import net.postchain.base.gtxml.SignaturesType
-import net.postchain.base.gtxml.SignersType
-import net.postchain.base.gtxml.TransactionType
+import net.postchain.base.gtxml.*
 import net.postchain.common.hexStringToByteArray
 import net.postchain.core.ByteArrayKey
 import net.postchain.gtx.GTXData
@@ -14,22 +11,32 @@ import net.postchain.gtx.GTXValue
 import net.postchain.gtx.OpData
 import java.io.StringReader
 import javax.xml.bind.JAXB
+import javax.xml.bind.JAXBElement
 
-class TransactionContext(val blockchainRID: ByteArray,
+class TransactionContext(val blockchainRID: ByteArray?,
                          val params: Map<String, GTXValue> = mapOf(),
                          val autoSign: Boolean = false,
-                         val signers: Map<ByteArray, Signer> = mapOf())
+                         val signers: Map<ByteArray, Signer> = mapOf()) {
+
+    companion object {
+        fun empty() = TransactionContext(null)
+    }
+}
 
 
 object GTXMLTransactionParser {
 
     /**
-     * Parses XML represented as string into [GTXData] within the [transactionContext]
+     * Parses XML represented as string into [GTXData] within the [TransactionContext]
      */
-    fun parseGTXMLTransaction(xml: String, transactionContext: TransactionContext?): GTXData {
-        val gtxData = doParseGTXMLTransaction(xml)
-        // TODO: Use transactionContext here
-        return gtxData
+    fun parseGTXMLTransaction(xml: String, context: TransactionContext): GTXData {
+        val transaction = JAXB.unmarshal(StringReader(xml), TransactionType::class.java)
+
+        return GTXData(
+                context.blockchainRID ?: parseBlockchainRID(transaction),
+                parseSigners(transaction.signers, context.params),
+                parseSignatures(transaction.signatures, context.params),
+                parseOperations(transaction.operations, context.params))
     }
 
     /**
@@ -39,37 +46,48 @@ object GTXMLTransactionParser {
                               params: Map<String, GTXValue> = mapOf(),
                               signers: Map<ByteArrayKey, ByteArray> = mapOf()): GTXData {
 
-        val gtxData = doParseGTXMLTransaction(xml)
-        // TODO: Use 'params' and 'signers' here
-        return gtxData
-    }
-
-    private fun doParseGTXMLTransaction(xml: String): GTXData {
         val transaction = JAXB.unmarshal(StringReader(xml), TransactionType::class.java)
+
         return GTXData(
                 parseBlockchainRID(transaction),
-                parseSigners(transaction.signers),
-                parseSignatures(transaction.signatures),
-                parseOperations(transaction.operations))
+                parseSigners(transaction.signers, params),
+                parseSignatures(transaction.signatures, params),
+                parseOperations(transaction.operations, params))
     }
 
     private fun parseBlockchainRID(transaction: TransactionType) =
             transaction.blockchainRID.hexStringToByteArray()
 
-    private fun parseSigners(signers: SignersType): Array<ByteArray> {
+    private fun parseSigners(signers: SignersType, params: Map<String, GTXValue>): Array<ByteArray> {
         return signers.signers
-                .filter { it.name.localPart == "bytea" } // TODO: Redesign, parse <param /> too
-                .map { it.value as ByteArray }
+                .map { parseJAXBElementToByteArrayOrParam(it, params) }
                 .toTypedArray()
     }
 
-    private fun parseSignatures(signatures: SignaturesType): Array<ByteArray> =
-            signatures.bytea.toTypedArray()
+    private fun parseSignatures(signatures: SignaturesType, params: Map<String, GTXValue>): Array<ByteArray> {
+        return signatures.signatures
+                .map { parseJAXBElementToByteArrayOrParam(it, params) }
+                .toTypedArray()
+    }
 
-    private fun parseOperations(operations: OperationsType): Array<OpData> {
+    private fun parseJAXBElementToByteArrayOrParam(jaxbElement: JAXBElement<*>, params: Map<String, GTXValue>): ByteArray {
+        // TODO: [et]: Add better error handling
+        return if (jaxbElement.value is ParamType) {
+            params[(jaxbElement.value as ParamType).key]
+                    ?.asByteArray()
+                    ?: throw IllegalArgumentException("Unknown type of GTXMLValue")
+        } else {
+            jaxbElement.value as ByteArray
+        }
+    }
+
+    private fun parseOperations(operations: OperationsType, params: Map<String, GTXValue>): Array<OpData> {
         return operations.operation.map {
-            var parameters = it.parameters.map(GTXMLValueParser::parseScalarGTXMLValue)
-            OpData(it.name, parameters.toTypedArray())
+            OpData(
+                    it.name,
+                    it.parameters.map {
+                        GTXMLValueParser.parseScalarGTXMLValue(it, params)
+                    }.toTypedArray())
         }.toTypedArray()
     }
 }

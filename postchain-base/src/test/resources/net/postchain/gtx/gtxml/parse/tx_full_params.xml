@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transaction blockchainRID="23213213" failure="true">
+    <signers>
+        <bytea>12387123</bytea>
+        <param type="bytea" key="param_signer" />
+    </signers>
+    <operations>
+        <operation name="ft_transfer">
+            <string>hello</string>
+            <param type="string" key="param_string" />
+            <param type="int" key="param_int" />
+            <param type="bytea" key="param_bytearray" />
+        </operation>
+    </operations>
+    <signatures>
+        <bytea>34567854</bytea>
+        <param type="bytea" key="param_signature_1" />
+        <param type="bytea" key="param_signature_2" />
+    </signatures>
+</transaction>

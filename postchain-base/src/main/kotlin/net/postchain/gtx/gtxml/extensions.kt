@@ -5,10 +5,13 @@ import net.postchain.gtx.GTXValueType.*
 import javax.xml.namespace.QName
 
 /**
- * Returns `true` for [NULL], [STRING], [INTEGER], [BYTEARRAY] types and `false` otherwise
+ * Returns `true` if [QName] corresponds `<param />` tag or tags for [NULL], [STRING], [INTEGER], [BYTEARRAY] types
+ * and `false` otherwise
  */
-fun isScalar(type: GTXValueType): Boolean =
-        type in arrayOf(NULL, STRING, INTEGER, BYTEARRAY)
+fun isScalar(qname: QName): Boolean =
+        isParam(qname) ||
+                gtxValueTypeOf(qname) in arrayOf(NULL, STRING, INTEGER, BYTEARRAY)
+
 
 /**
  * Returns `true` for [NULL], [STRING], [INTEGER], [BYTEARRAY] types and `false` otherwise
@@ -34,3 +37,9 @@ fun gtxValueTypeOf(qname: QName): GTXValueType {
         else -> throw IllegalArgumentException("Can't parse GTXValueType")
     }
 }
+
+/**
+ * Returns `true` if [QName] corresponds `<param />` tag and `false` otherwise
+ */
+fun isParam(qname: QName): Boolean =
+        "param".equals(qname.localPart, true)

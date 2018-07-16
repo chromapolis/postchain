@@ -22,6 +22,7 @@ operator fun <T> JAXBElement<T>.component2(): T = value
  */
 fun ObjectFactory.createBytearrayElement(value: ByteArray): JAXBElement<String> {
     val marshaledValue = HexBinaryAdapter().marshal(value)
+    // May be declaredType should be a byte[].class
     return JAXBElement(QName("", "bytea"), String::class.java, null, marshaledValue)
 }
 

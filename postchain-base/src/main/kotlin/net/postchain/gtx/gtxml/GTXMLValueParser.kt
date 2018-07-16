@@ -2,6 +2,7 @@ package net.postchain.gtx.gtxml
 
 import net.postchain.base.gtxml.ArrayType
 import net.postchain.base.gtxml.DictType
+import net.postchain.base.gtxml.ParamType
 import net.postchain.gtx.*
 import net.postchain.gtx.GTXValueType.*
 import java.io.StringReader
@@ -21,36 +22,46 @@ object GTXMLValueParser {
         val (qname, value) = jaxbElement
 
         return when {
-            isScalar(gtxValueTypeOf(qname)) -> parseScalarGTXMLValue(jaxbElement)
-            ARRAY == gtxValueTypeOf(qname) -> parseArrayGTXMLValue(value as ArrayType)
-            DICT == gtxValueTypeOf(qname) -> parseDictGTXMLValue(value as DictType)
+            isScalar(qname) -> parseScalarGTXMLValue(jaxbElement, params)
+            ARRAY == gtxValueTypeOf(qname) -> parseArrayGTXMLValue(value as ArrayType, params)
+            DICT == gtxValueTypeOf(qname) -> parseDictGTXMLValue(value as DictType, params)
             else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
         }
     }
 
-    fun parseScalarGTXMLValue(jaxbElement: JAXBElement<*>): GTXValue {
+    fun parseScalarGTXMLValue(jaxbElement: JAXBElement<*>, params: Map<String, GTXValue>): GTXValue {
         val (qname, value) = jaxbElement
 
-        return when (gtxValueTypeOf(qname)) {
-            NULL -> GTXNull
-            STRING -> StringGTXValue(value as String)
-            INTEGER -> IntegerGTXValue((value as BigInteger).longValueExact())
-            BYTEARRAY -> ByteArrayGTXValue(value as ByteArray)
-            else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
+        return if (isParam(qname)) {
+            parseParam(value as ParamType, params)
+        } else {
+            when (gtxValueTypeOf(qname)) {
+                NULL -> GTXNull
+                STRING -> StringGTXValue(value as String)
+                INTEGER -> IntegerGTXValue((value as BigInteger).longValueExact())
+                BYTEARRAY -> ByteArrayGTXValue(value as ByteArray)
+                else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
+            }
         }
     }
 
-    private fun parseArrayGTXMLValue(array: ArrayType): ArrayGTXValue {
-        val elements = array.elements.map(this::parseScalarGTXMLValue)
+    private fun parseArrayGTXMLValue(array: ArrayType, params: Map<String, GTXValue>): ArrayGTXValue {
+        val elements = array.elements.map { parseScalarGTXMLValue(it, params) }
         return ArrayGTXValue(elements.toTypedArray())
     }
 
-    private fun parseDictGTXMLValue(dict: DictType): DictGTXValue {
+    private fun parseDictGTXMLValue(dict: DictType, params: Map<String, GTXValue>): DictGTXValue {
         val parsedDict = dict.entry.map {
-            it.key to parseScalarGTXMLValue(it.value)
+            it.key to parseScalarGTXMLValue(it.value, params)
         }.toMap()
 
         return DictGTXValue(parsedDict)
+    }
+
+    private fun parseParam(paramType: ParamType, params: Map<String, GTXValue>): GTXValue {
+        // TODO: [et]: Resolve using of [paramType.type]
+        return params[paramType.key]
+                ?: throw IllegalArgumentException("Can't resolve param ${paramType.key}")
     }
 
     private fun parseJaxbElement(xml: String) =

@@ -55,8 +55,9 @@ object GTXMLTransactionEncoder {
     }
 
     private fun encodeSignature(signatures: Array<ByteArray>): SignaturesType {
-        return with (objectFactory.createSignaturesType()) {
-            signatures.toCollection(this.bytea)
+        return with(objectFactory.createSignaturesType()) {
+            signatures.map(objectFactory::createBytea) // See [ObjectFactory.createBytearrayElement]
+                    .toCollection(this.signatures)
             return this
         }
     }

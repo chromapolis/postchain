@@ -111,9 +111,15 @@
     </xs:complexType>
 
     <xs:complexType name="signaturesType">
-        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:annotation>
+                <xs:appinfo>
+                    <jaxb:property name="signatures"/>
+                </xs:appinfo>
+            </xs:annotation>
             <xs:element ref="bytea"/>
-        </xs:sequence>
+            <xs:element ref="param"/>
+        </xs:choice>
     </xs:complexType>
 
 

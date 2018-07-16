@@ -3,10 +3,7 @@ package net.postchain.gtx.gtxml
 import assertk.assert
 import assertk.assertions.isEqualTo
 import net.postchain.common.hexStringToByteArray
-import net.postchain.gtx.GTXData
-import net.postchain.gtx.IntegerGTXValue
-import net.postchain.gtx.OpData
-import net.postchain.gtx.StringGTXValue
+import net.postchain.gtx.*
 import org.junit.Test
 
 class GTXMLTransactionParserTest {
@@ -42,7 +39,7 @@ class GTXMLTransactionParserTest {
                 )
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
 
         assert(actual).isEqualTo(expected)
     }
@@ -72,7 +69,7 @@ class GTXMLTransactionParserTest {
                 )
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
 
         assert(actual).isEqualTo(expected)
     }
@@ -94,7 +91,7 @@ class GTXMLTransactionParserTest {
                 arrayOf()
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
 
         assert(actual).isEqualTo(expected)
     }
@@ -116,8 +113,95 @@ class GTXMLTransactionParserTest {
                 arrayOf(OpData("ft_transfer", arrayOf()))
         )
 
-        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, null)
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
 
         assert(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun parseGTXMLTransaction_in_context_with_params_in_all_sections_successfully() {
+        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_full_params.xml").readText()
+
+        val expected = GTXData(
+                "23213213".hexStringToByteArray(),
+                arrayOf(
+                        byteArrayOf(0x12, 0x38, 0x71, 0x23),
+                        byteArrayOf(0x01, 0x02, 0x03)
+                ),
+                arrayOf(
+                        byteArrayOf(0x34, 0x56, 0x78, 0x54),
+                        byteArrayOf(0x0A, 0x0B, 0x0C, 0x0D),
+                        byteArrayOf(0x0E, 0x0F)
+                ),
+                arrayOf(OpData("ft_transfer",
+                        arrayOf(StringGTXValue("hello"),
+                                StringGTXValue("my string param"),
+                                IntegerGTXValue(123),
+                                ByteArrayGTXValue(byteArrayOf(0x0A, 0x0B, 0x0C)))
+                ))
+        )
+
+        val context = TransactionContext(
+                null,
+                mapOf(
+                        "param_signer" to ByteArrayGTXValue(byteArrayOf(0x01, 0x02, 0x03)),
+
+                        "param_string" to StringGTXValue("my string param"),
+                        "param_int" to IntegerGTXValue(123),
+                        "param_bytearray" to ByteArrayGTXValue(byteArrayOf(0x0A, 0x0B, 0x0C)),
+
+                        "param_signature_1" to ByteArrayGTXValue(byteArrayOf(0x0A, 0x0B, 0x0C, 0x0D)),
+                        "param_signature_2" to ByteArrayGTXValue(byteArrayOf(0x0E, 0x0F))
+                )
+        )
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, context)
+
+        assert(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun parseGTXMLTransaction_with_params_in_all_sections_successfully() {
+        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_full_params.xml").readText()
+
+        val expected = GTXData(
+                "23213213".hexStringToByteArray(),
+                arrayOf(
+                        byteArrayOf(0x12, 0x38, 0x71, 0x23),
+                        byteArrayOf(0x01, 0x02, 0x03)
+                ),
+                arrayOf(
+                        byteArrayOf(0x34, 0x56, 0x78, 0x54),
+                        byteArrayOf(0x0A, 0x0B, 0x0C, 0x0D),
+                        byteArrayOf(0x0E, 0x0F)
+                ),
+                arrayOf(OpData("ft_transfer",
+                        arrayOf(StringGTXValue("hello"),
+                                StringGTXValue("my string param"),
+                                IntegerGTXValue(123),
+                                ByteArrayGTXValue(byteArrayOf(0x0A, 0x0B, 0x0C)))
+                ))
+        )
+
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml,
+                mapOf(
+                        "param_signer" to ByteArrayGTXValue(byteArrayOf(0x01, 0x02, 0x03)),
+
+                        "param_string" to StringGTXValue("my string param"),
+                        "param_int" to IntegerGTXValue(123),
+                        "param_bytearray" to ByteArrayGTXValue(byteArrayOf(0x0A, 0x0B, 0x0C)),
+
+                        "param_signature_1" to ByteArrayGTXValue(byteArrayOf(0x0A, 0x0B, 0x0C, 0x0D)),
+                        "param_signature_2" to ByteArrayGTXValue(byteArrayOf(0x0E, 0x0F))
+                ))
+
+        assert(actual).isEqualTo(expected)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun parseGTXMLTransaction_in_context_with_not_found_params_throws_exception() {
+        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/parse/tx_full_params_not_found.xml").readText()
+
+        GTXMLTransactionParser.parseGTXMLTransaction(
+                xml, TransactionContext.empty())
     }
 }
