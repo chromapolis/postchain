@@ -53,9 +53,15 @@ object GTXMLValueParser {
     }
 
     private fun parseParam(paramType: ParamType, params: Map<String, GTXValue>): GTXValue {
-        // TODO: [et]: Resolve using of [paramType.type]
-        return params[paramType.key]
+        val gtxValue = params[paramType.key]
                 ?: throw IllegalArgumentException("Can't resolve param ${paramType.key}")
+
+        if (paramType.type != null && gtxValueTypeOf(paramType.type) != gtxValue.type) {
+            throw IllegalArgumentException("Incompatible types of <param> and GTXValue: " +
+                    "found: '${gtxValue.type}', required: '${gtxValueTypeOf(paramType.type)}'")
+        }
+
+        return gtxValue
     }
 
     private fun parseJaxbElement(xml: String) =

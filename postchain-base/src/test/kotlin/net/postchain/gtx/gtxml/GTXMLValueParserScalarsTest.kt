@@ -2,10 +2,7 @@ package net.postchain.gtx.gtxml
 
 import assertk.assert
 import assertk.assertions.isEqualTo
-import net.postchain.gtx.ByteArrayGTXValue
-import net.postchain.gtx.GTXNull
-import net.postchain.gtx.IntegerGTXValue
-import net.postchain.gtx.StringGTXValue
+import net.postchain.gtx.*
 import org.junit.Test
 
 class GTXMLValueParserScalarsTest {
@@ -59,6 +56,19 @@ class GTXMLValueParserScalarsTest {
 
     @Test
     fun parseGTXValue_param_successfully() {
+        val xml = "<param key='param_key'/>"
+
+        val actual = GTXMLValueParser.parseGTXMLValue(
+                xml,
+                mapOf("param_key" to IntegerGTXValue(123)))
+
+        val expected = IntegerGTXValue(123)
+
+        assert(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun parseGTXValue_param_compatible_type_successfully() {
         val xml = "<param key='param_key' type='int'/>"
 
         val actual = GTXMLValueParser.parseGTXMLValue(
@@ -68,6 +78,22 @@ class GTXMLValueParserScalarsTest {
         val expected = IntegerGTXValue(123)
 
         assert(actual).isEqualTo(expected)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun parseGTXValue_param_incompatible_type_successfully() {
+        val xml = "<param key='param_key' type='string'/>"
+        GTXMLValueParser.parseGTXMLValue(
+                xml,
+                mapOf("param_key" to ArrayGTXValue(arrayOf(IntegerGTXValue(123)))))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun parseGTXValue_param_unknown_type_successfully() {
+        val xml = "<param key='param_key' type='UNKNOWN_TYPE'/>"
+        GTXMLValueParser.parseGTXMLValue(
+                xml,
+                mapOf("param_key" to IntegerGTXValue(123)))
     }
 
     @Test(expected = IllegalArgumentException::class)

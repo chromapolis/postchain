@@ -4,19 +4,24 @@ import net.postchain.gtx.GTXValueType
 import net.postchain.gtx.GTXValueType.*
 import javax.xml.namespace.QName
 
-
 /**
  * Returns [GTXValueType] object correspondent to [QName]
  */
-fun gtxValueTypeOf(qname: QName): GTXValueType {
-    return when (qname.localPart) {
+fun gtxValueTypeOf(qname: QName): GTXValueType =
+        gtxValueTypeOf(qname.localPart)
+
+/**
+ * Returns [GTXValueType] object correspondent to [String]
+ */
+fun gtxValueTypeOf(type: String): GTXValueType {
+    return when (type) {
         "null" -> NULL
         "string" -> STRING
         "int" -> INTEGER
         "bytea" -> BYTEARRAY
         "array" -> ARRAY
         "dict" -> DICT
-        else -> throw IllegalArgumentException("Can't parse GTXValueType")
+        else -> throw IllegalArgumentException("Unknown type of GTXValueType: $type")
     }
 }
 
