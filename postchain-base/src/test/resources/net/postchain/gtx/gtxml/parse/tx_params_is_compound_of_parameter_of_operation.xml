@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transaction blockchainRID="23213213" failure="true">
+    <signers>
+    </signers>
+    <operations>
+        <operation name="ft_transfer">
+            <param key="param_compound"/>
+        </operation>
+    </operations>
+    <signatures>
+    </signatures>
+</transaction>

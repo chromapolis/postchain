@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<transaction blockchainRID="23213213">
+    <signers/>
+    <operations>
+        <operation name="ft_transfer">
+            <string>foo</string>
+            <array>
+                <string>foo</string>
+                <array>
+                    <string>foo</string>
+                    <string>bar</string>
+                </array>
+                <dict>
+                    <entry key="key1">
+                        <int>42</int>
+                    </entry>
+                    <entry key="key2">
+                        <string>42</string>
+                    </entry>
+                    <entry key="key3">
+                        <array>
+                            <string>hello</string>
+                            <int>42</int>
+                        </array>
+                    </entry>
+                </dict>
+            </array>
+            <dict>
+                <entry key="key1">
+                    <null xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+                </entry>
+                <entry key="key2">
+                    <string>42</string>
+                </entry>
+            </dict>
+        </operation>
+    </operations>
+    <signatures/>
+</transaction>

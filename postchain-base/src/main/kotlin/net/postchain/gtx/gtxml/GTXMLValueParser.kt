@@ -18,41 +18,35 @@ object GTXMLValueParser {
      * Parses XML represented as string into [GTXValue] and resolves params ('<param />') by [params] map
      */
     fun parseGTXMLValue(xml: String, params: Map<String, GTXValue> = mapOf()): GTXValue {
-        val jaxbElement = parseJaxbElement(xml)
-        val (qname, value) = jaxbElement
-
-        return when {
-            isScalar(qname) -> parseScalarGTXMLValue(jaxbElement, params)
-            ARRAY == gtxValueTypeOf(qname) -> parseArrayGTXMLValue(value as ArrayType, params)
-            DICT == gtxValueTypeOf(qname) -> parseDictGTXMLValue(value as DictType, params)
-            else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
-        }
+        return parseJAXBElementToGTXMLValue(
+                parseJaxbElement(xml), params)
     }
 
-    fun parseScalarGTXMLValue(jaxbElement: JAXBElement<*>, params: Map<String, GTXValue>): GTXValue {
-        val (qname, value) = jaxbElement
+    fun parseJAXBElementToGTXMLValue(jaxbElement: JAXBElement<*>, params: Map<String, GTXValue>): GTXValue {
+        val (qName, value) = jaxbElement
 
-        return if (isParam(qname)) {
+        return if (isParam(qName)) {
             parseParam(value as ParamType, params)
         } else {
-            when (gtxValueTypeOf(qname)) {
+            when (gtxValueTypeOf(qName)) {
                 NULL -> GTXNull
                 STRING -> StringGTXValue(value as String)
                 INTEGER -> IntegerGTXValue((value as BigInteger).longValueExact())
                 BYTEARRAY -> ByteArrayGTXValue(value as ByteArray)
-                else -> throw IllegalArgumentException("Unknown type of GTXMLValue")
+                ARRAY -> parseArrayGTXMLValue(value as ArrayType, params)
+                DICT -> parseDictGTXMLValue(value as DictType, params)
             }
         }
     }
 
     private fun parseArrayGTXMLValue(array: ArrayType, params: Map<String, GTXValue>): ArrayGTXValue {
-        val elements = array.elements.map { parseScalarGTXMLValue(it, params) }
+        val elements = array.elements.map { parseJAXBElementToGTXMLValue(it, params) }
         return ArrayGTXValue(elements.toTypedArray())
     }
 
     private fun parseDictGTXMLValue(dict: DictType, params: Map<String, GTXValue>): DictGTXValue {
         val parsedDict = dict.entry.map {
-            it.key to parseScalarGTXMLValue(it.value, params)
+            it.key to parseJAXBElementToGTXMLValue(it.value, params)
         }.toMap()
 
         return DictGTXValue(parsedDict)

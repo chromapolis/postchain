@@ -16,7 +16,7 @@ import javax.xml.bind.JAXBElement
 class TransactionContext(val blockchainRID: ByteArray?,
                          val params: Map<String, GTXValue> = mapOf(),
                          val autoSign: Boolean = false,
-                         val signers: Map<ByteArray, Signer> = mapOf()) {
+                         val signers: Map<ByteArrayKey, Signer> = mapOf()) {
 
     companion object {
         fun empty() = TransactionContext(null)
@@ -44,15 +44,11 @@ object GTXMLTransactionParser {
      */
     fun parseGTXMLTransaction(xml: String,
                               params: Map<String, GTXValue> = mapOf(),
-                              signers: Map<ByteArrayKey, ByteArray> = mapOf()): GTXData {
+                              signers: Map<ByteArrayKey, Signer> = mapOf()): GTXData {
 
-        val transaction = JAXB.unmarshal(StringReader(xml), TransactionType::class.java)
-
-        return GTXData(
-                parseBlockchainRID(transaction),
-                parseSigners(transaction.signers, params),
-                parseSignatures(transaction.signatures, params),
-                parseOperations(transaction.operations, params))
+        return parseGTXMLTransaction(
+                xml,
+                TransactionContext(null, params = params, signers = signers))
     }
 
     private fun parseBlockchainRID(transaction: TransactionType) =
@@ -86,7 +82,7 @@ object GTXMLTransactionParser {
             OpData(
                     it.name,
                     it.parameters.map {
-                        GTXMLValueParser.parseScalarGTXMLValue(it, params)
+                        GTXMLValueParser.parseJAXBElementToGTXMLValue(it, params)
                     }.toTypedArray())
         }.toTypedArray()
     }

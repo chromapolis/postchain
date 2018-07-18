@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transaction blockchainRID="23213213" failure="true">
+    <signers>
+        <param type="bytea" key="param_foo" />
+    </signers>
+    <operations>
+    </operations>
+    <signatures>
+    </signatures>
+</transaction>

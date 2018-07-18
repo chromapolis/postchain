@@ -40,7 +40,7 @@ fun wrapValue(r: RawGTXValue): GTXValue {
         RawGTXValue.stringChosen -> return StringGTXValue(r.string)
         RawGTXValue.integerChosen -> return IntegerGTXValue(r.integer)
         RawGTXValue.dictChosen -> return DictGTXValue(r.dict.associateBy({ it.name }, { wrapValue(it.value) }))
-        RawGTXValue.arrayChosen -> return ArrayGTXValue(r.array.map({ wrapValue(it) }).toTypedArray())
+        RawGTXValue.arrayChosen -> return ArrayGTXValue(r.array.map { wrapValue(it) }.toTypedArray())
     }
     throw ProgrammerMistake("Unknown type identifier")
 }

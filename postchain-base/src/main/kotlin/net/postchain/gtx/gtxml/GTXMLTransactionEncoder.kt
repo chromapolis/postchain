@@ -46,7 +46,7 @@ object GTXMLTransactionEncoder {
             operations.forEach {
                 val operationType = objectFactory.createOperationType()
                 operationType.name = it.opName
-                it.args.map(GTXMLValueEncoder::createScalarElement)
+                it.args.map(GTXMLValueEncoder::encodeGTXMLValueToJAXBElement)
                         .toCollection(operationType.parameters)
                 this.operation.add(operationType)
             }

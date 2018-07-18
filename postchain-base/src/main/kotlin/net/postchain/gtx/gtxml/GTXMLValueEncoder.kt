@@ -18,32 +18,18 @@ object GTXMLValueEncoder {
      * Encodes [GTXValue] into XML format
      */
     fun encodeXMLGTXValue(gtxValue: GTXValue): String {
-        /**
-         * Special case to generate xml element w/o 'xsi:nil="true"' 'xmlns:xsi="..."' attributes.
-         */
-        if (gtxValue === GTXNull) {
-            return """
-                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-                <null/>
-
-            """.trimIndent()
+        return with(StringWriter()) {
+            JAXB.marshal(encodeGTXMLValueToJAXBElement(gtxValue), this)
+            toString()
         }
-
-        val jaxbElement = when {
-            isScalar(gtxValue) -> createScalarElement(gtxValue)
-            gtxValue is ArrayGTXValue -> createArrayElement(gtxValue)
-            gtxValue is DictGTXValue -> createDictElement(gtxValue)
-            else -> throw IllegalArgumentException("Unknown type of gtxValue")
-        }
-
-        val xmlWriter = StringWriter()
-        JAXB.marshal(jaxbElement, xmlWriter)
-
-        return xmlWriter.toString()
     }
 
-    fun createScalarElement(gtxValue: GTXValue): JAXBElement<*> {
+    fun encodeGTXMLValueToJAXBElement(gtxValue: GTXValue): JAXBElement<*> {
         return when (gtxValue) {
+        /**
+         * Note: null element will be equal to:
+         *      `<null xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>`
+         */
             is GTXNull -> objectFactory.createNull(null)
             is StringGTXValue -> objectFactory.createString(gtxValue.string)
             is IntegerGTXValue -> objectFactory.createInt(BigInteger.valueOf(gtxValue.integer))
@@ -52,6 +38,8 @@ object GTXMLValueEncoder {
          * Therefore we call it manually.
          */
             is ByteArrayGTXValue -> objectFactory.createBytearrayElement(gtxValue.bytearray)
+            is ArrayGTXValue -> createArrayElement(gtxValue)
+            is DictGTXValue -> createDictElement(gtxValue)
             else -> throw IllegalArgumentException("Unknown type of gtxValue")
         }
     }
@@ -59,8 +47,7 @@ object GTXMLValueEncoder {
     private fun createArrayElement(gtxValue: ArrayGTXValue): JAXBElement<ArrayType> {
         return with(objectFactory.createArrayType()) {
             gtxValue.array
-                    .filter(::isScalar) // Note: Array of arrays and array of dicts are not supported yet
-                    .map(::createScalarElement)
+                    .map(::encodeGTXMLValueToJAXBElement)
                     .toCollection(this.elements)
 
             objectFactory.createArray(this)
@@ -72,7 +59,7 @@ object GTXMLValueEncoder {
             gtxValue.dict.map { entry ->
                 val entryType = objectFactory.createEntryType()
                 entryType.key = entry.key
-                entryType.value = createScalarElement(entry.value)
+                entryType.value = encodeGTXMLValueToJAXBElement(entry.value)
                 entryType
             }.toCollection(this.entry)
 
