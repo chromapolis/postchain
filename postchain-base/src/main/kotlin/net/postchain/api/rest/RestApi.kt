@@ -127,7 +127,7 @@ class RestApi(private val model: Model, private val listenPort: Int, private val
                 val b = req.body()
                 logger.debug("Request body: $b")
                 val tx = toTransaction(req)
-                if (!tx.tx.matches(Regex("[0-9a-f]{2,}"))) {
+                if (!tx.tx.matches(Regex("[0-9a-fA-F]{2,}"))) {
                     throw UserMistake("Invalid tx format. Expected {\"tx\": <hexString>}")
                 }
                 model.postTransaction(tx)
