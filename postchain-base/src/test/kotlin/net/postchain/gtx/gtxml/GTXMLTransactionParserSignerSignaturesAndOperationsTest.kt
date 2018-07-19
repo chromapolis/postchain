@@ -7,7 +7,7 @@ import net.postchain.core.UserMistake
 import net.postchain.gtx.*
 import org.junit.Test
 
-class GTXMLTransactionParserTest {
+class GTXMLTransactionParserSignerSignaturesAndOperationsTest {
 
     @Test
     fun parseGTXMLTransaction_successfully() {

@@ -5,6 +5,7 @@ package net.postchain.gtx.gtxml
 import net.postchain.base.Signer
 import net.postchain.base.gtxml.*
 import net.postchain.common.hexStringToByteArray
+import net.postchain.common.toHex
 import net.postchain.core.ByteArrayKey
 import net.postchain.gtx.GTXData
 import net.postchain.gtx.GTXValue
@@ -33,7 +34,7 @@ object GTXMLTransactionParser {
         val transaction = JAXB.unmarshal(StringReader(xml), TransactionType::class.java)
 
         return GTXData(
-                context.blockchainRID ?: parseBlockchainRID(transaction),
+                parseBlockchainRID(transaction.blockchainRID, context.blockchainRID),
                 parseSigners(transaction.signers, context.params),
                 parseSignatures(transaction.signatures, context.params),
                 parseOperations(transaction.operations, context.params))
@@ -51,8 +52,18 @@ object GTXMLTransactionParser {
                 TransactionContext(null, params = params, signers = signers))
     }
 
-    private fun parseBlockchainRID(transaction: TransactionType) =
-            transaction.blockchainRID.hexStringToByteArray()
+    private fun parseBlockchainRID(blockchainRID: String?, contextBlockchainRID: ByteArray?): ByteArray {
+        return if (blockchainRID.isNullOrEmpty()) {
+            contextBlockchainRID ?: ByteArray(0)
+        } else {
+            blockchainRID!!.hexStringToByteArray()
+                    .takeIf { contextBlockchainRID == null || it.contentEquals(contextBlockchainRID) }
+                    ?: throw IllegalArgumentException(
+                            "BlockchainRID = '$blockchainRID' of parsed xml transaction is not equal to " +
+                                    "TransactionContext.blockchainRID = '${contextBlockchainRID!!.toHex()}'"
+                    )
+        }
+    }
 
     private fun parseSigners(signers: SignersType, params: Map<String, GTXValue>): Array<ByteArray> {
         return signers.signers
