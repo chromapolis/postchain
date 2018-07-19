@@ -2,24 +2,28 @@
 
 package net.postchain.common
 
-private val HEX_CHARS = "0123456789abcdef"
+private val HEX_CHARS = "0123456789ABCDEF"
 
-fun String.hexStringToByteArray() : ByteArray {
+fun String.hexStringToByteArray(): ByteArray {
+    if (length % 2 != 0) {
+        throw IllegalArgumentException("Invalid hex string: length is not an even number")
+    }
 
     val result = ByteArray(length / 2)
 
     for (i in 0 until length step 2) {
-        val firstIndex = HEX_CHARS.indexOf(this[i])
+        val firstIndex = HEX_CHARS.indexOf(this[i], ignoreCase = true)
         if (firstIndex == -1) {
-            throw ArrayIndexOutOfBoundsException("Char ${this[i]} is not a hex digit")
+            throw IllegalArgumentException("Char ${this[i]} is not a hex digit")
         }
-        val secondIndex = HEX_CHARS.indexOf(this[i + 1])
+
+        val secondIndex = HEX_CHARS.indexOf(this[i + 1], ignoreCase = true)
         if (secondIndex == -1) {
-            throw ArrayIndexOutOfBoundsException("Char ${this[i]} is not a hex digit")
+            throw IllegalArgumentException("Char ${this[i]} is not a hex digit")
         }
 
         val octet = firstIndex.shl(4).or(secondIndex)
-        result.set(i.shr(1), octet.toByte())
+        result[i.shr(1)] = octet.toByte()
     }
 
     return result
@@ -28,7 +32,7 @@ fun String.hexStringToByteArray() : ByteArray {
 
 private val HEX_CHARARRAY = HEX_CHARS.toCharArray()
 
-fun ByteArray.toHex() : String{
+fun ByteArray.toHex(): String {
     val result = StringBuffer()
 
     forEach {

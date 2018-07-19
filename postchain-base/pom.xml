@@ -30,6 +30,7 @@
         <executable-classifier>jar-with-dependencies</executable-classifier>
         <dist-classifier>dist</dist-classifier>
         <easymock.version>3.4</easymock.version>
+        <assertk.version>0.10</assertk.version>
 
     </properties>
 
@@ -116,10 +117,9 @@
         <dependency>
             <groupId>com.willowtreeapps.assertk</groupId>
             <artifactId>assertk</artifactId>
-            <version>0.10</version>
+            <version>${assertk.version}</version>
             <scope>test</scope>
         </dependency>
-
 
     </dependencies>
 

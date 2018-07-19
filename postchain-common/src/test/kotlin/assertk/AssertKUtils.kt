@@ -1,6 +1,5 @@
-package net.postchain.asserk
+package assertk
 
-import assertk.Assert
 import assertk.assertions.support.fail
 
 /**
