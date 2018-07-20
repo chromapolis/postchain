@@ -21,3 +21,10 @@ class ByteArrayKey(val byteArray: ByteArray) {
         return byteArray.toHex()
     }
 }
+
+/**
+ * Returns [ByteArrayKey] for given [ByteArray] object
+ */
+fun ByteArray.byteArrayKeyOf() =
+        ByteArrayKey(this)
+

@@ -7,7 +7,7 @@ import net.postchain.core.UserMistake
 import net.postchain.gtx.*
 import org.junit.Test
 
-class GTXMLTransactionParserSignerSignaturesAndOperationsTest {
+class GTXMLTransactionParserSignersSignaturesAndOperationsTest {
 
     @Test
     fun parseGTXMLTransaction_successfully() {
@@ -143,6 +143,7 @@ class GTXMLTransactionParserSignerSignaturesAndOperationsTest {
                 "23213213".hexStringToByteArray(),
                 arrayOf(
                         byteArrayOf(0x12, 0x38, 0x71, 0x23),
+                        byteArrayOf(0x12, 0x38, 0x71, 0x24),
                         byteArrayOf(0x01, 0x02, 0x03)
                 ),
                 arrayOf(
@@ -264,6 +265,50 @@ class GTXMLTransactionParserSignerSignaturesAndOperationsTest {
         )
 
         val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, context)
+
+        assert(actual).isEqualTo(expected)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun parseGTXMLTransaction_signers_more_than_signatures_throws_exception() {
+        val xml = javaClass.getResource(
+                "/net/postchain/gtx/gtxml/parse/tx_signers_and_signatures_incompatibility__signers_more_than_signatures.xml")
+                .readText()
+
+        GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun parseGTXMLTransaction_signers_less_than_signatures_throws_exception() {
+        val xml = javaClass.getResource(
+                "/net/postchain/gtx/gtxml/parse/tx_signers_and_signatures_incompatibility__signers_less_than_signatures.xml")
+                .readText()
+
+        GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
+    }
+
+    @Test
+    fun parseGTXMLTransaction_no_signatures_element_successfully() {
+        val xml = javaClass.getResource(
+                "/net/postchain/gtx/gtxml/parse/tx_signers_and_signatures_incompatibility__no_signatures_element.xml")
+                .readText()
+
+        val expected = GTXData(
+                "23213213".hexStringToByteArray(),
+                arrayOf(
+                        byteArrayOf(0x12, 0x38, 0x71, 0x23),
+                        byteArrayOf(0x12, 0x38, 0x71, 0x24),
+                        byteArrayOf(0x12, 0x38, 0x71, 0x25)
+                ),
+                arrayOf(
+                        byteArrayOf(),
+                        byteArrayOf(),
+                        byteArrayOf()
+                ),
+                arrayOf()
+        )
+
+        val actual = GTXMLTransactionParser.parseGTXMLTransaction(xml, TransactionContext.empty())
 
         assert(actual).isEqualTo(expected)
     }

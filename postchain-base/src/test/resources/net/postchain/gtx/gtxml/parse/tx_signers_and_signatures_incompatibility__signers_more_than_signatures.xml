@@ -2,10 +2,11 @@
 <transaction blockchainRID="23213213" failure="true">
     <signers>
         <bytea>12387123</bytea>
+        <bytea>12387124</bytea>
     </signers>
     <operations>
     </operations>
     <signatures>
-        <param type="bytea" key="param_foo" />
+        <bytea>34567854</bytea>
     </signatures>
 </transaction>

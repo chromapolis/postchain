@@ -3,10 +3,14 @@
 package net.postchain.gtx.gtxml
 
 import net.postchain.base.Signer
-import net.postchain.base.gtxml.*
+import net.postchain.base.gtxml.OperationsType
+import net.postchain.base.gtxml.ParamType
+import net.postchain.base.gtxml.SignersType
+import net.postchain.base.gtxml.TransactionType
 import net.postchain.common.hexStringToByteArray
 import net.postchain.common.toHex
 import net.postchain.core.ByteArrayKey
+import net.postchain.core.byteArrayKeyOf
 import net.postchain.gtx.GTXData
 import net.postchain.gtx.GTXValue
 import net.postchain.gtx.OpData
@@ -33,11 +37,27 @@ object GTXMLTransactionParser {
     fun parseGTXMLTransaction(xml: String, context: TransactionContext): GTXData {
         val transaction = JAXB.unmarshal(StringReader(xml), TransactionType::class.java)
 
-        return GTXData(
+        // Asserting count(signers) == count(signatures)
+        requireSignaturesCorrespondsSigners(transaction)
+
+        val gtxData = GTXData(
                 parseBlockchainRID(transaction.blockchainRID, context.blockchainRID),
                 parseSigners(transaction.signers, context.params),
-                parseSignatures(transaction.signatures, context.params),
+                parseSignatures(transaction, context.params),
                 parseOperations(transaction.operations, context.params))
+
+        if (context.autoSign) {
+            signTransaction(gtxData, context.signers)
+        }
+
+        return gtxData
+    }
+
+    private fun requireSignaturesCorrespondsSigners(tx: TransactionType) {
+        if (tx.signatures != null && tx.signers.signers.size != tx.signatures.signatures.size) {
+            throw IllegalArgumentException("Number of signers (${tx.signers.signers.size}) is not equal to " +
+                    "the number of signatures (${tx.signatures.signatures.size})\n")
+        }
     }
 
     /**
@@ -49,7 +69,7 @@ object GTXMLTransactionParser {
 
         return parseGTXMLTransaction(
                 xml,
-                TransactionContext(null, params = params, signers = signers))
+                TransactionContext(null, params, true, signers))
     }
 
     private fun parseBlockchainRID(blockchainRID: String?, contextBlockchainRID: ByteArray?): ByteArray {
@@ -71,10 +91,14 @@ object GTXMLTransactionParser {
                 .toTypedArray()
     }
 
-    private fun parseSignatures(signatures: SignaturesType, params: Map<String, GTXValue>): Array<ByteArray> {
-        return signatures.signatures
-                .map { parseJAXBElementToByteArrayOrParam(it, params) }
-                .toTypedArray()
+    private fun parseSignatures(transaction: TransactionType, params: Map<String, GTXValue>): Array<ByteArray> {
+        return if (transaction.signatures != null) {
+            transaction.signatures.signatures
+                    .map { parseJAXBElementToByteArrayOrParam(it, params) }
+                    .toTypedArray()
+        } else {
+            Array(transaction.signers.signers.size) { byteArrayOf() }
+        }
     }
 
     private fun parseJAXBElementToByteArrayOrParam(jaxbElement: JAXBElement<*>, params: Map<String, GTXValue>): ByteArray {
@@ -96,5 +120,15 @@ object GTXMLTransactionParser {
                         GTXMLValueParser.parseJAXBElementToGTXMLValue(it, params)
                     }.toTypedArray())
         }.toTypedArray()
+    }
+
+    private fun signTransaction(gtxData: GTXData, signers: Map<ByteArrayKey, Signer>) {
+        for (i in 0 until gtxData.signers.size) {
+            if (gtxData.signatures[i].isEmpty()) {
+                val signer = signers[gtxData.signers[i]?.byteArrayKeyOf()]
+                        ?: throw IllegalArgumentException("Signer ${gtxData.signers[i]?.byteArrayKeyOf()} is absent")
+                gtxData.signatures[i] = signer(gtxData.serializeWithoutSignatures()).data
+            }
+        }
     }
 }

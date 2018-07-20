@@ -11,6 +11,7 @@ import java.security.MessageDigest
 import kotlin.experimental.xor
 
 class MockCryptoSystem : CryptoSystem {
+
     override fun digest(bytes: ByteArray): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         return digest.digest(bytes)
@@ -19,7 +20,7 @@ class MockCryptoSystem : CryptoSystem {
     override fun makeSigner(pubKey: ByteArray, privKey: ByteArray): Signer {
         return { data ->
             val digest = digest(data)
-            digest.forEachIndexed { index, byte ->  byte xor pubKey[index]}
+            digest.forEachIndexed { index, byte -> byte xor pubKey[index] }
             Signature(pubKey, digest)
         }
     }
@@ -37,5 +38,4 @@ class MockCryptoSystem : CryptoSystem {
     override fun getRandomBytes(size: Int): ByteArray {
         return ByteArray(size)
     }
-
 }
