@@ -9,7 +9,6 @@
         <version>2.3.5-SNAPSHOT</version>
     </parent>
     <artifactId>postchain-base</artifactId>
-
     <packaging>jar</packaging>
 
     <name>Postchain Base</name>
@@ -35,10 +34,13 @@
     </properties>
 
     <dependencies>
+        <!-- Postchain -->
         <dependency>
             <groupId>net.postchain</groupId>
             <artifactId>postchain-common</artifactId>
+            <version>2.3.5-SNAPSHOT</version>
         </dependency>
+
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jre8</artifactId>

@@ -35,8 +35,27 @@ object GTXMLTransactionParser {
      * Parses XML represented as string into [GTXData] within the [TransactionContext]
      */
     fun parseGTXMLTransaction(xml: String, context: TransactionContext): GTXData {
-        val transaction = JAXB.unmarshal(StringReader(xml), TransactionType::class.java)
+        return parseGTXMLTransaction(
+                JAXB.unmarshal(StringReader(xml), TransactionType::class.java),
+                context)
+    }
 
+    /**
+     * Parses XML represented as string into [GTXData] within the jaxbContext of [params] ('<param />') and [signers]
+     */
+    fun parseGTXMLTransaction(xml: String,
+                              params: Map<String, GTXValue> = mapOf(),
+                              signers: Map<ByteArrayKey, Signer> = mapOf()): GTXData {
+
+        return parseGTXMLTransaction(
+                xml,
+                TransactionContext(null, params, true, signers))
+    }
+
+    /**
+     * TODO: [et]: Parses XML represented as string into [GTXData] within the [TransactionContext]
+     */
+    fun parseGTXMLTransaction(transaction: TransactionType, context: TransactionContext): GTXData {
         // Asserting count(signers) == count(signatures)
         requireSignaturesCorrespondsSigners(transaction)
 
@@ -58,18 +77,6 @@ object GTXMLTransactionParser {
             throw IllegalArgumentException("Number of signers (${tx.signers.signers.size}) is not equal to " +
                     "the number of signatures (${tx.signatures.signatures.size})\n")
         }
-    }
-
-    /**
-     * Parses XML represented as string into [GTXData] within the jaxbContext of [params] ('<param />') and [signers]
-     */
-    fun parseGTXMLTransaction(xml: String,
-                              params: Map<String, GTXValue> = mapOf(),
-                              signers: Map<ByteArrayKey, Signer> = mapOf()): GTXData {
-
-        return parseGTXMLTransaction(
-                xml,
-                TransactionContext(null, params, true, signers))
     }
 
     private fun parseBlockchainRID(blockchainRID: String?, contextBlockchainRID: ByteArray?): ByteArray {

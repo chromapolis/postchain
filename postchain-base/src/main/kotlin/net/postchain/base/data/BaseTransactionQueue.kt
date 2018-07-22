@@ -21,14 +21,14 @@ class ComparableTransaction(val tx: Transaction) {
 
 val MAX_REJECTED = 1000
 
-class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
+class BaseTransactionQueue(queueCapacity: Int = 2500) : TransactionQueue {
 
     companion object : KLogging()
 
     val queue = LinkedBlockingQueue<ComparableTransaction>(queueCapacity)
     val queueSet = HashSet<ByteArrayKey>()
     val taken = mutableListOf<ComparableTransaction>()
-    val rejects = object: LinkedHashMap<ByteArrayKey, Exception?>() {
+    val rejects = object : LinkedHashMap<ByteArrayKey, Exception?>() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<ByteArrayKey, java.lang.Exception?>?): Boolean {
             return size > MAX_REJECTED
         }
@@ -41,8 +41,7 @@ class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
             taken.add(tx)
             queueSet.remove(ByteArrayKey(tx.tx.getRID()))
             return tx.tx
-        }
-        else return null
+        } else return null
     }
 
     override fun getTransactionQueueSize(): Int {
@@ -90,7 +89,7 @@ class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
         val rid = ByteArrayKey(txHash)
         if (queueSet.contains(rid)) {
             return TransactionStatus.WAITING
-        } else if (taken.find({it.tx.getRID().contentEquals(txHash)}) != null) {
+        } else if (taken.find({ it.tx.getRID().contentEquals(txHash) }) != null) {
             return TransactionStatus.WAITING
         } else if (rid in rejects) {
             return TransactionStatus.REJECTED
@@ -106,8 +105,8 @@ class BaseTransactionQueue(queueCapacity: Int = 2500): TransactionQueue {
 
     @Synchronized
     override fun removeAll(transactionsToRemove: Collection<Transaction>) {
-        queue.removeAll(transactionsToRemove.map{ ComparableTransaction(it) })
+        queue.removeAll(transactionsToRemove.map { ComparableTransaction(it) })
         queueSet.removeAll(transactionsToRemove.map { ByteArrayKey(it.getRID()) })
-        taken.removeAll(transactionsToRemove.map{ ComparableTransaction(it) })
+        taken.removeAll(transactionsToRemove.map { ComparableTransaction(it) })
     }
 }

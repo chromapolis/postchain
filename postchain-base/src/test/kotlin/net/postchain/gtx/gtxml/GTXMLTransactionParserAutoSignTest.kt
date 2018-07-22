@@ -2,6 +2,7 @@ package net.postchain.gtx.gtxml
 
 import assertk.assert
 import assertk.assertions.isEqualTo
+import net.postchain.base.SECP256K1CryptoSystem
 import net.postchain.common.hexStringToByteArray
 import net.postchain.core.byteArrayKeyOf
 import net.postchain.gtx.*
@@ -12,38 +13,31 @@ class GTXMLTransactionParserAutoSignTest {
 
     @Test
     fun autoSign_autosigning_for_empty_signatures_successfully() {
-        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/auto-sign/tx_two_empty_signatures.xml").readText()
+        val xml = javaClass.getResource("/net/postchain/gtx/gtxml/auto-sign/tx.xml").readText()
+
+        val cs = SECP256K1CryptoSystem()
 
         val pubKey0 = pubKey(0)
         val privKey0 = privKey(0)
-        val signer0 = MockCryptoSystem().makeSigner(pubKey0, privKey0)
+        val signer0 = cs.makeSigner(pubKey0, privKey0)
 
         val pubKey1 = pubKey(1)
         val privKey1 = privKey(1)
-        val signer1 = MockCryptoSystem().makeSigner(pubKey1, privKey1)
+        val signer1 = SECP256K1CryptoSystem().makeSigner(pubKey1, privKey1)
 
         val expected = GTXData(
-                "23213213".hexStringToByteArray(),
+                "78967baa4768cbcef11c508326ffb13a956689fcb6dc3ba17f4b895cbb1577a3".hexStringToByteArray(),
                 arrayOf(
-                        pubKey0,
-                        byteArrayOf(0x12, 0x38, 0x71, 0x23),
-                        byteArrayOf(0x12, 0x38, 0x71, 0x24),
-                        pubKey1
+                        pubKey0
                 ),
                 arrayOf(
-                        byteArrayOf(), // empty signature, will calculated below
-                        byteArrayOf(0x34, 0x56, 0x78, 0x54),
-                        byteArrayOf(0x34, 0x56, 0x78, 0x55),
-                        byteArrayOf() // empty signature, will calculated below
+                        byteArrayOf()
                 ),
                 arrayOf(
-                        OpData("ft_transfer",
+                        OpData("timeb",
                                 arrayOf(
-                                        StringGTXValue("hello"),
-                                        StringGTXValue("hello2"),
-                                        StringGTXValue("hello3"),
-                                        IntegerGTXValue(42),
-                                        IntegerGTXValue(43)))
+                                        IntegerGTXValue(1530403200),
+                                        IntegerGTXValue(1532258883)))
                 )
         )
 

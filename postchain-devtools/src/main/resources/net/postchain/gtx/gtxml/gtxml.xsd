@@ -56,7 +56,7 @@
 
     <xs:complexType name="paramType">
         <xs:attribute name="key" use="required"/>
-        <xs:attribute name="type" use="optional" />
+        <xs:attribute name="type" use="optional"/>
     </xs:complexType>
 
 
@@ -125,13 +125,7 @@
 
     <!-- GTX XML Test -->
 
-    <xs:element name="tests">
-        <xs:complexType>
-            <xs:sequence maxOccurs="unbounded">
-                <xs:element name="test" type="testType"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
+    <xs:element name="test" type="testType"/>
 
     <xs:complexType name="testType">
         <xs:sequence maxOccurs="unbounded">

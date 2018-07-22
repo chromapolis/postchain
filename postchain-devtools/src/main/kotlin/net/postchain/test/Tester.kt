@@ -1,15 +1,13 @@
 package net.postchain.test
 
 import net.postchain.DataLayer
-import net.postchain.base.gtxml.Tests
-import net.postchain.common.hexStringToByteArray
-import javax.xml.bind.JAXBContext
 
 class Tester : IntegrationTest() {
 
 
     fun runGTXMLTests(xml: String, node: DataLayer): Boolean {
 
+        /*
         val jctx = JAXBContext.newInstance(Tests::class.java)
         val unmarshaller = jctx.createUnmarshaller()
 
@@ -32,6 +30,8 @@ class Tester : IntegrationTest() {
                 }
             }
         }
+        */
+
         return true
     }
 

@@ -4,42 +4,26 @@ package net.postchain.test
 
 import mu.KLogging
 import net.postchain.DataLayer
-import net.postchain.base.BasePeerCommConfiguration
-import net.postchain.base.DynamicPortPeerInfo
-import net.postchain.base.PeerInfo
-import net.postchain.base.SECP256K1CryptoSystem
+import net.postchain.base.*
 import net.postchain.base.data.BaseBlockchainConfiguration
-import net.postchain.base.secp256k1_derivePubKey
 import net.postchain.common.toHex
-import net.postchain.core.BlockBuilder
-import net.postchain.core.BlockWitness
-import net.postchain.core.BlockchainConfiguration
-import net.postchain.core.BlockchainConfigurationFactory
-import net.postchain.core.MultiSigBlockWitnessBuilder
-import net.postchain.core.Transaction
-import net.postchain.core.TransactionFactory
-import net.postchain.core.TxEContext
-import net.postchain.core.UserMistake
+import net.postchain.core.*
 import net.postchain.createDataLayer
 import net.postchain.ebft.BlockchainEngine
 import org.apache.commons.configuration2.CompositeConfiguration
 import org.apache.commons.configuration2.Configuration
 import org.apache.commons.configuration2.MapConfiguration
-import org.apache.commons.configuration2.builder.fluent.Configurations
+import org.apache.commons.configuration2.PropertiesConfiguration
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
+import org.apache.commons.configuration2.builder.fluent.Parameters
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler
+import org.apache.commons.configuration2.io.ClasspathLocationStrategy
 import org.junit.After
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
-import org.apache.commons.configuration2.PropertiesConfiguration
-import org.apache.commons.configuration2.io.ClasspathLocationStrategy
-import org.spongycastle.asn1.ua.DSTU4145NamedCurves.params
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder
-import org.apache.commons.configuration2.builder.fluent.Parameters
 
 
 open class IntegrationTest {
